@@ -1,3 +1,4 @@
 # IPDBG - the environment to debug your IP
 Main-repository for IPDBG.
-for details see ipdbg.org
+
+For details see [ipdbg.org!](http://ipdbg.org)
