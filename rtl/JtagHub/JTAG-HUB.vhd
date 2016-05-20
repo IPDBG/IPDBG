@@ -16,7 +16,9 @@ entity JTAG_HUB is
        Enable_IOVIEW      : out std_logic;
        Enable_GDB         : out std_logic;
 
-       DATAINREADY        : out std_logic;
+       DATAINREADY_LA        : out std_logic;
+       DATAINREADY_IOVIEW        : out std_logic;
+       DATAINREADY_GDB        : out std_logic;
        DATAINVALID_LA     : in  std_logic;
        DATAINVALID_IOVIEW : in  std_logic;
        DATAINVALID_GDB    : in  std_logic;
@@ -35,17 +37,22 @@ architecture structure of JTAG_HUB is
             clk                : in  std_logic;
             rst                : in  std_logic;
             ce                 : in  std_logic;
+
             DATAOUT            : out std_logic_vector(7 downto 0);
             Enable_LA          : out std_logic;
             Enable_IOVIEW      : out std_logic;
             Enable_GDB         : out std_logic;
-            DATAINREADY        : out std_logic;
+
+            DATAINREADY_LA        : out std_logic;
+            DATAINREADY_IOVIEW        : out std_logic;
+            DATAINREADY_GDB        : out std_logic;
             DATAINVALID_LA     : in  std_logic;
             DATAINVALID_IOVIEW : in  std_logic;
             DATAINVALID_GDB    : in  std_logic;
             DATAIN_LA          : in  std_logic_vector (7 downto 0);
             DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
             DATAIN_GDB         : in  std_logic_vector (7 downto 0);
+
             DRCLK1             : in  std_logic;
             DRCLK2             : in  std_logic;
             USER1              : in  std_logic;
@@ -125,7 +132,9 @@ begin
             Enable_IOVIEW      => Enable_IOVIEW,
             Enable_GDB         => Enable_GDB,
 
-            DATAINREADY        => DATAINREADY,
+            DATAINREADY_LA        => DATAINREADY_LA,
+            DATAINREADY_IOVIEW        => DATAINREADY_IOVIEW,
+            DATAINREADY_GDB        => DATAINREADY_GDB,
             DATAINVALID_LA     => DATAINVALID_LA,
             DATAINVALID_IOVIEW => DATAINVALID_IOVIEW,
             DATAINVALID_GDB    => DATAINVALID_GDB,

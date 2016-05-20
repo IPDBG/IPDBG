@@ -46,7 +46,9 @@ architecture structure of IPDBG is
             Enable_LA          : out std_logic;
             Enable_IOVIEW      : out std_logic;
             Enable_GDB         : out std_logic;
-            DATAINREADY        : out std_logic;
+            DATAINREADY_LA     : out std_logic;
+            DATAINREADY_IOVIEW : out std_logic;
+            DATAINREADY_GDB    : out std_logic;
             DATAINVALID_LA     : in  std_logic;
             DATAINVALID_IOVIEW : in  std_logic;
             DATAINVALID_GDB    : in  std_logic;
@@ -106,8 +108,8 @@ architecture structure of IPDBG is
     signal TDI          : std_logic;
     signal TDO1         : std_logic;
     signal TDO2         : std_logic;
-    signal rst         : std_logic;
-    signal ce         : std_logic;
+    signal rst          : std_logic;
+    signal ce           : std_logic;
 
     --signal Input_DeviceunderTest_IOVIEW     : std_logic_vector(7 downto 0);
     --signal Output_DeviceunderTest_IOVIEW    : std_logic_vector(7 downto 0);
@@ -117,7 +119,9 @@ architecture structure of IPDBG is
     signal Enable_LA          : std_logic;
     signal Enable_IOVIEW      : std_logic;
     signal Enable_GDB         : std_logic;
-    signal DATAINREADY        : std_logic;
+    signal DATAINREADY_LA     : std_logic;
+    signal DATAINREADY_IOVIEW : std_logic;
+    signal DATAINREADY_GDB    : std_logic;
     signal DATAINVALID_LA     : std_logic;
     signal DATAINVALID_IOVIEW : std_logic;
     signal DATAINVALID_GDB    : std_logic;
@@ -155,7 +159,7 @@ begin
             DataInValid         => Enable_LA,
             DataIn              => DATAOUT,
 
-            DataReadyOut        => DATAINREADY,
+            DataReadyOut        => DATAINREADY_LA,
             DataValidOut        => DATAINVALID_LA,
             DataOut             => DATAIN_LA,
 
@@ -173,7 +177,7 @@ begin
             DataInValid                     => Enable_IOVIEW,
             DataIn                          => DATAOUT,
 
-            DataOutReady                    => DATAINREADY,
+            DataOutReady                    => DATAINREADY_IOVIEW,
             DataOutValid                    => DATAINVALID_IOVIEW,
             DataOut                         => DATAIN_IOVIEW,
 
@@ -195,7 +199,9 @@ begin
             Enable_IOVIEW      => Enable_IOVIEW,
             Enable_GDB         => open,
 
-            DATAINREADY        => DATAINREADY,
+            DATAINREADY_LA     => DATAINREADY_LA,
+            DATAINREADY_IOVIEW => DATAINREADY_IOVIEW,
+            DATAINREADY_GDB    => DATAINREADY_GDB,
             DATAINVALID_LA     => DATAINVALID_LA,
             DATAINVALID_IOVIEW => DATAINVALID_IOVIEW,
             DATAINVALID_GDB    => '0',

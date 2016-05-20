@@ -20,7 +20,9 @@ entity JTAG_CDC_Komponente is
         Enable_GDB          : out std_logic;
 
 -------------------------- from Device under Test ------------------------
-        DATAINREADY         : out std_logic:= '1';
+        DATAINREADY_LA      : out std_logic:= '1';
+        DATAINREADY_IOVIEW  : out std_logic:= '1';
+        DATAINREADY_GDB     : out std_logic:= '1';
 
         --DATAINVALID     : in std_logic;
         DATAINVALID_LA      : in std_logic;
@@ -53,6 +55,7 @@ architecture behavioral of JTAG_CDC_Komponente is
 ---------------------- Datenregister -----------------------------
     signal Shiftregister            : std_logic_vector(11 downto 0);
     signal LaTransferRegister       : std_logic_vector(7 downto 0);
+    signal ChannelRegister          : std_logic_vector(2 downto 0);
 
 ---------------------- Signale Einlesen --------------------------
     signal update_synced             : std_logic := '0';
@@ -64,9 +67,11 @@ architecture behavioral of JTAG_CDC_Komponente is
     signal pending_synched           : std_logic;
     signal acknowledge               : std_logic := '0';
 
-    signal Shiftcounter              : natural := 8;
+    signal Shiftcounter              : natural := 12;
 
-    signal DATAINREADY_s             : std_logic := '1';
+    signal DATAINREADY_IOVIEW_s             : std_logic := '1';
+    signal DATAINREADY_LA_s             : std_logic := '1';
+    signal DATAINREADY_GDB_s             : std_logic := '1';
 
     signal read_GDB                 : std_logic;
     signal read_LA                  : std_logic;
@@ -85,40 +90,22 @@ begin
     process(DRCLK1)begin
         if rising_edge(DRCLK1) then
             if CAPTURE = '1' and USER1 = '1' then
-                Shiftregister(8 downto 0) <= '0' & LaTransferRegister;
+                --Shiftregister(8 downto 0) <= '0' & LaTransferRegister;
+                Shiftregister <= '0' & ChannelRegister & LaTransferRegister;
                 Shiftcounter <= 12;
-                if read_LA = '1' then
-                    Shiftregister (9)  <= '0';
-                    Shiftregister (10) <= '0';
-                    Shiftregister (11) <= '1';
-                end if;
-                if read_IOVIEW = '1' then
-                    Shiftregister (9)  <= '0';
-                    Shiftregister (10) <= '1';
-                    Shiftregister (11) <= '0';
-                end if;
-                if read_GDB = '1' then
-                    Shiftregister (9)  <= '1';
-                    Shiftregister (10) <= '0';
-                    Shiftregister (11) <= '0';
-                end if;
 
             elsif USER1 = '1' and SHIFT = '1' then
                 if Shiftcounter /= 0 then
                     Shiftcounter <= Shiftcounter - 1;
                 end if;
---                if Shiftcounter = 1 then
---                    acknowledge <= Shiftregister(0);
---                    Shiftregister (9)  <= '0';
---                    Shiftregister (10) <= '0';
---                    Shiftregister (11) <= '0';
---                end if;
---                if Shiftcounter = 5 then
---                    Shiftregister <= TDI & Shiftregister(Shiftregister'left downto 2) & pending_synched;
---                else
---                    Shiftregister <= TDI & Shiftregister(Shiftregister'left downto 1);
---                end if;
-                Shiftregister <= TDI & Shiftregister(Shiftregister'left downto 1);
+                if Shiftcounter = 1 then
+                    acknowledge <= Shiftregister(0);
+                end if;
+                if Shiftcounter = 2 then
+                    Shiftregister <= TDI & Shiftregister(Shiftregister'left downto 2) & pending_synched;
+                else
+                    Shiftregister <= TDI & Shiftregister(Shiftregister'left downto 1);
+                end if;
             end if;
         end if;
     end process;
@@ -177,13 +164,13 @@ begin
                 Enable_LA <= '0';
                 Enable_IOVIEW <= '0';
                 Enable_GDB <= '0';
-                if DataOutRegisterEnable = '1' and Shiftregister(11 downto 9) = "100" and Shiftregister (8) = '1' then
+                if DataOutRegisterEnable = '1' and Shiftregister(10 downto 8) = "100" and Shiftregister (11) = '1' then
                     Enable_LA <= '1';
                 end if;
-                if DataOutRegisterEnable = '1' and Shiftregister(11 downto 9) = "010" and Shiftregister (8) = '1' then
+                if DataOutRegisterEnable = '1' and Shiftregister(10 downto 8) = "010" and Shiftregister (11) = '1' then
                     Enable_IOVIEW <= '1';
                 end if;
-                if DataOutRegisterEnable = '1' and Shiftregister(11 downto 9) = "001"  and Shiftregister (8) = '1' then
+                if DataOutRegisterEnable = '1' and Shiftregister(10 downto 8) = "001"  and Shiftregister (11) = '1' then
                     Enable_GDB <= '1';
                 end if;
             end if;
@@ -203,48 +190,47 @@ begin
 
 -------------------------------------------Ausgeben-------------------------------------------
 
-    DATAINREADY <= DATAINREADY_s;
+    DATAINREADY_LA <= DATAINREADY_LA_s;
+    DATAINREADY_GDB <= DATAINREADY_GDB_s;
+    DATAINREADY_IOVIEW <= DATAINREADY_IOVIEW_s;
     process (clk) begin
         if rising_edge(clk) then
             if setPending = '1' then
                 pending <= '1';
             end if;
             setPending <= '0';
-            if DATAINREADY_s = '1' then
+            if DATAINREADY_LA_s = '1' then
                 if DATAINVALID_LA = '1' then
-                    DATAINREADY_s <= '0';
+                    DATAINREADY_LA_s <= '0';
                     read_LA <= '1';
---                    Shiftregister (9) <= '0';
---                    Shiftregister (10) <= '0';
---                    Shiftregister (11) <= '1';
+                    ChannelRegister <= "100";
                     LaTransferRegister <= DATAIN_LA;
                     setPending <= '1';
                 end if;
+            end if;
+            if DATAINREADY_IOVIEW_s = '1' then
                 if DATAINVALID_IOVIEW = '1' then
-                    DATAINREADY_s <= '0';
+                    DATAINREADY_IOVIEW_s <= '0';
+                    ChannelRegister <= "010";
                     LaTransferRegister <= DATAIN_IOVIEW;
-                    read_IOVIEW <= '1';
---                    Shiftregister (9) <= '0';
---                    Shiftregister (10) <= '1';
---                    Shiftregister (11) <= '0';
                     setPending <= '1';
                 end if;
+            end if;
+            if DATAINREADY_GDB_s = '1' then
                 if DATAINVALID_GDB = '1' then
-                    DATAINREADY_s <= '0';
+                    DATAINREADY_GDB_s <= '0';
+                    ChannelRegister <= "001";
                     LaTransferRegister <= DATAIN_GDB;
-                    read_GDB <= '1';
---                    Shiftregister (9) <= '1';
---                    Shiftregister (10) <= '0';
---                    Shiftregister (11) <= '0';
+
                     setPending <= '1';
                 end if;
-            elsif update_synced = '1' and update_synced_prev = '0' then
+            end if;
+            if update_synced = '1' and update_synced_prev = '0' then
                 if acknowledge = '1' then
                     pending <= '0';
-                    DATAINREADY_s <= '1';
-                    read_GDB <= '0';
-                    read_IOVIEW <= '0';
-                    read_LA <= '0';
+                    DATAINREADY_LA_s <= '1';
+                    DATAINREADY_IOVIEW_s <= '1';
+                    DATAINREADY_GDB_s <= '1';
                 end if;
             end if;
         end if;
@@ -252,7 +238,7 @@ begin
 
 
     pending_dffp: block
-        signal x : std_logic_vector(8 downto 0);
+        signal x : std_logic_vector(11 downto 0);
         component dffp is
             port(
                 clk : in  std_logic;
@@ -266,7 +252,7 @@ begin
 
         x(0) <= pending and USER1;
 
-        mffx_flops: for K in 0 to 7 generate begin
+        mffx_flops: for K in 0 to 10 generate begin
 
             MFF : dffp
                 port map
@@ -279,8 +265,8 @@ begin
         end generate;
 
 
-        pending_synched <= x(8);
-        --pending_synched <= x(7);
+        --pending_synched <= x(8);
+        pending_synched <= x(11);
 
     end block;
 
