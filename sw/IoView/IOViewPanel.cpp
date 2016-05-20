@@ -42,7 +42,7 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
     ipdbgJtagWrite(chain, buffer, 1);
 
 
-    /*buffer[0] = IOViewIPCommands::INOUT_Auslesen;
+    buffer[0] = IOViewIPCommands::INOUT_Auslesen;
     ipdbgJtagWrite(chain, buffer, 1);
 
     int readBytes  = 0;
@@ -61,9 +61,9 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
     NumberOfInputs =  buffer[4] |
                       buffer[5] << 8 |
                       buffer[6] << 16 |
-                      buffer[7] << 24;*/
-    NumberOfInputs = 8;
-    NumberOfOutputs = 8;
+                      buffer[7] << 24;
+    //NumberOfInputs = 8;
+    //NumberOfOutputs = 8;
 
 	wxBoxSizer* bSizer;
 	bSizer = new wxBoxSizer( wxVERTICAL );
@@ -99,7 +99,7 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
 	this->SetSizer( bSizer );
 	this->Layout();
 
-	//timer.Start(200);
+	timer.Start(200);
 }
 
 IOViewPanel::~IOViewPanel()
@@ -138,13 +138,15 @@ void IOViewPanel::onTimer(wxTimerEvent& event)
     buffer[0] = IOViewIPCommands::ReadInput;
     ipdbgJtagWrite(chain, buffer, 1);
 
-    /*int readBytes  = 0;
-    while(readBytes != NumberOfInputBytes)
-    {
-        printf("reading (%d)\n", readBytes);
-        readBytes +=
-    }*/
+//    int readBytes  = 0;
+//    while(readBytes != NumberOfInputBytes)
+//    {
+//        printf("reading (%d)\n", readBytes);
+//        readBytes += ;
+//    }
     ipdbgJtagRead(chain, buffer, NumberOfInputBytes);
+    //ipdbgJtagRead(chain, buffer, 1);
+
 
     for (size_t idx = 0 ; idx < NumberOfInputs ; ++idx)
     {
