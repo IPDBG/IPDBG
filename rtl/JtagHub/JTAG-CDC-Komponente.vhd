@@ -89,8 +89,8 @@ architecture behavioral of JTAG_CDC_Komponente is
 
     type MUX is(GDB_s, LA_s, IOVIEW_s);
     signal ent_mux    : MUX :=  GDB_s;
---    type transfer_t is (is_active, is_idle);
---    signal transfer : transfer_t;
+    type transfer_t is (is_active, is_idle);
+    signal transfer : transfer_t;
 
 
 
@@ -253,39 +253,39 @@ begin
                 when GDB_s =>
                     if DATAINREADY_GDB_s = '1' then
                         ent_mux <= LA_s;
---                        transfer <= is_idle;
+                        transfer <= is_idle;
                     else
                         LaTransferRegister <= Register_GDB;
---                        if transfer = is_idle then
+                        if transfer = is_idle then
                             setPending <= '1';
---                            transfer <= is_active;
---                        end if;
+                            transfer <= is_active;
+                        end if;
                         ChannelRegister <= "001";
                     end if;
 
                 when LA_s =>
                     if DATAINREADY_LA_s = '1' then
                         ent_mux <= IOVIEW_s;
---                        transfer <= is_idle;
+                        transfer <= is_idle;
                     else
                         LaTransferRegister <= Register_LA;
---                        if transfer = is_idle then
+                        if transfer = is_idle then
                             setPending <= '1';
---                            transfer <= is_active;
---                        end if;
+                            transfer <= is_active;
+                        end if;
                         ChannelRegister <= "100";
                     end if;
 
                 when IOVIEW_s =>
                     if DATAINREADY_IOVIEW_s = '1' then
                         ent_mux <= GDB_s;
---                        transfer <= is_idle;
+                        transfer <= is_idle;
                     else
                         LaTransferRegister <= Register_IOVIEW;
-                        --if transfer = is_idle then
+                        if transfer = is_idle then
                             setPending <= '1';
-                        --    transfer <= is_active;
-                        --end if;
+                            transfer <= is_active;
+                        end if;
                         ChannelRegister <= "010";
                     end if;
             end case;
