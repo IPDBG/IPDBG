@@ -73,7 +73,7 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
 	wxStaticBoxSizer* sbSizer1;
 	sbSizer1 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Inputs") ), wxHORIZONTAL );
 
-	for(int i = 0 ; i < NumberOfInputs ; ++i)
+	for(size_t i = 0 ; i < NumberOfInputs ; ++i)
     {
         wxLed *led = new wxLed(this);
         sbSizer1->Add( led, 0, wxALL, 5 );
@@ -88,7 +88,7 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
 	wxStaticBoxSizer* sbSizer2;
 	sbSizer2 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Outputs") ), wxHORIZONTAL );
 
-	for(int i = 0 ; i < NumberOfOutputs ; ++i)
+	for(size_t i = 0 ; i < NumberOfOutputs ; ++i)
     {
         wxString str = wxString::Format(_T("P%d"), NumberOfOutputs-1-i);
         wxCheckBox *checkBox = new wxCheckBox( this, wxID_ANY, str, wxDefaultPosition, wxDefaultSize, 0 );

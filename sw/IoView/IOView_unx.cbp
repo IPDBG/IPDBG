@@ -36,21 +36,22 @@
 			<Add option="`wx-config --cflags`" />
 			<Add option='[[if (GetCompilerFactory().GetCompilerVersionString(_T(&quot;gcc&quot;)) &gt;= _T(&quot;4.8.0&quot;)) print(_T(&quot;-Wno-unused-local-typedefs&quot;));]]' />
 			<Add option="-fPIC" />
+			<Add directory="../JtagHost" />
 		</Compiler>
 		<Linker>
 			<Add option="`wx-config --libs`" />
 			<Add library="urjtag" />
 		</Linker>
+		<Unit filename="../JtagHost/jtaghost.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../JtagHost/jtaghost.h" />
 		<Unit filename="IOViewApp.cpp" />
 		<Unit filename="IOViewApp.h" />
 		<Unit filename="IOViewMain.cpp" />
 		<Unit filename="IOViewMain.h" />
 		<Unit filename="IOViewPanel.cpp" />
 		<Unit filename="IOViewPanel.h" />
-		<Unit filename="jtaghost.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="jtaghost.h" />
 		<Unit filename="led.cpp" />
 		<Unit filename="led.h" />
 		<Unit filename="leds.xpm" />

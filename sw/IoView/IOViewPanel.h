@@ -49,8 +49,8 @@ class IOViewPanel : public wxPanel
             Reset = 0xee,
             Escape = 0x55
         };
-        int NumberOfInputs;
-        int NumberOfOutputs;
+        unsigned int NumberOfInputs;
+        unsigned int NumberOfOutputs;
 
 
 	protected:
