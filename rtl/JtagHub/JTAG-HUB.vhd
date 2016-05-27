@@ -16,9 +16,9 @@ entity JTAG_HUB is
        Enable_IOVIEW      : out std_logic;
        Enable_GDB         : out std_logic;
 
-       DATAINREADY_LA        : out std_logic;
-       DATAINREADY_IOVIEW        : out std_logic;
-       DATAINREADY_GDB        : out std_logic;
+       DATAINREADY_LA     : out std_logic;
+       DATAINREADY_IOVIEW : out std_logic;
+       DATAINREADY_GDB    : out std_logic;
        DATAINVALID_LA     : in  std_logic;
        DATAINVALID_IOVIEW : in  std_logic;
        DATAINVALID_GDB    : in  std_logic;
@@ -43,9 +43,9 @@ architecture structure of JTAG_HUB is
             Enable_IOVIEW      : out std_logic;
             Enable_GDB         : out std_logic;
 
-            DATAINREADY_LA        : out std_logic;
-            DATAINREADY_IOVIEW        : out std_logic;
-            DATAINREADY_GDB        : out std_logic;
+            DATAINREADY_LA     : out std_logic;
+            DATAINREADY_IOVIEW : out std_logic;
+            DATAINREADY_GDB    : out std_logic;
             DATAINVALID_LA     : in  std_logic;
             DATAINVALID_IOVIEW : in  std_logic;
             DATAINVALID_GDB    : in  std_logic;
@@ -62,8 +62,7 @@ architecture structure of JTAG_HUB is
             SHIFT              : in  std_logic;
             TDI                : in  std_logic;
             TDO1               : out std_logic;
-            TDO2               : out std_logic;
-            LEDS               : out std_logic_vector(7 downto 0)
+            TDO2               : out std_logic
         );
     end component JTAG_CDC_Komponente;
 
@@ -132,9 +131,9 @@ begin
             Enable_IOVIEW      => Enable_IOVIEW,
             Enable_GDB         => Enable_GDB,
 
-            DATAINREADY_LA        => DATAINREADY_LA,
-            DATAINREADY_IOVIEW        => DATAINREADY_IOVIEW,
-            DATAINREADY_GDB        => DATAINREADY_GDB,
+            DATAINREADY_LA     => DATAINREADY_LA,
+            DATAINREADY_IOVIEW => DATAINREADY_IOVIEW,
+            DATAINREADY_GDB    => DATAINREADY_GDB,
             DATAINVALID_LA     => DATAINVALID_LA,
             DATAINVALID_IOVIEW => DATAINVALID_IOVIEW,
             DATAINVALID_GDB    => DATAINVALID_GDB,
@@ -151,8 +150,8 @@ begin
             SHIFT              => SHIFT,
             TDI                => TDI,
             TDO1               => TDO1,
-            TDO2               => TDO2,
-            LEDS               => open
+            TDO2               => TDO2
+
         );
 
 
