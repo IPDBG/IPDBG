@@ -180,7 +180,7 @@ int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts, int MaskPendi
 
         uint32_t val = dr_value_rx;
 
-        if (val & MaskPending )
+        if ((val & 0xf00) == MaskPending)
         {
             *buf++ = val & 0x00ff;
             ++bytesReceived;
