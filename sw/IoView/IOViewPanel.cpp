@@ -13,6 +13,9 @@
 
 ///////////////////////////////////////////////////////////////////////////
 
+#define IPDBG_IOVIEW_VALID_MASK 0xA00
+
+
 BEGIN_EVENT_TABLE(IOViewPanel, wxPanel)
     EVT_CHECKBOX(wxID_ANY, IOViewPanel::onCheckBox)
     EVT_TIMER(wxID_ANY, IOViewPanel::onTimer)
@@ -38,20 +41,20 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
 
     uint8_t buffer[8];
     buffer[0] = IOViewIPCommands::Reset;
-    ipdbgJtagWrite(chain, buffer, 1);
-    ipdbgJtagWrite(chain, buffer, 1);
+    ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
+    ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
 
 
     buffer[0] = IOViewIPCommands::INOUT_Auslesen;
-    ipdbgJtagWrite(chain, buffer, 1);
+    ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
 
     /*int readBytes  = 0;
     while(readBytes != 8)
     {
         printf("reading (%d)\n", readBytes);
-        readBytes +=  ipdbgJtagRead(chain, &buffer[readBytes], 8-readBytes);
+        readBytes +=  ipdbgJtagRead(chain, &buffer[readBytes], 8-readBytes, IPDBG_IOVIEW_VALID_MASK);
     }*/
-    ipdbgJtagRead(chain, buffer, 8);
+    ipdbgJtagRead(chain, buffer, 8, IPDBG_IOVIEW_VALID_MASK);
 
 
     NumberOfOutputs = buffer[0] |
@@ -118,7 +121,7 @@ void IOViewPanel::onCheckBox(wxCommandEvent& event)
     uint8_t buffer[NumberOfOutputBytes];
 
     buffer[0] = IOViewIPCommands::WriteOutput;
-    ipdbgJtagWrite(chain, buffer, 1);
+    ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
 
     for(size_t idx = 0 ; idx < NumberOfOutputBytes ; ++idx)
         buffer[idx] = 0;
@@ -128,7 +131,7 @@ void IOViewPanel::onCheckBox(wxCommandEvent& event)
             buffer[(idx & 0xf8)>>3] |= (0x01 << (idx & 0x07));
 
 
-    ipdbgJtagWrite(chain, buffer, NumberOfOutputBytes);
+    ipdbgJtagWrite(chain, buffer, NumberOfOutputBytes, IPDBG_IOVIEW_VALID_MASK);
 
 }
 
@@ -138,7 +141,7 @@ void IOViewPanel::onTimer(wxTimerEvent& event)
     const size_t NumberOfInputBytes = (NumberOfInputs+7)/8;
     uint8_t buffer[NumberOfInputBytes];
     buffer[0] = IOViewIPCommands::ReadInput;
-    ipdbgJtagWrite(chain, buffer, 1);
+    ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
 
 //    int readBytes  = 0;
 //    while(readBytes != NumberOfInputBytes)
@@ -146,8 +149,8 @@ void IOViewPanel::onTimer(wxTimerEvent& event)
 //        printf("reading (%d)\n", readBytes);
 //        readBytes += ;
 //    }
-    ipdbgJtagRead(chain, buffer, NumberOfInputBytes);
-    //ipdbgJtagRead(chain, buffer, 1);
+    ipdbgJtagRead(chain, buffer, NumberOfInputBytes, IPDBG_IOVIEW_VALID_MASK);
+    //ipdbgJtagRead(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
 
 
     for (size_t idx = 0 ; idx < NumberOfInputs ; ++idx)

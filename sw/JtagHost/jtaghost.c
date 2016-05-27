@@ -141,12 +141,10 @@ int initSpartan3(urj_chain_t *chain)
     return 0;
 }
 
-int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths)
+int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths, int Mask_DataValid)
 {
     urj_part_t *part = urj_tap_chain_active_part(chain);
     assert(part != NULL && "part must not be NULL");
-
-    int const Mask_DataValid = 0xa00;
 
     while(lengths--)
     {
@@ -165,7 +163,7 @@ int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths)
 
 }
 
-int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts)
+int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts, int MaskPending)
 {
     urj_part_t *part = urj_tap_chain_active_part(chain);
     assert(part != NULL && "part must not be NULL");
@@ -181,7 +179,6 @@ int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts)
         uint64_t dr_value_rx = urj_tap_register_get_value (part->active_instruction->data_register->out);
 
         uint32_t val = dr_value_rx;
-        int const MaskPending = 0xa00;
 
         if (val & MaskPending )
         {

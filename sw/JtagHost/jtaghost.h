@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBSIGROK_HARDWARE_IPDBG_LA_PROTOCOL_H
-#define LIBSIGROK_HARDWARE_IPDBG_LA_PROTOCOL_H
+#ifndef IPDBG_JTAG_HOST_H
+#define IPDBG_JTAG_HOST_H
 
 #ifdef __cplusplus
 extern "C"
@@ -42,8 +42,8 @@ extern "C"
 
 urj_chain_t *ipdbgJtagAllocChain(void);
 int ipdbgJtagInit(urj_chain_t *chain);
-int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths);
-int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts);
+int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths, int Mask_DataValid);
+int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts, int MaskPending);
 void ipdbgJtagClose(urj_chain_t *chain);
 
 
