@@ -42,10 +42,7 @@ entity JTAG_CDC_Komponente is
         SHIFT        : in  std_logic;
         TDI          : in  std_logic;
         TDO1         : out std_logic;
-        TDO2         : out std_logic;
-
-------------------------------- Debugging -------------------------------
-        LEDS         : out std_logic_vector(7 downto 0)
+        TDO2         : out std_logic
     );
 end entity;
 
@@ -64,21 +61,36 @@ architecture behavioral of JTAG_CDC_Komponente is
 ---------------------- Signale Ausgabe --------------------------
     signal setPending                : std_logic := '0';
     signal pending                   : std_logic := '0';
-    signal pending_synched           : std_logic;
+    signal pending_synched           : std_logic := '0';
     signal acknowledge               : std_logic := '0';
 
     signal Shiftcounter              : natural := 12;
 
-    signal DATAINREADY_IOVIEW_s             : std_logic := '1';
-    signal DATAINREADY_LA_s             : std_logic := '1';
-    signal DATAINREADY_GDB_s             : std_logic := '1';
-
-    signal read_GDB                 : std_logic;
-    signal read_LA                  : std_logic;
-    signal read_IOVIEW              : std_logic;
+    signal DATAINREADY_IOVIEW_s      : std_logic := '1';
+    signal DATAINREADY_LA_s          : std_logic := '1';
+    signal DATAINREADY_GDB_s         : std_logic := '1';
 
 
 
+    signal Register_LA          : std_logic_vector(7 downto 0);
+    signal Register_GDB         : std_logic_vector(7 downto 0);
+    signal Register_IOVIEW      : std_logic_vector(7 downto 0);
+
+     --signal transfer_LA              : std_logic;
+     --signal transfer_GDB              : std_logic;
+     --signal transfer_IOVIEW            : std_logic;
+
+
+     signal zaehler            : natural ;
+     signal GDB            : std_logic := '0';
+     signal IOVIEW            : std_logic := '0';
+     signal LA            : std_logic := '0';
+
+
+    type MUX is(GDB_s, LA_s, IOVIEW_s);
+    signal ent_mux    : MUX :=  GDB_s;
+--    type transfer_t is (is_active, is_idle);
+--    signal transfer : transfer_t;
 
 
 
@@ -178,11 +190,8 @@ begin
 
         process(clk) begin
             if rising_edge(clk) then
-                --DATAOUTVALID <= '0';
                 if DataOutRegisterEnable = '1' then
                     DATAOUT <= Shiftregister(7 downto 0);
-                    LEDS <= Shiftregister(7 downto 0);
-                    --DATAOUTVALID <= Shiftregister(8);
                 end if;
             end if;
         end process;
@@ -198,43 +207,127 @@ begin
             if setPending = '1' then
                 pending <= '1';
             end if;
-            setPending <= '0';
             if DATAINREADY_LA_s = '1' then
                 if DATAINVALID_LA = '1' then
                     DATAINREADY_LA_s <= '0';
-                    read_LA <= '1';
-                    ChannelRegister <= "100";
-                    LaTransferRegister <= DATAIN_LA;
-                    setPending <= '1';
+                    Register_LA <= DATAIN_LA;
                 end if;
             end if;
+
             if DATAINREADY_IOVIEW_s = '1' then
                 if DATAINVALID_IOVIEW = '1' then
                     DATAINREADY_IOVIEW_s <= '0';
-                    ChannelRegister <= "010";
-                    LaTransferRegister <= DATAIN_IOVIEW;
-                    setPending <= '1';
+                    Register_IOVIEW <= DATAIN_IOVIEW;
                 end if;
             end if;
+
             if DATAINREADY_GDB_s = '1' then
                 if DATAINVALID_GDB = '1' then
                     DATAINREADY_GDB_s <= '0';
-                    ChannelRegister <= "001";
-                    LaTransferRegister <= DATAIN_GDB;
-
-                    setPending <= '1';
+                    Register_GDB <= DATAIN_GDB;
                 end if;
             end if;
             if update_synced = '1' and update_synced_prev = '0' then
                 if acknowledge = '1' then
                     pending <= '0';
-                    DATAINREADY_LA_s <= '1';
-                    DATAINREADY_IOVIEW_s <= '1';
-                    DATAINREADY_GDB_s <= '1';
+                    if ChannelRegister = "001" then
+                        DATAINREADY_GDB_s <= '1';
+                    end if;
+
+                    if ChannelRegister = "100" then
+                        DATAINREADY_LA_s <= '1';
+                    end if;
+                    if ChannelRegister = "010" then
+                        DATAINREADY_IOVIEW_s <= '1';
+                    end if;
                 end if;
             end if;
         end if;
     end process;
+
+
+    process (clk) begin
+        if rising_edge(clk) then
+            setPending <= '0';
+            case ent_mux is
+                when GDB_s =>
+                    if DATAINREADY_GDB_s = '1' then
+                        ent_mux <= LA_s;
+--                        transfer <= is_idle;
+                    else
+                        LaTransferRegister <= Register_GDB;
+--                        if transfer = is_idle then
+                            setPending <= '1';
+--                            transfer <= is_active;
+--                        end if;
+                        ChannelRegister <= "001";
+                    end if;
+
+                when LA_s =>
+                    if DATAINREADY_LA_s = '1' then
+                        ent_mux <= IOVIEW_s;
+--                        transfer <= is_idle;
+                    else
+                        LaTransferRegister <= Register_LA;
+--                        if transfer = is_idle then
+                            setPending <= '1';
+--                            transfer <= is_active;
+--                        end if;
+                        ChannelRegister <= "100";
+                    end if;
+
+                when IOVIEW_s =>
+                    if DATAINREADY_IOVIEW_s = '1' then
+                        ent_mux <= GDB_s;
+--                        transfer <= is_idle;
+                    else
+                        LaTransferRegister <= Register_IOVIEW;
+                        --if transfer = is_idle then
+                            setPending <= '1';
+                        --    transfer <= is_active;
+                        --end if;
+                        ChannelRegister <= "010";
+                    end if;
+            end case;
+
+
+
+
+--            IOVIEW <= '0';
+--            if zaehler = 0 then
+--                if transfer_IOVIEW = '1' then
+--                    zaehler <= 1;
+--                    --LaTransferRegister <= Register_IOVIEW;
+--                    --IOVIEW <= '1';
+--                else
+--                    zaehler <= 1;
+--                end if;
+--            end if;
+--            if zaehler = 1 then
+--                if transfer_LA = '1' then
+--                    zaehler <= 2;
+--                    --DATAINREADY_LA_s <= '0';
+----                    LaTransferRegister <= Register_LA;
+--                    LA <= '1';
+--                else
+--                    zaehler <= 2;
+--                end if;
+--            end if;
+--            if zaehler = 2 then
+--                if transfer_GDB = '1' then
+--                    zaehler <= 0;
+--                    --DATAINREADY_GDB_s <= '0';
+----                    LaTransferRegister <= Register_LA;
+--                    LA <= '1';
+--                else
+--                    zaehler <= 0;
+--                end if;
+--            end if;
+        end if;
+    end process;
+
+
+
 
 
     pending_dffp: block

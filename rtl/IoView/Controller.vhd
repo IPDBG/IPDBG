@@ -43,8 +43,8 @@ architecture tab of Controller_IO is
 
     ------------------------------------------------------------------Befehle um den LogicAnalyser zu bedienen-------------------------------------------------------------------------------------------------------------------------------------------------------------
     constant Read_IO_WIDTH    : std_logic_vector := "10101011";--AB
-    constant Write_Output       : std_logic_vector := "10111011";--BB
-    constant Read_In       : std_logic_vector := "10101010";--AA
+    constant Write_Output     : std_logic_vector := "10111011";--BB
+    constant Read_In          : std_logic_vector := "10101010";--AA
 
 
     --State machines
@@ -70,6 +70,8 @@ architecture tab of Controller_IO is
     signal import_ADDR      : std_logic;
     signal IOZwischenspeicher : std_logic_vector(31 downto 0);
     signal DatenOutZwischenspeicher: std_logic_vector(INPUT_WIDTH downto 0);
+
+
 
 begin
 

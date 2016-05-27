@@ -45,12 +45,13 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
     buffer[0] = IOViewIPCommands::INOUT_Auslesen;
     ipdbgJtagWrite(chain, buffer, 1);
 
-    int readBytes  = 0;
+    /*int readBytes  = 0;
     while(readBytes != 8)
     {
         printf("reading (%d)\n", readBytes);
         readBytes +=  ipdbgJtagRead(chain, &buffer[readBytes], 8-readBytes);
-    }
+    }*/
+    ipdbgJtagRead(chain, buffer, 8);
 
 
     NumberOfOutputs = buffer[0] |
@@ -62,6 +63,7 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
                       buffer[5] << 8 |
                       buffer[6] << 16 |
                       buffer[7] << 24;
+    //wxMessageBox(wxString::Format(_("outputs: %d, inputs: %d"), NumberOfOutputs, NumberOfInputs));
     //NumberOfInputs = 8;
     //NumberOfOutputs = 8;
 

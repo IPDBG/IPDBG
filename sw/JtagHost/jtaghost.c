@@ -146,7 +146,7 @@ int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths)
     urj_part_t *part = urj_tap_chain_active_part(chain);
     assert(part != NULL && "part must not be NULL");
 
-    int const Mask_DataValid = 0x500;
+    int const Mask_DataValid = 0xa00;
 
     while(lengths--)
     {
@@ -181,7 +181,7 @@ int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts)
         uint64_t dr_value_rx = urj_tap_register_get_value (part->active_instruction->data_register->out);
 
         uint32_t val = dr_value_rx;
-        int const MaskPending = 0x500;
+        int const MaskPending = 0xa00;
 
         if (val & MaskPending )
         {
