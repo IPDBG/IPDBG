@@ -97,7 +97,6 @@ architecture structure of IPDBG is
     end component IO_View;
 
 
-
     signal DRCLK1       : std_logic;
     signal DRCLK2       : std_logic;
     signal RESET        : std_logic;
@@ -115,6 +114,7 @@ architecture structure of IPDBG is
     --signal Input_DeviceunderTest_IOVIEW     : std_logic_vector(7 downto 0);
     signal Output_DeviceunderTest_IOVIEW    : std_logic_vector(7 downto 0);
     signal DataIn_LogicAnalyser             : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal stateDebug          : std_logic_vector(7 downto 0);
 
     signal DATAOUT            : std_logic_vector(7 downto 0);
     signal Enable_LA          : std_logic;
@@ -159,18 +159,18 @@ begin
             DataInValid         => Enable_LA,
             DataIn              => DATAOUT,
 
-            DataReadyOut        => '0',--DATAINREADY_LA,
-            DataValidOut        => open, --DATAINVALID_LA,
+            DataReadyOut        => DATAINREADY_LA,
+            DataValidOut        => DATAINVALID_LA,
             DataOut             => DATAIN_LA,
 
             SampleEn            => '1',
             DataDeviceunderTest => DataIn_LogicAnalyser,
 
-            stateDebug          => open --Leds
+            stateDebug          => stateDebug
 
         );
-        DATAINVALID_LA <= '0';
-    --LEDs <= Statedebug;
+    --DATAINVALID_LA <= '0';
+    LEDs <= Statedebug;
 
     IO : component IO_View
         port map(
@@ -189,7 +189,7 @@ begin
             OUTPUT_DeviceUnderTest_Ioview   => Output_DeviceunderTest_IOVIEW
 
         );
-    LEDs <= Output_DeviceunderTest_IOVIEW;
+    --LEDs <= Output_DeviceunderTest_IOVIEW;
 
 
     JTAG : component JTAG_HUB

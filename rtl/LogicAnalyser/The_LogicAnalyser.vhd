@@ -23,7 +23,9 @@ entity The_LogicAnalyser is
 
         -- LA interface
         SampleEn            : in  std_logic;
-        DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0)
+        DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+
+        stateDebug          : out std_logic_vector(7 downto 0)
 
     );
 end entity;
@@ -113,9 +115,9 @@ architecture tab of The_LogicAnalyser is
             clk           : in  std_logic;
             rst           : in  std_logic;
             ce            : in  std_logic;
-            DataInValid  : in  std_logic;
+            DataInValid   : in  std_logic;
             DataIn        : in  std_logic_vector(7 downto 0);
-            DataOutValid : out std_logic;
+            DataOutValid  : out std_logic;
             DataOut       : out std_logic_vector(7 downto 0);
             reset         : out std_logic
 
@@ -242,7 +244,7 @@ begin
             Daten_LA         => Daten_LA,
             NextData_LA      => NextData_LA,
             DataValid_LA     => DataValid_LA,
-            stateDebug       => open,
+            stateDebug       => stateDebug,
             finish_LA        => finish_LA
         );
 --

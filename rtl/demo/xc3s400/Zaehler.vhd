@@ -22,7 +22,7 @@ end entity;
 
 
 architecture tab of Zaehler is
-    signal DatenOut_reg : std_logic_vector(DatenOut'range);
+    signal DatenOut_reg : std_logic_vector(DatenOut'range) := ( 0 => '1', others => '0' );
     --signal i            : signed(20 downto 0) := (others=> '0');
     --signal x            : signed(20 downto 0) := (others => '1');
 
