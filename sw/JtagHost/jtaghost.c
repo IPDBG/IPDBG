@@ -34,7 +34,7 @@
 #include <urjtag/part_instruction.h> // urj_part_instruction
 #include <urjtag/tap_register.h> // urj_tap_register_set_value
 
-int initSpartan3(urj_chain_t *chain);
+//int initSpartan3(urj_chain_t *chain);
 
 
 int initSpartan3(urj_chain_t *chain);
@@ -151,7 +151,7 @@ int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths, int Mask_Da
         uint64_t dr_value_tx = *buf++;
 
         dr_value_tx |= Mask_DataValid;
-        printf("writing 0x%02x\n", dr_value_tx);
+        printf("writing 0x%02x\n", (int)dr_value_tx);
 
         urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
         urj_tap_chain_shift_data_registers(chain, 1);
