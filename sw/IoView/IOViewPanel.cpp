@@ -9,7 +9,7 @@
 #include "IOViewPanel.h"
 #include "led.h"
 
-#include "jtaghost.h"
+//#include "jtaghost.h"
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -21,12 +21,29 @@ BEGIN_EVENT_TABLE(IOViewPanel, wxPanel)
     EVT_TIMER(wxID_ANY, IOViewPanel::onTimer)
 END_EVENT_TABLE()
 
+
+
 IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ):
     wxPanel( parent, id, pos, size, style ),
     timer(this)
 {
 
-    chain = ipdbgJtagAllocChain();
+
+    client_ = new wxSocketClient(SOCKET_ID);
+
+    wxIPV4address address;
+    address.Hostname(_("localhost"));
+    address.Service(_("4243"));
+
+    client_->SetFlags(wxSOCKET_NOWAIT);
+    //client->SetEventHandler(*this, SOCKET_ID);
+    //client->SetNotify(wxSOCKET_INPUT_FLAG);
+    //client->Notify(true);
+    client_->Connect(address);
+
+
+///////////////////////////////////////////////////////////////////////new
+    /*chain = ipdbgJtagAllocChain();
     if(!chain)
     {
         wxMessageBox(_T("failed to allocate chain"));
@@ -37,16 +54,17 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
     {
         wxMessageBox(_T("failed to initialize chain"));
         return;
-    }
+    }*/
+
 
     uint8_t buffer[8];
     buffer[0] = IOViewIPCommands::Reset;
-    ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
-    ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
+    client_->Write(buffer, 1);
+    client_->Write(buffer, 1);
 
 
     buffer[0] = IOViewIPCommands::INOUT_Auslesen;
-    ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
+    client_->Write(buffer, 1);
 
     /*int readBytes  = 0;
     while(readBytes != 8)
@@ -54,7 +72,7 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
         printf("reading (%d)\n", readBytes);
         readBytes +=  ipdbgJtagRead(chain, &buffer[readBytes], 8-readBytes, IPDBG_IOVIEW_VALID_MASK);
     }*/
-    ipdbgJtagRead(chain, buffer, 8, IPDBG_IOVIEW_VALID_MASK);
+    client_->Read(buffer, 8);
 
 
     NumberOfOutputs = buffer[0] |
@@ -106,11 +124,11 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
 
 	timer.Start(200);
 }
-
+//////////////////////////////////////////////////////////////////////////////????????????????????????????????????
 IOViewPanel::~IOViewPanel()
 {
-    if(chain)
-        ipdbgJtagClose(chain);
+    //if(chain)
+        //ipdbgJtagClose(chain);
 }
 
 
@@ -121,7 +139,7 @@ void IOViewPanel::onCheckBox(wxCommandEvent& event)
     uint8_t buffer[NumberOfOutputBytes];
 
     buffer[0] = IOViewIPCommands::WriteOutput;
-    ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
+    client_->Write(buffer, 1);
 
     for(size_t idx = 0 ; idx < NumberOfOutputBytes ; ++idx)
         buffer[idx] = 0;
@@ -131,7 +149,8 @@ void IOViewPanel::onCheckBox(wxCommandEvent& event)
             buffer[(idx & 0xf8)>>3] |= (0x01 << (idx & 0x07));
 
 
-    ipdbgJtagWrite(chain, buffer, NumberOfOutputBytes, IPDBG_IOVIEW_VALID_MASK);
+    //ipdbgJtagWrite(chain, buffer, NumberOfOutputBytes, IPDBG_IOVIEW_VALID_MASK);
+    client_->Write(buffer, NumberOfOutputBytes);
 
 }
 
@@ -141,7 +160,8 @@ void IOViewPanel::onTimer(wxTimerEvent& event)
     const size_t NumberOfInputBytes = (NumberOfInputs+7)/8;
     uint8_t buffer[NumberOfInputBytes];
     buffer[0] = IOViewIPCommands::ReadInput;
-    ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
+    //ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
+    client_->Write(buffer, 1);
 
 //    int readBytes  = 0;
 //    while(readBytes != NumberOfInputBytes)
@@ -149,8 +169,9 @@ void IOViewPanel::onTimer(wxTimerEvent& event)
 //        printf("reading (%d)\n", readBytes);
 //        readBytes += ;
 //    }
-    ipdbgJtagRead(chain, buffer, NumberOfInputBytes, IPDBG_IOVIEW_VALID_MASK);
+    //ipdbgJtagRead(chain, buffer, NumberOfInputBytes, IPDBG_IOVIEW_VALID_MASK);
     //ipdbgJtagRead(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
+    client_->Read(buffer, NumberOfInputBytes);
 
 
     for (size_t idx = 0 ; idx < NumberOfInputs ; ++idx)

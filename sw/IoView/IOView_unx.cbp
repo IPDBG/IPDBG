@@ -40,12 +40,7 @@
 		</Compiler>
 		<Linker>
 			<Add option="`wx-config --libs`" />
-			<Add library="urjtag" />
 		</Linker>
-		<Unit filename="../JtagHost/jtaghost.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="../JtagHost/jtaghost.h" />
 		<Unit filename="IOViewApp.cpp" />
 		<Unit filename="IOViewApp.h" />
 		<Unit filename="IOViewMain.cpp" />

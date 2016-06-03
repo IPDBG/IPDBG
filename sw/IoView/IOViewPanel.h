@@ -19,6 +19,7 @@
 #include <wx/colour.h>
 #include <wx/settings.h>
 #include <wx/panel.h>
+#include <wx/socket.h>
 
 #include <cstdint>
 ///////////////////////////////////////////////////////////////////////////
@@ -51,6 +52,11 @@ class IOViewPanel : public wxPanel
         };
         unsigned int NumberOfInputs;
         unsigned int NumberOfOutputs;
+
+        wxSocketClient *client_;
+        enum {
+            SOCKET_ID = 10,
+        };
 
 
 	protected:
