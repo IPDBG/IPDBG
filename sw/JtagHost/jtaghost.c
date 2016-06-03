@@ -140,65 +140,82 @@ int initSpartan3(urj_chain_t *chain)
     }
     return 0;
 }
-
-int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths, int Mask_DataValid)
-{
+ //int ipdbgJTAGtransfer(urj_chain_t *chain, uint8_t *rxData, uint8_t*txData, int rx_len, int tx_len)
+ int ipdbgJTAGtransfer(urj_chain_t *chain, uint16_t *upData, uint16_t downData)
+ {
     urj_part_t *part = urj_tap_chain_active_part(chain);
     assert(part != NULL && "part must not be NULL");
 
-    while(lengths--)
-    {
-        uint64_t dr_value_tx = *buf++;
+    uint64_t dr_value_tx = downData;
+    printf("jtagtransfer %04x\n", downData);
+    urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
+    urj_tap_chain_shift_data_registers(chain, 1);
+    *upData = urj_tap_register_get_value (part->active_instruction->data_register->out);
 
-        dr_value_tx |= Mask_DataValid;
-        printf("writing 0x%02x\n", (int)dr_value_tx);
-
-        urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
-        urj_tap_chain_shift_data_registers(chain, 1);
-    }
-
-    urj_tap_chain_flush(chain);
+    //urj_tap_chain_flush(chain);
 
     return JTAG_HOST_OK;
+ }
+//int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths, int Mask_DataValid)
+//{
+//    urj_part_t *part = urj_tap_chain_active_part(chain);
+//    assert(part != NULL && "part must not be NULL");
+//
+//    while(lengths--)
+//    {
+//        uint64_t dr_value_tx = *buf++;
+//
+//        dr_value_tx |= Mask_DataValid;
+//        printf("writing 0x%02x\n", (int)dr_value_tx);
+//
+//        urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
+//        urj_tap_chain_shift_data_registers(chain, 1);
+//    }
+//
+//    urj_tap_chain_flush(chain);
+//
+//    return JTAG_HOST_OK;
 
-}
+//}
 
-int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts, int MaskPending)
-{
-    urj_part_t *part = urj_tap_chain_active_part(chain);
-    assert(part != NULL && "part must not be NULL");
+//int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts, int MaskPending)
+//int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts)
+//{
+//    urj_part_t *part = urj_tap_chain_active_part(chain);
+//    assert(part != NULL && "part must not be NULL");
+//
+//    size_t bytesReceived = 0;
+//    //int InvalidDataCounter = 0;
+//
+//    while (bytesReceived<lengts)
+//    {
+//        uint8_t dr_value_tx = 0x000;
+//        urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
+//        urj_tap_chain_shift_data_registers(chain, 1);
+//        uint64_t dr_value_rx = urj_tap_register_get_value (part->active_instruction->data_register->out);
+//        *buf = dr_value_rx;
 
-    size_t bytesReceived = 0;
-    int InvalidDataCounter = 0;
-
-    while (bytesReceived<lengts)
-    {
-        uint8_t dr_value_tx = 0x000;
-        urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
-        urj_tap_chain_shift_data_registers(chain, 1);
-        uint64_t dr_value_rx = urj_tap_register_get_value (part->active_instruction->data_register->out);
-
-        uint32_t val = dr_value_rx;
-
-        if ((val & 0xf00) == MaskPending)
-        {
-            *buf++ = val & 0x00ff;
-            ++bytesReceived;
-
-            InvalidDataCounter = 0;
-        }
-        else
-        {
-            ++InvalidDataCounter;
-        }
-
-        if (InvalidDataCounter >= 10)
-        {
-            break;
-        }
-     }
-     return bytesReceived;
-}
+//        uint32_t val = dr_value_rx;
+//
+//        if ((val & 0xf00) == MaskPending)
+//        {
+//            *buf++ = val & 0x00ff;
+//            ++bytesReceived;
+//
+//            InvalidDataCounter = 0;
+//        }
+//        else
+//        {
+//            ++InvalidDataCounter;
+//        }
+//
+//        if (InvalidDataCounter >= 10)
+//        {
+//            break;
+//        }
+//     }
+//     return bytesReceived;
+//}
 void ipdbgJtagClose(urj_chain_t *chain)
 {
     printf("ipdbgJtagClose\n");
