@@ -72,7 +72,13 @@ IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, c
         printf("reading (%d)\n", readBytes);
         readBytes +=  ipdbgJtagRead(chain, &buffer[readBytes], 8-readBytes, IPDBG_IOVIEW_VALID_MASK);
     }*/
-    client_->Read(buffer, 8);
+
+    size_t len = 0;
+    do
+    {
+        client_->Read(&buffer[len], 8-len);
+        len += client_->LastCount();
+    }while(len < 8);
 
 
     NumberOfOutputs = buffer[0] |
