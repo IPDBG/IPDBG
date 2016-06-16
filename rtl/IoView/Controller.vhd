@@ -69,7 +69,7 @@ architecture tab of Controller_IO is
     signal zaehler          : unsigned(INPUT_WIDTH-1 downto 0):= (others => '0');
     signal import_ADDR      : std_logic;
     signal IOZwischenspeicher : std_logic_vector(31 downto 0);
-    signal DatenOutZwischenspeicher: std_logic_vector(INPUT_WIDTH downto 0);
+    signal DatenOutZwischenspeicher: std_logic_vector(INPUT'length-1 downto 0);
 
 
 
@@ -245,7 +245,7 @@ begin
         end process;
     end generate;
     outputSmallerOrEqual8: if OUTPUT_WIDTH_BYTES = 1 generate
-        constant OutputResetValue : std_logic_Vector(output'left-1 downto 0) := (others => '0');
+        constant OutputResetValue : std_logic_Vector(output'left downto 0) := (others => '0');
     begin
         process(rst, clk)begin
             if rst = '1' then
