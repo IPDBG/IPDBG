@@ -6,7 +6,7 @@ use ieee.numeric_std.all;
 entity TAP is
     port(
         --clk             : out std_logic;
-        --reset           : out std_logic;
+        rst             : in  std_logic;
 
         Capture         : out std_logic;
         Shift           : out std_logic;
@@ -32,10 +32,10 @@ architecture tab of TAP is
     constant User1Code          : std_logic_vector(7 downto 0) := "01010101";
     constant IDCode             : std_logic_vector(7 downto 0) := "11110000";
 
-    constant IdValue            : std_logic_vector(31 downto 0) := "11110000111100001111000011110000";
+    constant IdValue            : std_logic_vector(31 downto 0) := "11110000111100001111000011110001";
 
     type TAP_Controller is(Test_logic_reset, Run_test, Select_dr_scan, Capture_dr, Shift_dr, Exit1_dr, Pause_dr, Exit2_dr, Update_dr, Select_ir_scan, Capture_ir, Shift_ir, Exit1_ir, Pause_ir, Exit2_ir, Update_ir);
-    signal TAP    : TAP_Controller :=  Run_test;
+    signal TAP    : TAP_Controller :=  Test_logic_reset;
 
     signal InstuctionRegister   : std_logic_vector(7 downto 0) := IDCode;
     signal BypassRegister       : std_logic;
@@ -48,8 +48,10 @@ architecture tab of TAP is
 begin
 
 
-    process(TCK)begin
-        if rising_edge(TCK) then
+    process(TCK, rst)begin
+        if rst = '1' then
+            TAP <= Test_logic_reset;
+        elsif rising_edge(TCK) then
             case TAP is
             when Test_logic_reset => if TMS = '0' then TAP <= Run_test; end if;
             when Run_test         => if TMS = '1' then TAP <= Select_dr_scan; end if;
