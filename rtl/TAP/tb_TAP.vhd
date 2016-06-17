@@ -9,8 +9,6 @@ architecture test of tb_TAP  is
 
     component TAP is
         port(
-            --clk     : out std_logic;
-            --reset   : out std_logic;
             Capture : out std_logic;
             Shift   : out std_logic;
             Update  : out std_logic;
@@ -18,12 +16,14 @@ architecture test of tb_TAP  is
             TDO_i   : in  std_logic;
             SEL     : out std_logic;
             DRCK    : out std_logic;
-            TDI_i   : in  std_logic;
-            TDO_o   : out std_logic;
+
+            TDI     : in  std_logic;
+            TDO     : out std_logic;
             TMS     : in  std_logic;
             TCK     : in  std_logic
         );
     end component TAP;
+
 
     constant T                 : time := 10 ns;
 
@@ -34,8 +34,8 @@ architecture test of tb_TAP  is
     signal TDO_i   : std_logic;
     signal SEL     : std_logic;
     signal DRCK    : std_logic;
-    signal TDI_i   : std_logic;
-    signal TDO_o   : std_logic;
+    signal TDI   : std_logic;
+    signal TDO   : std_logic;
     signal TMS     : std_logic;
     signal TCK     : std_logic;
 
@@ -60,28 +60,28 @@ begin
 
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '0';
         wait for T;
         TMS <= '0';
-        TDI_i <= '0';
+        TDI <= '0';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '0';
         wait for T;
         TMS <= '0';
-        TDI_i <= '0';
+        TDI <= '0';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
         wait for T;
         TMS <= '0';
-        TDI_i <= '0';
+        TDI <= '1';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
         wait for T;
         TMS <= '1';
-        TDI_i <= '0';
+        TDI <= '1';
 
         --wait for T;
         --TMS <= '1';
@@ -97,36 +97,36 @@ begin
 
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
         wait for T;
         TMS <= '0';
-        TDI_i <= '1';
+        TDI <= '1';
 
         wait for T;
         TMS <= '1';
         wait for T;
-        TMS <= '1';
+        TMS <= '1';00
         wait for T;
         TMS <= '1';
 --------------------
@@ -135,12 +135,8 @@ begin
 
 
 
-
-
-    UUT : component TAP
+    uut : component TAP
         port map(
-            --clk     => clk,
-            --reset   => reset,
             Capture => Capture,
             Shift   => Shift,
             Update  => Update,
@@ -148,8 +144,8 @@ begin
             TDO_i   => TDO_i,
             SEL     => SEL,
             DRCK    => DRCK,
-            TDI_i   => TDI_i,
-            TDO_o   => TDO_o,
+            TDI     => TDI,
+            TDO     => TDO,
             TMS     => TMS,
             TCK     => TCK
         );
