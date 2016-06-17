@@ -34,10 +34,16 @@
 #include <urjtag/part_instruction.h> // urj_part_instruction
 #include <urjtag/tap_register.h> // urj_tap_register_set_value
 
+#define URJ_STATUS_OK             0
+#define URJ_STATUS_FAIL           1
+#define URJ_STATUS_MUST_QUIT    (-2)
+
 //int initSpartan3(urj_chain_t *chain);
 
 
+
 int initSpartan3(urj_chain_t *chain);
+int initiCE40(urj_chain_t *chain);
 
 urj_chain_t *ipdbgJtagAllocChain(void)
 {
@@ -87,7 +93,8 @@ int ipdbgJtagInit(urj_chain_t *chain)
     }
 
 
-    return initSpartan3(chain);
+//    return initSpartan3(chain);
+        return initiCE40(chain);
 }
 
 int initSpartan3(urj_chain_t *chain)
@@ -140,6 +147,59 @@ int initSpartan3(urj_chain_t *chain)
     }
     return 0;
 }
+int initiCE40(urj_chain_t *chain)
+{
+    printf("initiCE40\n");
+    urj_part_t *part = urj_tap_chain_active_part(chain);
+    assert(part != NULL && "part must not be NULL");
+    /// set instruction register length of part if database does not contain part?
+    urj_part_instruction_length_set (part, 8);
+    printf("set instruction length\n");
+
+    int user1register_register_length = 12; /// length of data register
+    char *user1register_register_name = "USER1REGISTER";
+
+    if(urj_part_data_register_define(part, user1register_register_name, user1register_register_length) != URJ_STATUS_OK)
+    {
+        printf("definition of register failed\n");
+        return -8;
+    }
+    else
+        printf("definition of register ok\n");
+
+    urj_part_instruction_t *instr = urj_part_instruction_define(part, "USER1", "01010101", user1register_register_name);
+
+    if(instr == URJ_STATUS_FAIL)
+    {
+        printf("defining instruction failed\n");
+        return -7;
+    }
+    else
+        printf("defining instruction ok\n");
+
+    /// load USER1 instruction
+    urj_part_set_instruction(part, "USER1");
+    urj_tap_chain_shift_instructions(chain);
+
+
+
+    /// do datashift data shift
+    urj_part_instruction_t *active_ir = part->active_instruction;
+    if (active_ir == NULL)
+    {
+        printf("5 ?????\n");
+        return -5;
+    }
+    urj_data_register_t *dreg = active_ir->data_register;
+    if (dreg == NULL)
+    {
+        printf("6 ?????\n");
+        return -6;
+    }
+    return 0;
+}
+
+
  //int ipdbgJTAGtransfer(urj_chain_t *chain, uint8_t *rxData, uint8_t*txData, int rx_len, int tx_len)
  int ipdbgJTAGtransfer(urj_chain_t *chain, uint16_t *upData, uint16_t downData)
  {
@@ -156,66 +216,6 @@ int initSpartan3(urj_chain_t *chain)
 
     return JTAG_HOST_OK;
  }
-//int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths, int Mask_DataValid)
-//{
-//    urj_part_t *part = urj_tap_chain_active_part(chain);
-//    assert(part != NULL && "part must not be NULL");
-//
-//    while(lengths--)
-//    {
-//        uint64_t dr_value_tx = *buf++;
-//
-//        dr_value_tx |= Mask_DataValid;
-//        printf("writing 0x%02x\n", (int)dr_value_tx);
-//
-//        urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
-//        urj_tap_chain_shift_data_registers(chain, 1);
-//    }
-//
-//    urj_tap_chain_flush(chain);
-//
-//    return JTAG_HOST_OK;
-
-//}
-
-//int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts, int MaskPending)
-//int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts)
-//{
-//    urj_part_t *part = urj_tap_chain_active_part(chain);
-//    assert(part != NULL && "part must not be NULL");
-//
-//    size_t bytesReceived = 0;
-//    //int InvalidDataCounter = 0;
-//
-//    while (bytesReceived<lengts)
-//    {
-//        uint8_t dr_value_tx = 0x000;
-//        urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
-//        urj_tap_chain_shift_data_registers(chain, 1);
-//        uint64_t dr_value_rx = urj_tap_register_get_value (part->active_instruction->data_register->out);
-//        *buf = dr_value_rx;
-
-//        uint32_t val = dr_value_rx;
-//
-//        if ((val & 0xf00) == MaskPending)
-//        {
-//            *buf++ = val & 0x00ff;
-//            ++bytesReceived;
-//
-//            InvalidDataCounter = 0;
-//        }
-//        else
-//        {
-//            ++InvalidDataCounter;
-//        }
-//
-//        if (InvalidDataCounter >= 10)
-//        {
-//            break;
-//        }
-//     }
-//     return bytesReceived;
-//}
 void ipdbgJtagClose(urj_chain_t *chain)
 {
     printf("ipdbgJtagClose\n");
