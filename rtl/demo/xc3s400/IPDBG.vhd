@@ -12,9 +12,9 @@ entity IPDBG is
         clk                              : in  std_logic;
 
         Input_DeviceunderTest_IOVIEW     : in std_logic_vector(7 downto 0);
-        --Output_DeviceunderTest_IOVIEW    : out std_logic_vector(7 downto 0);
+        Output_DeviceunderTest_IOVIEW    : out std_logic_vector(7 downto 0)
 -------------------------- Debugging ------------------------
-        Leds            : out std_logic_vector (7 downto 0)
+        --Leds            : out std_logic_vector (7 downto 0)
     );
 end IPDBG;
 
@@ -112,9 +112,9 @@ architecture structure of IPDBG is
     signal ce           : std_logic;
 
     --signal Input_DeviceunderTest_IOVIEW     : std_logic_vector(7 downto 0);
-    signal Output_DeviceunderTest_IOVIEW    : std_logic_vector(7 downto 0);
+    --signal Output_DeviceunderTest_IOVIEW    : std_logic_vector(7 downto 0);
     signal DataIn_LogicAnalyser             : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal stateDebug          : std_logic_vector(7 downto 0);
+    --signal stateDebug          : std_logic_vector(7 downto 0);
 
     signal DATAOUT            : std_logic_vector(7 downto 0);
     signal Enable_LA          : std_logic;
@@ -166,11 +166,11 @@ begin
             SampleEn            => '1',
             DataDeviceunderTest => DataIn_LogicAnalyser,
 
-            stateDebug          => stateDebug
+            stateDebug          => open
 
         );
     --DATAINVALID_LA <= '0';
-    LEDs <= Statedebug;
+    --LEDs <= Statedebug;
 
     IO : component IO_View
         port map(
