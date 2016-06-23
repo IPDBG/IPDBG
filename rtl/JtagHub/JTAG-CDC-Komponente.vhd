@@ -81,10 +81,6 @@ architecture behavioral of JTAG_CDC_Komponente is
      --signal transfer_IOVIEW            : std_logic;
 
 
-     signal zaehler            : natural ;
-     signal GDB            : std_logic := '0';
-     signal IOVIEW            : std_logic := '0';
-     signal LA            : std_logic := '0';
 
 
     type MUX is(GDB_s, LA_s, IOVIEW_s);

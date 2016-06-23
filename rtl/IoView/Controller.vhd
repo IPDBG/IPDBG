@@ -65,11 +65,10 @@ architecture tab of Controller_IO is
 
 
 
-    signal I0_Data_WIDTH    : std_logic_vector(31 downto 0) := (others => '0');
-    signal zaehler          : unsigned(INPUT_WIDTH-1 downto 0):= (others => '0');
-    signal import_ADDR      : std_logic;
-    signal IOZwischenspeicher : std_logic_vector(31 downto 0);
-    signal DatenOutZwischenspeicher: std_logic_vector(INPUT'length-1 downto 0);
+    signal zaehler                  : unsigned(INPUT_WIDTH-1 downto 0):= (others => '0');
+    signal import_ADDR              : std_logic;
+    signal IOZwischenspeicher       : std_logic_vector(31 downto 0);
+    signal DatenOutZwischenspeicher : std_logic_vector(INPUT'length-1 downto 0);
 
 
 
@@ -77,10 +76,8 @@ begin
 
     assert INPUT_WIDTH >= 8 report "input width must at least be 8, connect unused input to a constant" severity failure;
 
-    process (clk, rst)
+    process (clk, rst) begin
 
-
-    begin
 
         if rst = '1' then
 
@@ -95,7 +92,6 @@ begin
             if ce = '1' then
                 DataInRegValid <= '0';
                 DataInRegLast  <= '0';
-
                 DataOutValid <= '0';
                 case init_statemachine is
                 when init =>

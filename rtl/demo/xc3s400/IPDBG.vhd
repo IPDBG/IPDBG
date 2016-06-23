@@ -12,9 +12,9 @@ entity IPDBG is
         clk                              : in  std_logic;
 
         Input_DeviceunderTest_IOVIEW     : in std_logic_vector(7 downto 0);
-        Output_DeviceunderTest_IOVIEW    : out std_logic_vector(7 downto 0)
+        Output_DeviceunderTest_IOVIEW    : out std_logic_vector(7 downto 0);
 -------------------------- Debugging ------------------------
-        --Leds            : out std_logic_vector (7 downto 0)
+        Leds            : out std_logic_vector (7 downto 0)
     );
 end IPDBG;
 

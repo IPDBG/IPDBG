@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DiamondModule name="pll0" module="pll0" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2016 06 21 12:28:11.477" version="5.8" type="Module" synthesis="synplify" source_format="VHDL">
+  <Package>
+		<File name="pll0.lpc" type="lpc" modified="2016 06 21 12:27:48.621"/>
+		<File name="pll0.vhd" type="top_level_vhdl" modified="2016 06 21 12:27:48.744"/>
+		<File name="pll0_tmpl.vhd" type="template_vhdl" modified="2016 06 21 12:27:48.747"/>
+  </Package>
+</DiamondModule>

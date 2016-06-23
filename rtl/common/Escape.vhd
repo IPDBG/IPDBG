@@ -24,7 +24,6 @@ architecture tab of Escape is
 
     constant Escape     : std_logic_vector (7 downto 0) := "01010101"; --55
     constant Reset_c    : std_logic_vector (7 downto 0) := "11101110"; --EE
-    signal Data         : std_logic_vector (7 downto 0) ;
 
 
 
