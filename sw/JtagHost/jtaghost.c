@@ -95,7 +95,7 @@ int ipdbgJtagInit(urj_chain_t *chain)
         return -4;
     }
 
-    if ( strcmp(part->manufacturer, "xilinx") == 0)
+    if ( strcmp(part->manufacturer, "Xilinx") == 0)
     {
         if(strcmp(part->part, "xc3s50") == 0 ||
            strcmp(part->part, "xc3s200") == 0 ||
@@ -129,7 +129,7 @@ int ipdbgJtagInit(urj_chain_t *chain)
                 strcmp(part->part, "xc6slx150") == 0 ||
                 strcmp(part->part, "xc6slx150t") == 0)
             return initSpartan6(chain);
-//
+
         else if(strcmp(part->part, "xc7a35t") == 0 ||
                 strcmp(part->part, "xc7a50t") == 0 ||
                 strcmp(part->part, "xc7a75t") == 0 ||
@@ -153,8 +153,6 @@ int ipdbgJtagInit(urj_chain_t *chain)
         return initiCE40(chain);
     }
 
-    //return initEcp2(chain);
-       // return initiCE40(chain);
 }
 
 int initArtix7 (urj_chain_t *chain)
