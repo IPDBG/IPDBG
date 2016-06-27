@@ -1,7 +1,7 @@
 /*
  * This file is part of the libsigrok project.
  *
- * Copyright (C) 2016 ek <ek>
+ * Copyright (C) 2016 danselmi <da@da>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,32 +16,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <string.h>
-#include <assert.h>
 
 #include <config.h>
+#ifdef _WIN32
+#define _WIN32_WINNT 0x0501
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
+//#include <glib.h>
+#include <string.h>
+#include <unistd.h>
+#ifndef _WIN32
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#endif
+#include <errno.h>
 #include "protocol.h"
-#include <urjtag/chain.h>
 
-#include <urjtag/chain.h>
-#include <urjtag/tap.h>
-#include <urjtag/part.h> //urj_parts_t
-
-
-#include <urjtag/data_register.h> // urj_part_data_register_define
-
-#include <urjtag/part_instruction.h> // urj_part_instruction
-#include <urjtag/tap_register.h> // urj_tap_register_set_value
-
-#include "jtaghost.h"
+#define BUFFER_SIZE 4
 
 
 #define Start                      0xFE
 #define reset                      0xAB
-#define IDBG                       0xBB
+#define IPDBG_LA_ID                0xBB
 #define Escape                     0x55
-
-
 
 
 /* Command opcodes */
@@ -57,16 +57,126 @@
 #define delay                      0x1F
 #define K_Mauslesen                0xAA
 
-#define IPDBG_LA_VALID_MASK        0xC00
 
+SR_PRIV int sendEscaping(struct ipdbg_org_la_tcp *tcp, char *dataToSend, int length);
 
-//SP_PRIV int initSpartan3(urj_chain_t *chain);
-SR_PRIV int sendEscaping(urj_chain_t *chain, char *dataToSend, int length);
-//SR_PRIV int initSpartan3(urj_chain_t *chain);
-
-SR_PRIV int ipdbg_convert_trigger(const struct sr_dev_inst *sdi)
+SR_PRIV struct ipdbg_org_la_tcp *ipdbg_org_la_new_tcp(void)
 {
-    struct ipdbgla_dev_context *devc;
+    struct ipdbg_org_la_tcp *tcp;
+
+    tcp = g_malloc0(sizeof(struct ipdbg_org_la_tcp));
+
+    tcp->address = NULL;
+    tcp->port = NULL;
+    tcp->socket = -1;
+
+    return tcp;
+}
+
+SR_PRIV int ipdbg_org_la_tcp_open(struct ipdbg_org_la_tcp *tcp)
+{
+	struct addrinfo hints;
+	struct addrinfo *results, *res;
+	int err;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+
+	err = getaddrinfo(tcp->address, tcp->port, &hints, &results);
+
+	if (err) {
+		sr_err("Address lookup failed: %s:%s: %s", tcp->address, tcp->port,
+			gai_strerror(err));
+		return SR_ERR;
+	}
+
+	for (res = results; res; res = res->ai_next) {
+		if ((tcp->socket = socket(res->ai_family, res->ai_socktype,
+						res->ai_protocol)) < 0)
+			continue;
+		if (connect(tcp->socket, res->ai_addr, res->ai_addrlen) != 0) {
+			close(tcp->socket);
+			tcp->socket = -1;
+			continue;
+		}
+		break;
+	}
+
+	freeaddrinfo(results);
+
+	if (tcp->socket < 0) {
+		sr_err("Failed to connect to %s:%s: %s", tcp->address, tcp->port,
+				g_strerror(errno));
+		return SR_ERR;
+	}
+
+	return SR_OK;
+}
+
+SR_PRIV int ipdbg_org_la_tcp_send(struct ipdbg_org_la_tcp *tcp, const uint8_t *buf, size_t len)
+{
+	int out;
+
+	out = send(tcp->socket, buf, len, 0);
+
+	if (out < 0) {
+		sr_err("Send error: %s", g_strerror(errno));
+		return SR_ERR;
+	}
+
+	if ((unsigned int)out < len) {
+		sr_dbg("Only sent %d/%d bytes of data.", out, (int)len);
+	}
+
+	return SR_OK;
+}
+
+SR_PRIV int ipdbg_org_la_tcp_receive(struct ipdbg_org_la_tcp *tcp, uint8_t *buf, int bufsize)
+{
+    int received = 0;
+
+    while(received < bufsize)
+    {
+
+        int len;
+
+        len = recv(tcp->socket, buf+received, bufsize-received, 0);
+
+        if (len < 0) {
+            sr_err("Receive error: %s", g_strerror(errno));
+            return SR_ERR;
+        }
+        else
+        {
+            received += len;
+        }
+    }
+
+	return received;
+}
+
+SR_PRIV int ipdbg_org_la_tcp_close(struct ipdbg_org_la_tcp *tcp)
+{
+    int ret = SR_ERR;
+	if (close(tcp->socket) >= 0)
+        ret = SR_OK;
+
+    tcp->socket = -1;
+
+    return ret;
+}
+
+SR_PRIV void ipdbg_org_la_tcp_free(struct ipdbg_org_la_tcp *tcp)
+{
+	g_free(tcp->address);
+	g_free(tcp->port);
+}
+
+SR_PRIV int ipdbg_org_la_convert_trigger(const struct sr_dev_inst *sdi)
+{
+    struct ipdbg_org_la_dev_context *devc;
     struct sr_trigger *trigger;
     struct sr_trigger_stage *stage;
     struct sr_trigger_match *match;
@@ -145,26 +255,36 @@ SR_PRIV int ipdbg_convert_trigger(const struct sr_dev_inst *sdi)
 
     return SR_OK;
 }
-SR_PRIV int ipdbg_receive_data(int fd, int revents, void *cb_data)
+
+SR_PRIV int ipdbg_org_la_receive_data(int fd, int revents, void *cb_data)
 {
+    printf("receive Data0\n");
+
 
     const struct sr_dev_inst *sdi;
-    struct ipdbgla_dev_context *devc;
+    struct ipdbg_org_la_dev_context *devc;
+
+
 
     (void)fd;
 	(void)revents;
 
-    if (!(sdi = cb_data))
+    sdi = (const struct sr_dev_inst *)cb_data;
+    if (!sdi)
     {
-        return TRUE;
+        return FALSE;
     }
+    printf("receive Data1\n");
 
     if (!(devc = sdi->priv))
     {
-        return TRUE;
-    }
+        return FALSE;
 
-    urj_chain_t *chain = sdi->conn;
+    }
+    printf("receive Data2\n");
+
+
+    struct ipdbg_org_la_tcp *tcp = sdi->conn;
     struct sr_datafeed_packet packet;
     struct sr_datafeed_logic logic;
 
@@ -193,9 +313,11 @@ SR_PRIV int ipdbg_receive_data(int fd, int revents, void *cb_data)
 
     if (devc->num_transfers < devc->limit_samples*devc->DATA_WIDTH_BYTES)
     {
+        printf("1");
         unsigned char byte;
 
-        if (ipdbgJtagRead(chain, &byte, 1, IPDBG_LA_VALID_MASK) == 1)
+        //if (ipdbgJtagRead(chain, &byte, 1, IPDBG_LA_VALID_MASK) == 1)
+        if (ipdbg_org_la_tcp_receive(tcp, &byte, 1) == 1)
         {
             devc->raw_sample_buf[devc->num_transfers++] = byte;
         }
@@ -203,6 +325,7 @@ SR_PRIV int ipdbg_receive_data(int fd, int revents, void *cb_data)
     }
     else
     {
+        printf("Received %d bytes", devc->num_transfers);
 
         sr_dbg("Received %d bytes.", devc->num_transfers);
 
@@ -235,12 +358,13 @@ SR_PRIV int ipdbg_receive_data(int fd, int revents, void *cb_data)
         devc->raw_sample_buf = NULL;
 
         //serial_flush(serial);
-        ipdbg_abort_acquisition(sdi);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ipdbg_org_la_abort_acquisition(sdi);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
 
     return TRUE;
 }
-SR_PRIV int sendDelay( struct ipdbgla_dev_context *devc, urj_chain_t *chain)
+
+SR_PRIV int ipdbg_org_la_sendDelay(struct ipdbg_org_la_dev_context *devc, struct ipdbg_org_la_tcp *tcp)
 {
     //sr_warn("delay");
 
@@ -251,9 +375,9 @@ SR_PRIV int sendDelay( struct ipdbgla_dev_context *devc, urj_chain_t *chain)
     devc->delay_value = (maxSample/100.0) * devc->capture_ratio;
     uint8_t Befehl[1];
     Befehl[0] = LA;
-    ipdbgJtagWrite(chain, Befehl, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, Befehl, 1);
     Befehl[0] = delay;
-    ipdbgJtagWrite(chain, Befehl, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, Befehl, 1);
 
     //sr_warn("delay 2");
 
@@ -263,53 +387,53 @@ SR_PRIV int sendDelay( struct ipdbgla_dev_context *devc, urj_chain_t *chain)
                    (devc->delay_value >> 16) & 0x000000ff,
                    (devc->delay_value >> 24) & 0x000000ff};
 
-    //sendEscaping(serial, buf, devc->ADDR_WIDTH_BYTES);
-    sendEscaping(chain, buf, devc->ADDR_WIDTH_BYTES);
+    sendEscaping(tcp, buf, devc->ADDR_WIDTH_BYTES);
 
     //sr_warn("send delay_value: 0x%.2x", devc->delay_value);
 
-    return JTAG_HOST_OK;
+    return SR_OK;
 }
-SR_PRIV int sendTrigger(struct ipdbgla_dev_context *devc, urj_chain_t *chain)
+
+SR_PRIV int ipdbg_org_la_sendTrigger(struct ipdbg_org_la_dev_context *devc, struct ipdbg_org_la_tcp *tcp)
 {
     /////////////////////////////////////////////Mask////////////////////////////////////////////////////////////
     uint8_t buf[1];
     buf[0] = Trigger;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
     buf[0] = Masks;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
     buf[0] = Mask;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
 
-    sendEscaping(chain, devc->trigger_mask, devc->DATA_WIDTH_BYTES);
+    sendEscaping(tcp, devc->trigger_mask, devc->DATA_WIDTH_BYTES);
 
     //sr_warn("send trigger_mask: %x", devc->trigger_mask[0]);
 
 
      /////////////////////////////////////////////Value////////////////////////////////////////////////////////////
     buf[0]= Trigger;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
     buf[0] = Masks;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
     buf[0] = Value;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
 
 
-    sendEscaping(chain, devc->trigger_value, devc->DATA_WIDTH_BYTES);
+    sendEscaping(tcp, devc->trigger_value, devc->DATA_WIDTH_BYTES);
 
     //sr_warn("send trigger_value: 0x%.2x", devc->trigger_value[0]);
 
 
     /////////////////////////////////////////////Mask_last////////////////////////////////////////////////////////////
     buf[0] = Trigger;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
     buf[0] = Last_Masks;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
     buf[0] = Mask_last;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
 
 
-    sendEscaping(chain, devc->trigger_mask_last, devc->DATA_WIDTH_BYTES);
+    sendEscaping(tcp, devc->trigger_mask_last, devc->DATA_WIDTH_BYTES);
 
 
     //sr_warn("send trigger_mask_last: 0x%.2x", devc->trigger_mask_last[0]);
@@ -317,23 +441,22 @@ SR_PRIV int sendTrigger(struct ipdbgla_dev_context *devc, urj_chain_t *chain)
 
     /////////////////////////////////////////////Value_last////////////////////////////////////////////////////////////
     buf[0] = Trigger;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
     buf[0]= Last_Masks;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
     buf[0]= Value_last;
-    ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK);
+    ipdbg_org_la_tcp_send(tcp, buf, 1);
 
 
-    sendEscaping(chain, devc->trigger_value_last, devc->DATA_WIDTH_BYTES);
+    sendEscaping(tcp, devc->trigger_value_last, devc->DATA_WIDTH_BYTES);
 
 
     //sr_warn("send trigger_value_last: 0x%.2x", devc->trigger_value_last[0]);
 
-
-
-    return JTAG_HOST_OK;
+    return SR_OK;
 }
-SR_PRIV int sendEscaping(urj_chain_t *chain, char *dataToSend, int length)
+
+SR_PRIV int sendEscaping(struct ipdbg_org_la_tcp *tcp, char *dataToSend, int length)
 {
 
     while(length--)
@@ -348,7 +471,7 @@ SR_PRIV int sendEscaping(urj_chain_t *chain, char *dataToSend, int length)
             uint8_t escapeSymbol = Escape;
             sr_warn("Escape");
 
-            if(ipdbgJtagWrite(chain, &escapeSymbol, 1, IPDBG_LA_VALID_MASK) != JTAG_HOST_OK)
+            if(ipdbg_org_la_tcp_send(tcp, &escapeSymbol, 1) != SR_OK)
                 sr_warn("can't send escape");
 
 
@@ -359,34 +482,35 @@ SR_PRIV int sendEscaping(urj_chain_t *chain, char *dataToSend, int length)
             uint8_t escapeSymbol = Escape;
             sr_warn("Escape");
 
-            if(ipdbgJtagWrite(chain, &escapeSymbol, 1, IPDBG_LA_VALID_MASK) != JTAG_HOST_OK)
+            if(ipdbg_org_la_tcp_send(tcp, &escapeSymbol, 1) != SR_OK)
                 sr_warn("can't send escape");
         }
 
-        if (ipdbgJtagWrite(chain, &payload, 1, IPDBG_LA_VALID_MASK) != JTAG_HOST_OK)
+        if (ipdbg_org_la_tcp_send(tcp, &payload, 1) != SR_OK)
         {
             sr_warn("Can't send data");
         }
          //sr_warn("length %d", length);
 
     }
-    return JTAG_HOST_OK;
+    return SR_OK;
 }
-SR_PRIV void getAddrWidthAndDataWidth(urj_chain_t *chain, struct ipdbgla_dev_context *devc)
+
+SR_PRIV void ipdbg_org_la_get_addrwidth_and_datawidth(struct ipdbg_org_la_tcp *tcp, struct ipdbg_org_la_dev_context *devc)
 {
     //printf("getAddrAndDataWidth\n");
     uint8_t buf[8];
     uint8_t auslesen[1];
     auslesen[0]= K_Mauslesen;
 
-    if(ipdbgJtagWrite(chain, auslesen, 1, IPDBG_LA_VALID_MASK) != JTAG_HOST_OK)
+    if(ipdbg_org_la_tcp_send(tcp, auslesen, 1) != SR_OK)
         sr_warn("Can't send K_Mauslesen");
     //g_usleep(RESPONSE_DELAY_US);
 
 
 
-
-    if(ipdbgJtagRead(chain, buf, 8, IPDBG_LA_VALID_MASK) != 8)
+    /// delay
+    if(ipdbg_org_la_tcp_receive(tcp, buf, 8) != 8)
         sr_warn("getAddrAndDataWidth failed");
 
     //sr_warn("getAddrAndDataWidth 0x%x:0x%x:0x%x:0x%x 0x%x:0x%x:0x%x:0x%x", buf[0],buf[1],buf[2],buf[3],buf[4],buf[5],buf[6],buf[7]);
@@ -421,12 +545,12 @@ SR_PRIV void getAddrWidthAndDataWidth(urj_chain_t *chain, struct ipdbgla_dev_con
 
 
 }
-SR_PRIV struct ipdbgla_dev_context *ipdbgla_dev_new(void)
+
+SR_PRIV struct ipdbg_org_la_dev_context *ipdbg_org_la_dev_new(void)
 {
-    struct ipdbgla_dev_context *devc;
+    struct ipdbg_org_la_dev_context *devc;
 
-    devc = g_malloc0(sizeof(struct ipdbgla_dev_context));
-
+    devc = g_malloc0(sizeof(struct ipdbg_org_la_dev_context));
 
 
     devc->capture_ratio = 50;
@@ -434,24 +558,28 @@ SR_PRIV struct ipdbgla_dev_context *ipdbgla_dev_new(void)
 
     return devc;
 }
-SR_PRIV int setReset(urj_chain_t *chain)
+
+SR_PRIV int ipdbg_org_la_sendReset(struct ipdbg_org_la_tcp *tcp)
 {
     uint8_t buf[1];
     buf[0]= reset;
-    if(ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK) != JTAG_HOST_OK)
+    if(ipdbg_org_la_tcp_send(tcp, buf, 1) != SR_OK)
         sr_warn("Reset can't send");
-    return JTAG_HOST_OK;
+    return SR_OK;
 }
-SR_PRIV int requestID(urj_chain_t *chain)
+
+SR_PRIV int ipdbg_org_la_requestID(struct ipdbg_org_la_tcp *tcp)
 {
     uint8_t buf[1];
-    buf[0]= IDBG;
-    if(ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK) != JTAG_HOST_OK)
+    buf[0]= IPDBG_LA_ID;
+    if(ipdbg_org_la_tcp_send(tcp, buf, 1) != SR_OK)
         sr_warn("IDBG can't send");
 
     char ID[4];
-    if(ipdbgJtagRead(chain, (uint8_t*)ID, 4, IPDBG_LA_VALID_MASK) != 4)
-        sr_warn("IDBG can't red");
+    if(ipdbg_org_la_tcp_receive(tcp, (uint8_t*)ID, 4) != 4)
+    {
+        sr_warn("IDBG can't read");
+    }
 
 
     if (strncmp(ID, "IDBG", 4)) {
@@ -459,34 +587,29 @@ SR_PRIV int requestID(urj_chain_t *chain)
         return SR_ERR;
     }
 
-
-    return JTAG_HOST_OK;
+    return SR_OK;
 }
 
-SR_PRIV void ipdbg_abort_acquisition(const struct sr_dev_inst *sdi)
+SR_PRIV void ipdbg_org_la_abort_acquisition(const struct sr_dev_inst *sdi)
 {
     struct sr_datafeed_packet packet;
-    //urj_chain_t *chain;
 
-    //chain = sdi->conn;
-    //serial_source_remove(sdi->session, serial);
+    struct ipdbg_org_la_tcp *tcp = sdi->conn;
 
-	sr_session_source_remove(sdi->session, -1);
+	sr_session_source_remove(sdi->session, tcp->socket);
 
     /* Terminate session */
     packet.type = SR_DF_END;
     sr_session_send(sdi, &packet);
 }
 
-SR_PRIV int setStart(urj_chain_t *chain)
+SR_PRIV int ipdbg_org_la_sendStart(struct ipdbg_org_la_tcp *tcp)
 {
     uint8_t buf[1];
     buf[0] = Start;
 
-   if(ipdbgJtagWrite(chain, buf, 1, IPDBG_LA_VALID_MASK) != JTAG_HOST_OK)
+   if(ipdbg_org_la_tcp_send(tcp, buf, 1) != SR_OK)
         sr_warn("Reset can't send");
-    return JTAG_HOST_OK;
+    return SR_OK;
 }
-
-
 

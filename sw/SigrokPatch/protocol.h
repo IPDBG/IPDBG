@@ -1,7 +1,7 @@
 /*
  * This file is part of the libsigrok project.
  *
- * Copyright (C) 2016 ek <ek>
+ * Copyright (C) 2016 danselmi <da@da>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,32 +17,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBSIGROK_HARDWARE_IPDBG_LA_PROTOCOL_H
-#define LIBSIGROK_HARDWARE_IPDBG_LA_PROTOCOL_H
-
-
-#include <urjtag/chain.h>
+#ifndef LIBSIGROK_HARDWARE_IPDBG_ORG_LA_PROTOCOL_H
+#define LIBSIGROK_HARDWARE_IPDBG_ORG_LA_PROTOCOL_H
 
 #include <stdint.h>
 #include <glib.h>
 #include <libsigrok/libsigrok.h>
 #include "libsigrok-internal.h"
 
-#define LOG_PREFIX "ipdbg-la"
-
-#define JTAG_HOST_OK 0
-#define JTAG_HOST_ERR -1
+#define LOG_PREFIX "ipdbg-org-la"
 
 
+struct ipdbg_org_la_tcp {
+	char *address;
+	char *port;
+	int socket;
+	//char length_buf[BUFFER_SIZE];
+	//int length_bytes_read;
+	//int response_length;
+	//int response_bytes_read;
+};
 
 /** Private, per-device-instance driver context. */
-struct ipdbgla_dev_context {
-
+struct ipdbg_org_la_dev_context
+{
 	int DATA_WIDTH;
     int DATA_WIDTH_BYTES;
     int ADDR_WIDTH;
     int ADDR_WIDTH_BYTES ;
-
 
     unsigned int limit_samples;
     char capture_ratio;
@@ -56,17 +58,24 @@ struct ipdbgla_dev_context {
     unsigned char *raw_sample_buf;
 };
 
+SR_PRIV struct ipdbg_org_la_tcp *ipdbg_org_la_new_tcp(void);
+SR_PRIV int ipdbg_org_la_tcp_open(struct ipdbg_org_la_tcp *tcp);
+SR_PRIV int ipdbg_org_la_tcp_close(struct ipdbg_org_la_tcp *tcp);
+SR_PRIV void ipdbg_org_la_tcp_free(struct ipdbg_org_la_tcp *tcp);
+SR_PRIV int ipdbg_org_la_tcp_send(struct ipdbg_org_la_tcp *tcp, const uint8_t *buf, size_t len);
+SR_PRIV int ipdbg_org_la_tcp_receive(struct ipdbg_org_la_tcp *tcp, uint8_t *buf, int bufsize);
 
-SR_PRIV struct ipdbgla_dev_context *ipdbgla_dev_new(void);
-SR_PRIV void getAddrWidthAndDataWidth(urj_chain_t *chain, struct ipdbgla_dev_context *devc);
-SR_PRIV int setReset(urj_chain_t *chain);
-SR_PRIV int requestID(urj_chain_t *chain);
-SR_PRIV int setStart(urj_chain_t *chain);
-SR_PRIV int sendTrigger(struct ipdbgla_dev_context *devc, urj_chain_t *chain);
-SR_PRIV int sendDelay( struct ipdbgla_dev_context *devc, urj_chain_t *chain);
-SR_PRIV int ipdbg_convert_trigger(const struct sr_dev_inst *sdi);
-SR_PRIV int ipdbg_receive_data(int fd, int revents, void *cb_data);
-SR_PRIV void ipdbg_abort_acquisition(const struct sr_dev_inst *sdi);
+SR_PRIV struct ipdbg_org_la_dev_context *ipdbg_org_la_dev_new(void);
+SR_PRIV void ipdbg_org_la_get_addrwidth_and_datawidth(struct ipdbg_org_la_tcp *tcp, struct ipdbg_org_la_dev_context *devc);
+SR_PRIV int ipdbg_org_la_sendReset(struct ipdbg_org_la_tcp *tcp);
+SR_PRIV int ipdbg_org_la_requestID(struct ipdbg_org_la_tcp *tcp);
+SR_PRIV int ipdbg_org_la_sendStart(struct ipdbg_org_la_tcp *tcp);
+SR_PRIV int ipdbg_org_la_sendTrigger(struct ipdbg_org_la_dev_context *devc, struct ipdbg_org_la_tcp *tcp);
+SR_PRIV int ipdbg_org_la_sendDelay(struct ipdbg_org_la_dev_context *devc, struct ipdbg_org_la_tcp *tcp);
+SR_PRIV int ipdbg_org_la_convert_trigger(const struct sr_dev_inst *sdi);
+SR_PRIV int ipdbg_org_la_receive_data(int fd, int revents, void *cb_data);
+SR_PRIV void ipdbg_org_la_abort_acquisition(const struct sr_dev_inst *sdi);
 
+SR_PRIV int ipdbg_org_la_receive_data(int fd, int revents, void *cb_data);
 
 #endif
