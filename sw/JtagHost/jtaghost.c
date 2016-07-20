@@ -69,7 +69,8 @@ int ipdbgJtagInit(urj_chain_t *chain)
 
     /// detect devices in chain
     const int maxIrLen = 0;
-    int numberOfParts = urj_tap_detect_parts(chain, "/usr/local/share/urjtag", maxIrLen);
+    //int numberOfParts = urj_tap_detect_parts(chain, "/usr/local/share/urjtag", maxIrLen);
+    int numberOfParts = urj_tap_detect_parts(chain, "urjtag", maxIrLen);
     printf("number of parts detected = %d\n", numberOfParts);
     if ( numberOfParts == 0)
     {
