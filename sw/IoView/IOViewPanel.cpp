@@ -9,8 +9,6 @@
 #include "IOViewPanel.h"
 #include "led.h"
 
-//#include "jtaghost.h"
-
 ///////////////////////////////////////////////////////////////////////////
 
 #define IPDBG_IOVIEW_VALID_MASK 0xA00
@@ -18,134 +16,36 @@
 
 BEGIN_EVENT_TABLE(IOViewPanel, wxPanel)
     EVT_CHECKBOX(wxID_ANY, IOViewPanel::onCheckBox)
-    EVT_TIMER(wxID_ANY, IOViewPanel::onTimer)
 END_EVENT_TABLE()
 
 
-
-IOViewPanel::IOViewPanel( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ):
-    wxPanel( parent, id, pos, size, style ),
-    timer(this)
+IOViewPanel::IOViewPanel( wxWindow* parent, IOViewPanelObserver *obs ):
+    wxPanel( parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL ),
+    NumberOfInputs(0),
+    NumberOfOutputs(0),
+    observer(obs)
 {
+	mainSizer = new wxBoxSizer( wxVERTICAL );
 
+	sbLedsSizer = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Inputs") ), wxHORIZONTAL );
+	mainSizer->Add( sbLedsSizer, 1, wxEXPAND, 5 );
 
-    client_ = new wxSocketClient(SOCKET_ID);
+	sbCBoxesSizer = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Outputs") ), wxHORIZONTAL );
+	mainSizer->Add( sbCBoxesSizer, 1, wxEXPAND, 5 );
 
-    wxIPV4address address;
-    address.Hostname(_("localhost"));
-    address.Service(_("4243"));
-
-    client_->SetFlags(wxSOCKET_NOWAIT);
-    //client->SetEventHandler(*this, SOCKET_ID);
-    //client->SetNotify(wxSOCKET_INPUT_FLAG);
-    //client->Notify(true);
-    client_->Connect(address);
-
-
-///////////////////////////////////////////////////////////////////////new
-    /*chain = ipdbgJtagAllocChain();
-    if(!chain)
-    {
-        wxMessageBox(_T("failed to allocate chain"));
-        return;
-    }
-
-    if(ipdbgJtagInit(chain) != 0 )
-    {
-        wxMessageBox(_T("failed to initialize chain"));
-        return;
-    }*/
-
-
-    uint8_t buffer[8];
-    buffer[0] = IOViewIPCommands::Reset;
-    client_->Write(buffer, 1);
-    client_->Write(buffer, 1);
-
-
-    buffer[0] = IOViewIPCommands::INOUT_Auslesen;
-    client_->Write(buffer, 1);
-
-    /*int readBytes  = 0;
-    while(readBytes != 8)
-    {
-        printf("reading (%d)\n", readBytes);
-        readBytes +=  ipdbgJtagRead(chain, &buffer[readBytes], 8-readBytes, IPDBG_IOVIEW_VALID_MASK);
-    }*/
-
-    size_t len = 0;
-    do
-    {
-        client_->Read(&buffer[len], 8-len);
-        len += client_->LastCount();
-    }while(len < 8);
-
-
-    NumberOfOutputs = buffer[0] |
-                      buffer[1] << 8 |
-                      buffer[2] << 16 |
-                      buffer[3] << 24 ;
-
-    NumberOfInputs =  buffer[4] |
-                      buffer[5] << 8 |
-                      buffer[6] << 16 |
-                      buffer[7] << 24;
-    //wxMessageBox(wxString::Format(_("outputs: %d, inputs: %d"), NumberOfOutputs, NumberOfInputs));
-    //NumberOfInputs = 8;
-    //NumberOfOutputs = 8;
-
-	wxBoxSizer* bSizer;
-	bSizer = new wxBoxSizer( wxVERTICAL );
-
-	wxStaticBoxSizer* sbSizer1;
-	sbSizer1 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Inputs") ), wxHORIZONTAL );
-
-	for(size_t i = 0 ; i < NumberOfInputs ; ++i)
-    {
-        wxLed *led = new wxLed(this);
-        sbSizer1->Add( led, 0, wxALL, 5 );
-        led->SetColour(wxLED_RED);
-        if(i%2)
-            led->SetState(wxLED_ON);
-        leds.push_back(led);
-    }
-
-	bSizer->Add( sbSizer1, 1, wxEXPAND, 5 );
-
-	wxStaticBoxSizer* sbSizer2;
-	sbSizer2 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Outputs") ), wxHORIZONTAL );
-
-	for(size_t i = 0 ; i < NumberOfOutputs ; ++i)
-    {
-        wxString str = wxString::Format(_T("P%d"), NumberOfOutputs-1-i);
-        wxCheckBox *checkBox = new wxCheckBox( this, wxID_ANY, str, wxDefaultPosition, wxDefaultSize, 0 );
-        sbSizer2->Add( checkBox, 0, wxALL, 5 );
-        checkBoxes.push_back(checkBox);
-    }
-
-	bSizer->Add( sbSizer2, 1, wxEXPAND, 5 );
-
-	this->SetSizer( bSizer );
+	this->SetSizer( mainSizer );
 	this->Layout();
-
-	timer.Start(200);
 }
 //////////////////////////////////////////////////////////////////////////////????????????????????????????????????
 IOViewPanel::~IOViewPanel()
 {
-    //if(chain)
-        //ipdbgJtagClose(chain);
 }
 
 
 void IOViewPanel::onCheckBox(wxCommandEvent& event)
 {
-    //wxMessageBox(_T("CheckBoxClicked"));
     const size_t NumberOfOutputBytes = (NumberOfOutputs+7)/8;
-    uint8_t buffer[NumberOfOutputBytes];
-
-    buffer[0] = IOViewIPCommands::WriteOutput;
-    client_->Write(buffer, 1);
+    uint8_t *buffer = new uint8_t[NumberOfOutputBytes];
 
     for(size_t idx = 0 ; idx < NumberOfOutputBytes ; ++idx)
         buffer[idx] = 0;
@@ -154,44 +54,63 @@ void IOViewPanel::onCheckBox(wxCommandEvent& event)
         if(checkBoxes[NumberOfOutputs-1-idx]->IsChecked())
             buffer[(idx & 0xf8)>>3] |= (0x01 << (idx & 0x07));
 
-
-    //ipdbgJtagWrite(chain, buffer, NumberOfOutputBytes, IPDBG_IOVIEW_VALID_MASK);
-    client_->Write(buffer, NumberOfOutputBytes);
-
+    if(observer)
+        observer->setOutput(buffer, NumberOfOutputBytes);
 }
 
-void IOViewPanel::onTimer(wxTimerEvent& event)
+void IOViewPanel::setLeds(uint8_t *buffer, size_t len)
 {
-    //wxMessageBox(_T("timeout expired"));
-    const size_t NumberOfInputBytes = (NumberOfInputs+7)/8;
-    uint8_t buffer[NumberOfInputBytes];
-    buffer[0] = IOViewIPCommands::ReadInput;
-    //ipdbgJtagWrite(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
-    client_->Write(buffer, 1);
-
-//    int readBytes  = 0;
-//    while(readBytes != NumberOfInputBytes)
-//    {
-//        printf("reading (%d)\n", readBytes);
-//        readBytes += ;
-//    }
-    //ipdbgJtagRead(chain, buffer, NumberOfInputBytes, IPDBG_IOVIEW_VALID_MASK);
-    //ipdbgJtagRead(chain, buffer, 1, IPDBG_IOVIEW_VALID_MASK);
-    client_->Read(buffer, NumberOfInputBytes);
-
+    assert(NumberOfInputs <= len*8);
 
     for (size_t idx = 0 ; idx < NumberOfInputs ; ++idx)
     {
-
-        printf("buf0: %x\n", buffer[0]);
-
         if (buffer[idx >> 3] & (0x01 << (idx & 0x07)))
             leds[NumberOfInputs-1-idx]->SetState(wxLED_ON);
         else
             leds[NumberOfInputs-1-idx]->SetState(wxLED_OFF);
+    }
+}
 
+void IOViewPanel::setOutputs(unsigned int outputs)
+{
+    for(size_t i = 0 ; i < checkBoxes.size() ; ++i)
+        delete checkBoxes[i];
+    checkBoxes.clear();
+
+    NumberOfOutputs = outputs;
+
+	for(size_t i = 0 ; i < NumberOfOutputs ; ++i)
+    {
+        wxString str = wxString::Format(_T("P%d"), NumberOfOutputs-1-i);
+        wxCheckBox *checkBox = new wxCheckBox( this, wxID_ANY, str, wxDefaultPosition, wxDefaultSize, 0 );
+        sbCBoxesSizer->Add( checkBox, 0, wxALL, 5 );
+        checkBoxes.push_back(checkBox);
     }
 
+	this->SetSizer( mainSizer );
+	this->Layout();
+}
+
+void IOViewPanel::setInputs(unsigned int inputs)
+{
+    for(size_t i = 0 ; i < leds.size() ; ++i)
+        delete leds[i];
+    leds.clear();
+
+    NumberOfInputs = inputs;
+
+	for(size_t i = 0 ; i < NumberOfInputs ; ++i)
+    {
+        wxLed *led = new wxLed(this);
+        sbLedsSizer->Add( led, 0, wxALL, 5 );
+        led->SetColour(wxLED_RED);
+        if(i%2)
+            led->SetState(wxLED_ON);
+        leds.push_back(led);
+    }
+
+	this->SetSizer( mainSizer );
+	this->Layout();
 }
 
 
