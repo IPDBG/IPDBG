@@ -53,7 +53,7 @@
 			<Add directory="C:/msys64/mingw32/lib/wx/include/msw-unicode-static-3.0" />
 		</Compiler>
 		<ResourceCompiler>
-			<Add directory="$(#wx)/include" />
+			<Add directory="C:/msys64/mingw32/include/wx-3.0" />
 		</ResourceCompiler>
 		<Linker>
 			<Add option="-mthreads" />
@@ -66,8 +66,12 @@
 		<Unit filename="IOViewApp.h" />
 		<Unit filename="IOViewMain.cpp" />
 		<Unit filename="IOViewMain.h" />
+		<Unit filename="IOViewObserver.h" />
 		<Unit filename="IOViewPanel.cpp" />
 		<Unit filename="IOViewPanel.h" />
+		<Unit filename="IOViewProtocol.cpp" />
+		<Unit filename="IOViewProtocol.h" />
+		<Unit filename="IOViewProtocolI.h" />
 		<Unit filename="led.cpp" />
 		<Unit filename="led.h" />
 		<Unit filename="leds.xpm" />
