@@ -15,22 +15,37 @@
 #endif
 
 #include "IOViewApp.h"
+#include "IOViewObserver.h"
+#include "IOViewProtocolI.h"
 
-class IOViewFrame: public wxFrame
+class IOViewPanel;
+class IOViewProtocol;
+
+class IOViewFrame: public wxFrame, public IOViewPanelObserver, public IOViewProtocolObserver
 {
     public:
         IOViewFrame(wxFrame *frame, const wxString& title);
         ~IOViewFrame();
-    private:
-        enum
-        {
-            idMenuQuit = 1000,
-            idMenuAbout
-        };
-        void OnClose(wxCloseEvent& event);
-        void OnQuit(wxCommandEvent& event);
-        void OnAbout(wxCommandEvent& event);
-        DECLARE_EVENT_TABLE()
+
+    virtual void visualizeInputs(uint8_t *buffer, size_t len);
+    virtual void setPortWidths(unsigned int inputs, unsigned int outputs);
+    virtual void setOutput(uint8_t *buffer, size_t len);
+
+private:
+
+
+    void OnClose(wxCloseEvent &event);
+    void OnQuit(wxCommandEvent &event);
+    void OnAbout(wxCommandEvent &event);
+    void OnConnect(wxCommandEvent &event);
+    void OnUpdateConnect(wxUpdateUIEvent &event);
+    void OnDisconnect(wxCommandEvent &event);
+    void OnUpdateDisconnect(wxUpdateUIEvent &event);
+
+    IOViewPanel *mainPanel;
+    IOViewProtocol *protocol;
+
+    DECLARE_EVENT_TABLE()
 };
 
 
