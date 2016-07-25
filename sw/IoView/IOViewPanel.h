@@ -21,6 +21,8 @@
 #include <wx/panel.h>
 #include <wx/socket.h>
 
+#include "IOViewObserver.h"
+
 #include <cstdint>
 ///////////////////////////////////////////////////////////////////////////
 #include <vector>
@@ -30,46 +32,36 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 class wxLed;
-struct URJ_CHAIN;
 
 class IOViewPanel : public wxPanel
 {
-	private:
-	    void onCheckBox(wxCommandEvent& event);
-	    void onTimer(wxTimerEvent& event);
+public:
 
-	     wxTimer timer;
-    private:
-        URJ_CHAIN *chain;
+    IOViewPanel( wxWindow* parent, IOViewPanelObserver *obs);
+    ~IOViewPanel();
 
-        enum IOViewIPCommands:uint8_t
-        {
-            INOUT_Auslesen = 0xAB,
-            ReadInput = 0xAA,
-            WriteOutput = 0xBB,
-            Reset = 0xee,
-            Escape = 0x55
-        };
-        unsigned int NumberOfInputs;
-        unsigned int NumberOfOutputs;
+    void setLeds(uint8_t *buffer, size_t len);
+    void setOutputs(unsigned int outputs);
+    void setInputs(unsigned int inputs);
 
-        wxSocketClient *client_;
-        enum {
-            SOCKET_ID = 10,
-        };
+private:
+    void onCheckBox(wxCommandEvent& event);
 
+    unsigned int NumberOfInputs;
+    unsigned int NumberOfOutputs;
+    IOViewPanelObserver *observer;
 
-	protected:
-		std::vector<wxCheckBox*> checkBoxes;
-		std::vector<wxLed*> leds;
+    wxBoxSizer* mainSizer;
+    wxStaticBoxSizer* sbLedsSizer;
+    wxStaticBoxSizer* sbCBoxesSizer;
+
+protected:
+    std::vector<wxCheckBox*> checkBoxes;
+    std::vector<wxLed*> leds;
 
 
-	public:
 
-		IOViewPanel( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxTAB_TRAVERSAL );
-		~IOViewPanel();
-
-        DECLARE_EVENT_TABLE()
+    DECLARE_EVENT_TABLE()
 
 };
 
