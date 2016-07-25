@@ -38,6 +38,9 @@
 #define URJ_STATUS_FAIL           1
 #define URJ_STATUS_MUST_QUIT    (-2)
 
+#include <stdio.h>
+#include <stdlib.h>
+
 //int initSpartan3(urj_chain_t *chain);
 
 
@@ -52,42 +55,17 @@ urj_chain_t *ipdbgJtagAllocChain(void)
 {
     return urj_tap_chain_alloc();
 }
-
-int ipdbgJtagInit(urj_chain_t *chain)
+int ipdbgJtagInit(urj_chain_t *chain, int apart)
 {
-    printf("ipdbgJtagInit\n");
-    /// select cable
-    char *Programmer_params[] = {"ft2232", "vid=0x0403", "pid=0x6010", 0};
-    if(urj_tap_chain_connect(chain, Programmer_params[0], &(Programmer_params[1])) != 0)
-    {
-        printf("connect failed!\n");
-        return -1;
-    }
 
-    urj_tap_reset(chain);
-
-
-    /// detect devices in chain
-    const int maxIrLen = 0;
-    //int numberOfParts = urj_tap_detect_parts(chain, "/usr/local/share/urjtag", maxIrLen);
-    int numberOfParts = urj_tap_detect_parts(chain, "urjtag", maxIrLen);
-    printf("number of parts detected = %d\n", numberOfParts);
-    if ( numberOfParts == 0)
-    {
-        printf("detection of chain failed\n");
-        return -2;
-    }
-
-    /// select active part in chain
-    int active_part = 0;
-    printf("select the active part\n");
+    int active_part = apart;
     if (active_part >= chain->parts->len)
     {
         printf("selection of part not possible\n");
         return -3;
     }
+
     chain->active_part = active_part;
-    printf("set the active part\n");
 
     urj_part_t *part = urj_tap_chain_active_part(chain);
     if (part == NULL)
@@ -153,9 +131,7 @@ int ipdbgJtagInit(urj_chain_t *chain)
     {
         return initiCE40(chain);
     }
-
 }
-
 int initArtix7 (urj_chain_t *chain)
 {
     printf("initArtix7\n");
@@ -163,6 +139,7 @@ int initArtix7 (urj_chain_t *chain)
 
     urj_part_t *part = urj_tap_chain_active_part(chain);
     assert(part != NULL && "part must not be NULL");
+
     /// set instruction register length of part if database does not contain part?
     urj_part_instruction_length_set (part, 6);
 
@@ -208,7 +185,6 @@ int initArtix7 (urj_chain_t *chain)
     }
     return 0;
 }
-
 int initEcp2 (urj_chain_t *chain)
 {
     printf("initEcp2\n");
@@ -259,9 +235,6 @@ int initEcp2 (urj_chain_t *chain)
     }
     return 0;
 }
-
-
-
 int initSpartan3(urj_chain_t *chain)
 {
     printf("initSpartan3\n");
@@ -363,7 +336,6 @@ int initSpartan6(urj_chain_t *chain)
     }
     return 0;
 }
-
 int initiCE40(urj_chain_t *chain)
 {
     printf("initiCE40\n");
@@ -415,24 +387,21 @@ int initiCE40(urj_chain_t *chain)
     }
     return 0;
 }
+int ipdbgJTAGtransfer(urj_chain_t *chain, uint16_t *upData, uint16_t downData)
+{
+urj_part_t *part = urj_tap_chain_active_part(chain);
+assert(part != NULL && "part must not be NULL");
 
+uint64_t dr_value_tx = downData;
+printf("jtagtransfer %04x\n", downData);
+urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
+urj_tap_chain_shift_data_registers(chain, 1);
+*upData = urj_tap_register_get_value (part->active_instruction->data_register->out);
 
- //int ipdbgJTAGtransfer(urj_chain_t *chain, uint8_t *rxData, uint8_t*txData, int rx_len, int tx_len)
- int ipdbgJTAGtransfer(urj_chain_t *chain, uint16_t *upData, uint16_t downData)
- {
-    urj_part_t *part = urj_tap_chain_active_part(chain);
-    assert(part != NULL && "part must not be NULL");
+//urj_tap_chain_flush(chain);
 
-    uint64_t dr_value_tx = downData;
-    printf("jtagtransfer %04x\n", downData);
-    urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
-    urj_tap_chain_shift_data_registers(chain, 1);
-    *upData = urj_tap_register_get_value (part->active_instruction->data_register->out);
-
-    //urj_tap_chain_flush(chain);
-
-    return JTAG_HOST_OK;
- }
+return JTAG_HOST_OK;
+}
 void ipdbgJtagClose(urj_chain_t *chain)
 {
     printf("ipdbgJtagClose\n");

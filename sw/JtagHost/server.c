@@ -9,6 +9,10 @@
 
 #include "jtaghost.h"
 
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
+
 
 /* default listen port number */
 #define DEF_LISTEN_PORT		4242
@@ -76,19 +80,78 @@ void distribute_to_up_buffer(uint16_t val, serv_ctx_t *channel_contexts[]);
  */
 int main(int argc, const char *argv[])
 {
-
     urj_chain_t *chain = ipdbgJtagAllocChain();
     if(!chain)
     {
         printf("failed to allocate chain");
         return -1;
     }
+    printf("ipdbgJtagInit\n");
+    char cable[200];
 
-    if(ipdbgJtagInit(chain) != 0 )
+    int vidNumber;
+    int pidNumber;
+
+    printf("select the cable:");
+    scanf("%s", &cable);
+
+    printf("select vid(in hex):");
+    scanf("%x", &vidNumber);
+
+    printf("select pid:");
+    scanf("%x", &pidNumber);
+
+
+    char vid[200];
+    char pid[200];
+    sprintf(vid, "vid=0x%x", vidNumber);
+    sprintf(pid, "pid=0x%x", pidNumber);
+
+
+
+    /// select cable
+    //char *Programmer_params[] = {"ft2232", "vid=0x0403", "pid=0x6010", 0};
+    char *Programmer_params[] = {cable, vid, pid, 0};
+    if(urj_tap_chain_connect(chain, Programmer_params[0], &(Programmer_params[1])) != 0)
     {
-        printf("failed to initialize chain");
+        printf("connect failed!\n");
         return -1;
     }
+
+    urj_tap_reset(chain);
+
+
+    /// detect devices in chain
+    const int maxIrLen = 0;
+#ifdef __unix__
+    int numberOfParts = urj_tap_detect_parts(chain, "/usr/local/share/urjtag", maxIrLen);
+#else
+    int numberOfParts = urj_tap_detect_parts(chain, "urjtag", maxIrLen);
+#endif
+    printf("number of parts detected = %d\n", numberOfParts);
+    if ( numberOfParts == 0)
+    {
+        printf("detection of chain failed\n");
+        return -2;
+    }
+
+    /// select active part in chain
+    printf("select the active part in chain: \n");
+
+    int active_part = 7;
+    scanf("%d", &active_part);
+
+    printf("selected part: %d\n", active_part);
+
+
+//    if(ipdbgJtagInit(chain, active_part) != 0 )
+//    {
+//        printf("failed to initialize chain");
+//        return -1;
+//    }
+    ipdbgJtagInit(chain, active_part);
+
+
 
     apr_status_t rv;
     apr_pool_t *mp;
