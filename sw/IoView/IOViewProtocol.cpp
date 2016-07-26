@@ -15,8 +15,8 @@ void IOViewProtocol::open()
     client = new wxSocketClient();
 
     wxIPV4address address;
-    address.Hostname("localhost");
-    address.Service("4243");
+    address.Hostname(_("192.168.61.98"));
+    address.Service(_("4243"));
 
     client->SetFlags(wxSOCKET_NOWAIT);
     //client->SetEventHandler(*this, SOCKET_ID);
@@ -26,7 +26,7 @@ void IOViewProtocol::open()
 
     if(!client->IsConnected())
     {
-        wxMessageBox("Not able to connect to JtagHost");
+        wxMessageBox(_("Not able to connect to JtagHost"));
         delete client;
         client = nullptr;
         return;
@@ -65,7 +65,7 @@ void IOViewProtocol::open()
                       buffer[6] << 16 |
                       buffer[7] << 24;
 
-    wxMessageBox(wxString::Format("Detected %d inputs and %d outputs", NumberOfInputs, NumberOfOutputs));
+    wxMessageBox(wxString::Format(_("Detected %d inputs and %d outputs"), NumberOfInputs, NumberOfOutputs));
 
     if(protocolObserver)
         protocolObserver->setPortWidths(NumberOfInputs, NumberOfOutputs);
