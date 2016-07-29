@@ -59,7 +59,7 @@ architecture tab of Controller_IO is
     signal OUTPUT_WIDTH_BYTES_ZAEHLER              : natural range 0 to OUTPUT_WIDTH_BYTES;
     --signal Zaehler              : natural ;
 
-    signal DataInReg      : std_logic_vector(7 downto 0);
+    signal DataInReg      : std_logic_vector(HOST_WORD_SIZE-1 downto 0);
     signal DataInRegValid : std_logic;
     signal DataInRegLast  : std_logic;
 
@@ -222,7 +222,7 @@ begin
 
     outputGreater8: if OUTPUT_WIDTH_BYTES > 1 generate
         signal Output_s         : std_logic_vector(OUTPUT_WIDTH-HOST_WORD_SIZE-1 downto 0);
-        constant OutputResetValue : std_logic_Vector(output'left-1 downto 0) := (others => '0');
+        constant OutputResetValue : std_logic_Vector(output'left downto 0) := (others => '0');
     begin
         process(rst, clk)begin
             if rst = '1' then
@@ -233,7 +233,7 @@ begin
                         Output_s <= DataInReg & Output_s(Output_s'left downto HOST_WORD_SIZE);
                     end if;
                     if DataInRegLast = '1' then
-                        Output  <=  DataInReg & Output_s(Output_s'left downto HOST_WORD_SIZE);
+                        Output  <=  DataInReg & Output_s(Output_s'left downto 0);
                     end if;
 
                 end if;
