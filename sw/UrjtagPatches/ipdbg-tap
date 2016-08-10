@@ -1,0 +1,5 @@
+instruction length 8
+register USER1 12
+register BYPASS 1
+register IDREG 32
+instruction USER1 01010101 USER1
