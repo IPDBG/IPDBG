@@ -131,6 +131,7 @@ int ipdbgJtagInit(urj_chain_t *chain, int apart)
     {
         return initiCE40(chain);
     }
+    return -1;
 }
 int initArtix7 (urj_chain_t *chain)
 {

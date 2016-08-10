@@ -144,12 +144,11 @@ int main(int argc, const char *argv[])
     printf("selected part: %d\n", active_part);
 
 
-//    if(ipdbgJtagInit(chain, active_part) != 0 )
-//    {
-//        printf("failed to initialize chain");
-//        return -1;
-//    }
-    ipdbgJtagInit(chain, active_part);
+    if(ipdbgJtagInit(chain, active_part) != 0 )
+    {
+        printf("failed to initialize chain");
+        return -1;
+    }
 
 
 
