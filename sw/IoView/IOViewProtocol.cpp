@@ -15,7 +15,7 @@ void IOViewProtocol::open()
     client = new wxSocketClient();
 
     wxIPV4address address;
-    address.Hostname(_("192.168.61.98"));
+    address.Hostname(_("127.0.0.1"));
     address.Service(_("4243"));
 
     client->SetFlags(wxSOCKET_NOWAIT);
