@@ -48,13 +48,14 @@
 int initSpartan3(urj_chain_t *chain);
 int initiCE40(urj_chain_t *chain);
 int initEcp2(urj_chain_t *chain);
-int initArtix7 (urj_chain_t *chain);
 int initSpartan6(urj_chain_t *chain);
+int init7Series(urj_chain_t *chain);
 
 urj_chain_t *ipdbgJtagAllocChain(void)
 {
     return urj_tap_chain_alloc();
 }
+
 int ipdbgJtagInit(urj_chain_t *chain, int apart)
 {
 
@@ -113,9 +114,10 @@ int ipdbgJtagInit(urj_chain_t *chain, int apart)
                 strcmp(part->part, "xc7a50t") == 0 ||
                 strcmp(part->part, "xc7a75t") == 0 ||
                 strcmp(part->part, "xc7a100t") == 0 ||
-                strcmp(part->part, "xc7a200t") == 0 )
-            return initArtix7(chain);
+                strcmp(part->part, "xc7a200t") == 0 ||
 
+                strcmp(part->part, "xc7k325t") == 0 )
+            return init7Series(chain);
         else
         {
             printf("xilinx family not supported yet");
@@ -133,10 +135,10 @@ int ipdbgJtagInit(urj_chain_t *chain, int apart)
     }
     return -1;
 }
-int initArtix7 (urj_chain_t *chain)
+
+int init7Series(urj_chain_t *chain)
 {
-    printf("initArtix7\n");
-    printf("not tested\n");
+    printf("init7Series\n");
 
     urj_part_t *part = urj_tap_chain_active_part(chain);
     assert(part != NULL && "part must not be NULL");
@@ -156,7 +158,7 @@ int initArtix7 (urj_chain_t *chain)
     }
 
 
-    urj_part_instruction_t *instr = urj_part_instruction_define(part, "USER1", "00110010", user1register_register_name);
+    urj_part_instruction_t *instr = urj_part_instruction_define(part, "USER1", "000010", user1register_register_name);
 
     if(!instr)
     {
@@ -186,7 +188,8 @@ int initArtix7 (urj_chain_t *chain)
     }
     return 0;
 }
-int initEcp2 (urj_chain_t *chain)
+
+int initEcp2(urj_chain_t *chain)
 {
     printf("initEcp2\n");
     urj_part_t *part = urj_tap_chain_active_part(chain);
@@ -236,6 +239,7 @@ int initEcp2 (urj_chain_t *chain)
     }
     return 0;
 }
+
 int initSpartan3(urj_chain_t *chain)
 {
     printf("initSpartan3\n");
@@ -286,6 +290,7 @@ int initSpartan3(urj_chain_t *chain)
     }
     return 0;
 }
+
 int initSpartan6(urj_chain_t *chain)
 {
     printf("initSpartan6\n");
@@ -337,6 +342,7 @@ int initSpartan6(urj_chain_t *chain)
     }
     return 0;
 }
+
 int initiCE40(urj_chain_t *chain)
 {
     printf("initiCE40\n");
@@ -388,24 +394,27 @@ int initiCE40(urj_chain_t *chain)
     }
     return 0;
 }
+
 int ipdbgJTAGtransfer(urj_chain_t *chain, uint16_t *upData, uint16_t downData)
 {
-urj_part_t *part = urj_tap_chain_active_part(chain);
-assert(part != NULL && "part must not be NULL");
+    urj_part_t *part = urj_tap_chain_active_part(chain);
+    assert(part != NULL && "part must not be NULL");
 
-uint64_t dr_value_tx = downData;
-printf("jtagtransfer %04x\n", downData);
-urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
-urj_tap_chain_shift_data_registers(chain, 1);
-*upData = urj_tap_register_get_value (part->active_instruction->data_register->out);
+    uint64_t dr_value_tx = downData;
+    printf("jtagtransfer %04x\n", downData);
+    urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
+    urj_tap_chain_shift_data_registers(chain, 1);
+    *upData = urj_tap_register_get_value (part->active_instruction->data_register->out);
 
-//urj_tap_chain_flush(chain);
+    //urj_tap_chain_flush(chain);
 
-return JTAG_HOST_OK;
+    return JTAG_HOST_OK;
 }
+
 void ipdbgJtagClose(urj_chain_t *chain)
 {
     printf("ipdbgJtagClose\n");
     urj_tap_chain_disconnect(chain);
     urj_tap_chain_free(chain);
 }
+
