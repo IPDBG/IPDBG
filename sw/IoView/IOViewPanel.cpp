@@ -56,6 +56,8 @@ void IOViewPanel::onCheckBox(wxCommandEvent& event)
 
     if(observer)
         observer->setOutput(buffer, NumberOfOutputBytes);
+
+    delete[] buffer;
 }
 
 void IOViewPanel::setLeds(uint8_t *buffer, size_t len)

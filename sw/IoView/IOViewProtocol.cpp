@@ -2,6 +2,16 @@
 
 #include <wx/socket.h>
 #include <wx/msgdlg.h>
+#include <wx/string.h>
+#include <string>
+#include <wx/textdlg.h>
+#include <wx/fileconf.h>
+#include <wx/msw/regconf.h>
+#include <wx/confbase.h>
+#include <wx/config.h>
+
+wxConfig *config = new wxConfig("I/O-View");
+wxString LastIp;
 
 IOViewProtocol::IOViewProtocol(IOViewProtocolObserver *obs):
 client(nullptr),
@@ -14,8 +24,20 @@ void IOViewProtocol::open()
 {
     client = new wxSocketClient();
 
+    config->Read("LastIp",&LastIp);
+    wxString IpAdress = wxGetTextFromUser(wxT("IP Adresse"),wxT("IP Adress to Connect"),LastIp);
+    config->Write("LastIp",IpAdress);
+
+    if(IpAdress.IsEmpty())
+    {
+        delete client;
+        client = nullptr;
+        return;
+    }
+
+
     wxIPV4address address;
-    address.Hostname(_("127.0.0.1"));
+    address.Hostname(_(IpAdress));
     address.Service(_("4243"));
 
     client->SetFlags(wxSOCKET_NOWAIT);
@@ -65,6 +87,12 @@ void IOViewProtocol::open()
                       buffer[6] << 16 |
                       buffer[7] << 24;
 
+    if(NumberOfOutputs == (256*len)&&NumberOfInputs == (256*len))
+    {
+        NumberOfOutputs = len;
+        NumberOfInputs = len;
+    }
+
     wxMessageBox(wxString::Format(_("Detected %d inputs and %d outputs"), NumberOfInputs, NumberOfOutputs));
 
     if(protocolObserver)
@@ -84,6 +112,8 @@ void IOViewProtocol::close()
         client->Close();
 
     delete client;
+    client = nullptr;
+    return;
 }
 
 bool IOViewProtocol::isOpen()

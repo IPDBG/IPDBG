@@ -11,6 +11,10 @@
 #include "wx_pch.h"
 #endif
 
+#include <wx/textdlg.h>
+#include <wx/string.h>
+#include <string>
+
 #ifdef __BORLANDC__
 #pragma hdrstop
 #endif //__BORLANDC__
@@ -115,6 +119,8 @@ void IOViewFrame::OnConnect(wxCommandEvent &event)
     {
         protocol->open();
     }
+
+    SetStatusText(_("Connected"), 1);
 }
 
 void IOViewFrame::OnUpdateConnect(wxUpdateUIEvent &event)
@@ -128,6 +134,7 @@ void IOViewFrame::OnDisconnect(wxCommandEvent &event)
     {
         protocol->close();
     }
+    SetStatusText(_("Disconnected"), 1);
 }
 
 void IOViewFrame::OnUpdateDisconnect(wxUpdateUIEvent &event)
