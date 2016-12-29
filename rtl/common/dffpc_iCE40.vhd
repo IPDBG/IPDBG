@@ -29,7 +29,7 @@ architecture iCE40 of dffp is
 
 begin
 
-    SB_DFF_inst: SB_DFF
+    SB_DFF_inst: SB_DFFE
     port map (
         E => ce,    -- clock enable
         Q => q,     -- Registered Output
