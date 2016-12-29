@@ -72,7 +72,7 @@ architecture tab of Controller_IO is
 
 begin
 
-    assert INPUT_WIDTH >= 8 report "input width must at least be 8, connect unused input to a constant" severity failure;
+    assert INPUT_WIDTH >= 8 report "input width must at least be 8, (hint: connect unused input to a constant)" severity failure;
 
     process (clk, rst) begin
 
