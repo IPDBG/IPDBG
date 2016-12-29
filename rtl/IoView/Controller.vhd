@@ -22,9 +22,7 @@ entity Controller_IO is
         --- Input & Ouput--------
 
         Input               : in std_logic_vector;
-        Output              : out std_logic_vector;
-
-        stateDebug          : out std_logic_vector(7 downto 0)
+        Output              : out std_logic_vector
 
     );
 end entity;
