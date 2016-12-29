@@ -46,28 +46,29 @@ begin
             DataOutValid <= '0';
 
         elsif rising_edge(clk) then
-
-            DataOutValid <= '0';
-            reset <= '0';
-            case state is
-            when Normal_s =>
-                if DataInValid = '1' then
-                    if DataIn = Escape then
-                        state <= Escaping_s;
-                    elsif DataIn = Reset_c  then
-                        reset <= '1';
-                    else
+            if ce = '1' then
+                DataOutValid <= '0';
+                reset <= '0';
+                case state is
+                when Normal_s =>
+                    if DataInValid = '1' then
+                        if DataIn = Escape then
+                            state <= Escaping_s;
+                        elsif DataIn = Reset_c  then
+                            reset <= '1';
+                        else
+                            DataOut <= DataIn;
+                            DataOutValid <= '1';
+                        end if;
+                    end if;
+                when Escaping_s =>
+                    if DataInValid = '1' then
+                        state <= Normal_s;
                         DataOut <= DataIn;
                         DataOutValid <= '1';
                     end if;
-                end if;
-            when Escaping_s =>
-                if DataInValid = '1' then
-                    state <= Normal_s;
-                    DataOut <= DataIn;
-                    DataOutValid <= '1';
-                end if;
-            end case;
+                end case;
+            end if;
         end if;
     end process ;
 end architecture tab;
