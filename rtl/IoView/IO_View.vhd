@@ -44,8 +44,7 @@ architecture tab of IO_View is
             DataOutValid : out std_logic;
             DataOut      : out std_logic_vector(7 downto 0);
             Input        : in  std_logic_vector;
-            Output       : out std_logic_vector;
-            stateDebug   : out std_logic_vector(7 downto 0)
+            Output       : out std_logic_vector
         );
     end component Controller_IO;
     component Escape is
@@ -82,8 +81,7 @@ begin
             DataOutValid => DataOutValid,
             DataOut      => DataOut,
             Input        => INPUT_DeviceUnderTest_Ioview,
-            Output       => OUTPUT_DeviceUnderTest_Ioview,
-            stateDebug   => open
+            Output       => OUTPUT_DeviceUnderTest_Ioview
         );
     esc : component Escape
         port map(
