@@ -16,10 +16,10 @@
 					<Add option="-g" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="$(#wx)/lib/gcc_dll/mswud" />
+					<Add directory="C:/msys64/mingw32/lib/wx/include/msw-unicode-3.0" />
 				</ResourceCompiler>
 				<Linker>
-					<Add directory="$(#wx)/lib/gcc_dll" />
+					<Add directory="C:/msys64/mingw32/lib" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -32,11 +32,11 @@
 					<Add option="-O2" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="$(#wx)/lib/gcc_dll/mswu" />
+					<Add directory="C:/msys64/mingw32/lib/wx/include/msw-unicode-3.0" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-s" />
-					<Add directory="$(#wx)/lib/gcc_dll" />
+					<Add directory="C:/msys64/mingw32/lib" />
 				</Linker>
 			</Target>
 		</Build>
