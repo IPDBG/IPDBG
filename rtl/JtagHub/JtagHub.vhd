@@ -9,7 +9,6 @@ entity JtagHub is
     );
     port(
        clk                : in  std_logic;
-       rst                : in  std_logic;
        ce                 : in  std_logic;
 
        TMS                : in  std_logic := '0';
@@ -42,7 +41,6 @@ architecture structure of JtagHub is
         );
         port(
             clk                : in  std_logic;
-            rst                : in  std_logic;
             ce                 : in  std_logic;
 
             DATAOUT            : out std_logic_vector(7 downto 0);
