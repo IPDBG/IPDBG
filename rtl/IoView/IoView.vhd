@@ -30,10 +30,9 @@ end entity;
 
 
 
-architecture tab of IO_View is
+architecture struct of IO_View is
 
-
-    component Controller_IO is
+    component IoViewController is
         port(
             clk          : in  std_logic;
             rst          : in  std_logic;
@@ -46,7 +45,8 @@ architecture tab of IO_View is
             Input        : in  std_logic_vector;
             Output       : out std_logic_vector
         );
-    end component Controller_IO;
+    end component IoViewController;
+
     component Escape is
         port(
             clk          : in  std_logic;
@@ -60,17 +60,12 @@ architecture tab of IO_View is
         );
     end component Escape;
 
-
     signal Data         : std_logic_vector(7 downto 0);
     signal DataValid    : std_logic;
     signal reset        : std_logic;
-
-
-
 begin
 
-
-    ctr : component Controller_IO
+    ctr : component IoViewController
         port map(
             clk          => clk,
             rst          => reset,
@@ -83,6 +78,7 @@ begin
             Input        => INPUT_DeviceUnderTest_Ioview,
             Output       => OUTPUT_DeviceUnderTest_Ioview
         );
+
     esc : component Escape
         port map(
             clk          => clk,
@@ -95,6 +91,4 @@ begin
             reset        => reset
         );
 
-
-
-end architecture tab;
+end architecture struct;
