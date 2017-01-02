@@ -3,13 +3,12 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 
-entity JTAG_CDC_Komponente is
+entity JtagCdc is
     generic(
         MFF_LENGTH : natural := 3
     );
     port(
         clk                 : in  std_logic;
-        rst                 : in  std_logic;
         ce                  : in  std_logic;
 -------------------------- to Device under Test --------------------------
         DATAOUT             : out std_logic_vector(7 downto 0);
@@ -20,34 +19,32 @@ entity JTAG_CDC_Komponente is
         Enable_GDB          : out std_logic;
 
 -------------------------- from Device under Test ------------------------
-        DATAINREADY_LA      : out std_logic:= '1';
-        DATAINREADY_IOVIEW  : out std_logic:= '1';
-        DATAINREADY_GDB     : out std_logic:= '1';
+        DATAINREADY_LA      : out std_logic;
+        DATAINREADY_IOVIEW  : out std_logic;
+        DATAINREADY_GDB     : out std_logic;
 
         --DATAINVALID     : in std_logic;
         DATAINVALID_LA      : in std_logic;
         DATAINVALID_IOVIEW  : in std_logic;
         DATAINVALID_GDB     : in std_logic;
 
-        DATAIN_LA           : in std_logic_vector (7 downto 0);
-        DATAIN_IOVIEW       : in std_logic_vector (7 downto 0);
-        DATAIN_GDB          : in std_logic_vector (7 downto 0);
+        DATAIN_LA           : in std_logic_vector(7 downto 0);
+        DATAIN_IOVIEW       : in std_logic_vector(7 downto 0);
+        DATAIN_GDB          : in std_logic_vector(7 downto 0);
+
 -------------------------- BSCAN-Componente (Debugging) ------------------
-        DRCLK1       : in  std_logic;
-        DRCLK2       : in  std_logic;
-        USER1        : in  std_logic;
-        USER2        : in  std_logic;
-        UPDATE       : in  std_logic;
-        CAPTURE      : in  std_logic;
-        SHIFT        : in  std_logic;
-        TDI          : in  std_logic;
-        TDO1         : out std_logic;
-        TDO2         : out std_logic
+        DRCLK               : in  std_logic;
+        USER                : in  std_logic;
+        UPDATE              : in  std_logic;
+        CAPTURE             : in  std_logic;
+        SHIFT               : in  std_logic;
+        TDI                 : in  std_logic;
+        TDO                 : out std_logic
     );
 end entity;
 
 
-architecture behavioral of JTAG_CDC_Komponente is
+architecture behavioral of JtagCdc is
 
 ---------------------- Datenregister -----------------------------
     signal Shiftregister            : std_logic_vector(11 downto 0);
@@ -55,54 +52,43 @@ architecture behavioral of JTAG_CDC_Komponente is
     signal ChannelRegister          : std_logic_vector(2 downto 0);
 
 ---------------------- Signale Einlesen --------------------------
-    signal update_synced             : std_logic := '0';
-    signal update_synced_prev        : std_logic := '0';
+    signal update_synced             : std_logic;
+    signal update_synced_prev        : std_logic;
 
 ---------------------- Signale Ausgabe --------------------------
-    signal setPending                : std_logic := '0';
-    signal pending                   : std_logic := '0';
-    signal pending_synched           : std_logic := '0';
-    signal acknowledge               : std_logic := '0';
+    signal setPending                : std_logic;
+    signal pending                   : std_logic;
+    signal pending_synched           : std_logic;
+    signal acknowledge               : std_logic;
 
-    signal Shiftcounter              : natural := 12;
+    signal Shiftcounter              : natural range 0 to 12;
 
-    signal DATAINREADY_IOVIEW_s      : std_logic := '1';
-    signal DATAINREADY_LA_s          : std_logic := '1';
-    signal DATAINREADY_GDB_s         : std_logic := '1';
+    signal DATAINREADY_IOVIEW_s      : std_logic;
+    signal DATAINREADY_LA_s          : std_logic;
+    signal DATAINREADY_GDB_s         : std_logic;
 
-
-
-    signal Register_LA          : std_logic_vector(7 downto 0);
-    signal Register_GDB         : std_logic_vector(7 downto 0);
-    signal Register_IOVIEW      : std_logic_vector(7 downto 0);
-
-     --signal transfer_LA              : std_logic;
-     --signal transfer_GDB              : std_logic;
-     --signal transfer_IOVIEW            : std_logic;
-
-
-
+    signal Register_LA               : std_logic_vector(7 downto 0);
+    signal Register_GDB              : std_logic_vector(7 downto 0);
+    signal Register_IOVIEW           : std_logic_vector(7 downto 0);
 
     type MUX is(GDB_s, LA_s, IOVIEW_s);
     signal ent_mux    : MUX :=  GDB_s;
     type transfer_t is (is_active, is_idle);
     signal transfer : transfer_t;
 
-
-
 begin
 
 
-    TDO1 <= Shiftregister(0);
+    TDO <= Shiftregister(0);
 
-    process(DRCLK1)begin
-        if rising_edge(DRCLK1) then
-            if CAPTURE = '1' and USER1 = '1' then
-                --Shiftregister(8 downto 0) <= '0' & LaTransferRegister;
+    process(DRCLK)begin
+        if rising_edge(DRCLK) then
+            if CAPTURE = '1' and USER = '1' then
+
                 Shiftregister <= '0' & ChannelRegister & LaTransferRegister;
                 Shiftcounter <= 12;
 
-            elsif USER1 = '1' and SHIFT = '1' then
+            elsif USER = '1' and SHIFT = '1' then
                 if Shiftcounter /= 0 then
                     Shiftcounter <= Shiftcounter - 1;
                 end if;
@@ -130,10 +116,9 @@ begin
                 q   : out std_logic
             );
         end component dffp;
-
     begin
 
-        x(0) <= UPDATE and USER1;
+        x(0) <= UPDATE and USER;
 
         mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
 
@@ -150,9 +135,6 @@ begin
         update_synced <= x(MFF_LENGTH);
 
     end block;
-
-
-
 
     outputControl : block
         signal DataOutRegisterEnable : std_logic := '0';
@@ -241,7 +223,6 @@ begin
         end if;
     end process;
 
-
     process (clk) begin
         if rising_edge(clk) then
             setPending <= '0';
@@ -285,46 +266,8 @@ begin
                         ChannelRegister <= "010";
                     end if;
             end case;
-
-
-
-
---            IOVIEW <= '0';
---            if zaehler = 0 then
---                if transfer_IOVIEW = '1' then
---                    zaehler <= 1;
---                    --LaTransferRegister <= Register_IOVIEW;
---                    --IOVIEW <= '1';
---                else
---                    zaehler <= 1;
---                end if;
---            end if;
---            if zaehler = 1 then
---                if transfer_LA = '1' then
---                    zaehler <= 2;
---                    --DATAINREADY_LA_s <= '0';
-----                    LaTransferRegister <= Register_LA;
---                    LA <= '1';
---                else
---                    zaehler <= 2;
---                end if;
---            end if;
---            if zaehler = 2 then
---                if transfer_GDB = '1' then
---                    zaehler <= 0;
---                    --DATAINREADY_GDB_s <= '0';
-----                    LaTransferRegister <= Register_LA;
---                    LA <= '1';
---                else
---                    zaehler <= 0;
---                end if;
---            end if;
         end if;
     end process;
-
-
-
-
 
     pending_dffp: block
         signal x : std_logic_vector(11 downto 0);
@@ -339,31 +282,22 @@ begin
 
     begin
 
-        x(0) <= pending and USER1;
+        x(0) <= pending and USER;
 
         mffx_flops: for K in 0 to 10 generate begin
 
             MFF : dffp
                 port map
                 (
-                  clk => DRCLK1,
+                  clk => DRCLK,
                   ce  => '1',
                   d   => x(K),
                   q   => x(K+1)
                 );
         end generate;
 
-
-        --pending_synched <= x(8);
         pending_synched <= x(11);
 
     end block;
 
-
-
-
-
 end architecture behavioral;
-
-
-

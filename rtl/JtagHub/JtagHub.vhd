@@ -2,10 +2,10 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity JTAG_HUB is
+entity JtagHub is
     generic(
         MFF_LENGTH        : natural := 3;
-        TARGET_TECHNOLOGY : natural range 0 to 2 := 2 -- '0': "ipdbgtap"    1: spartan3   2: LFE2
+        TARGET_TECHNOLOGY : natural range 0 to 3 := 2 -- '0': "ipdbgtap"    1: xilinx spartan 3   2: LFE2;   3: xilinx 7series
     );
     port(
        clk                : in  std_logic;
@@ -16,8 +16,6 @@ entity JTAG_HUB is
        TCK                : in  std_logic := '0';
        TDI                : in  std_logic := '1';
        TDO                : out std_logic;
-
-
 
        DATAOUT            : out std_logic_vector(7 downto 0);
 
@@ -31,14 +29,14 @@ entity JTAG_HUB is
        DATAINVALID_LA     : in  std_logic;
        DATAINVALID_IOVIEW : in  std_logic;
        DATAINVALID_GDB    : in  std_logic;
-       DATAIN_LA          : in  std_logic_vector (7 downto 0);
-       DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
-       DATAIN_GDB         : in  std_logic_vector (7 downto 0)
+       DATAIN_LA          : in  std_logic_vector(7 downto 0);
+       DATAIN_IOVIEW      : in  std_logic_vector(7 downto 0);
+       DATAIN_GDB         : in  std_logic_vector(7 downto 0)
     );
-end JTAG_HUB;
+end JtagHub;
 
-architecture structure of JTAG_HUB is
-    component JTAG_CDC_Komponente is
+architecture structure of JtagHub is
+    component JtagCdc is
         generic(
             MFF_LENGTH : natural
         );
@@ -62,28 +60,18 @@ architecture structure of JTAG_HUB is
             DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
             DATAIN_GDB         : in  std_logic_vector (7 downto 0);
 
-            DRCLK1             : in  std_logic;
-            DRCLK2             : in  std_logic;
-            USER1              : in  std_logic;
-            USER2              : in  std_logic;
+            DRCLK              : in  std_logic;
+            USER               : in  std_logic;
             UPDATE             : in  std_logic;
             CAPTURE            : in  std_logic;
             SHIFT              : in  std_logic;
             TDI                : in  std_logic;
-            TDO1               : out std_logic;
-            TDO2               : out std_logic
+            TDO                : out std_logic
         );
-    end component JTAG_CDC_Komponente;
+    end component JtagCdc;
 
-
-
-
-
-
-
-    signal DRCLK1       : std_logic;
-    signal USER1        : std_logic;
-    signal USER2        : std_logic;
+    signal DRCLK        : std_logic;
+    signal USER         : std_logic;
     signal UPDATE       : std_logic;
     signal CAPTURE      : std_logic;
     signal SHIFT        : std_logic;
@@ -91,6 +79,35 @@ architecture structure of JTAG_HUB is
     signal TDO1         : std_logic;
 
 begin
+
+--    xilinx_7series: if TARGET_TECHNOLOGY = 3 generate
+--        component BSCAN is
+--            port(
+--                capture : out std_logic;
+--                DRCLK1  : out std_logic;
+--                RESET   : out std_logic;
+--                USER1   : out std_logic;
+--                SHIFT   : out std_logic;
+--                TCK     : out std_logic;
+--                TDI     : out std_logic;
+--                TMS     : out std_logic;
+--                TDO     : in  std_logic
+--            );
+--        end component BSCAN;
+--    begin
+--        bscane2_inst : component BSCAN
+--            port map(
+--                capture => CAPTURE,
+--                DRCLK1  => DRCLK1,
+--                USER1   => USER1,
+--                SHIFT   => SHIFT,
+--                TCK     => TCK_i,
+--                TDI     => TDI_i,
+--                TMS     => TMS_i,
+--                TDO     => TDO1
+--            );
+--        TDO <= '0'; -- to decrease  number of warnings only
+--    end generate;
 
     Lattice_LFE2_12E: if TARGET_TECHNOLOGY = 2 generate -- Lattice LFE2
         signal UPDATE1        : std_logic;
@@ -125,7 +142,7 @@ begin
                 JTDO1   => TDO1,--
                 JTDO2   => '0',--
                 JTDI    => TDI_i,--
-                JTCK    => DRCLK1,--
+                JTCK    => DRCLK,--
                 JRTI1   => open,--
                 JRTI2   => open,--
                 JSHIFT  => SHIFT_lfe,--
@@ -134,8 +151,8 @@ begin
                 JCE1    => JCE1_lfe,
                 JCE2    => open
             );
-        process(DRCLK1)begin
-            if falling_edge(DRCLK1) then
+        process(DRCLK)begin
+            if falling_edge(DRCLK) then
                 UPDATE  <= UPDATE_lfe;
                 SHIFT   <= SHIFT_lfe;
                 JCE1    <= JCE1_lfe;
@@ -146,10 +163,10 @@ begin
         CAPTURE1 <= JCE1 and (not SHIFT);
         SHIFT1 <= JCE1 and SHIFT;
 
-        USER1 <= UPDATE1 or CAPTURE1 or SHIFT1;
+        USER <= UPDATE1 or CAPTURE1 or SHIFT1;
 
-        process(DRCLK1)begin
-            if falling_edge(DRCLK1) then
+        process(DRCLK)begin
+            if falling_edge(DRCLK) then
                 if SHIFT1 = '1' then
                     wasInShiftDr1 <= '1';
                 elsif UPDATE_lfe = '1' then
@@ -162,9 +179,6 @@ begin
                 end if;
             end if;
         end process;
-
-
-        USER2 <= '0';
         TDO <= '0'; -- to decrease  number of warnings only
     end generate;
 
@@ -188,11 +202,11 @@ begin
         bscan_inst : component BSCAN
             port map(
                 capture => CAPTURE,
-                DRCLK1  => DRCLK1,
+                DRCLK1  => DRCLK,
                 DRCLK2  => open,
                 RESET   => open,
-                USER1   => USER1,
-                USER2   => USER2,
+                USER1   => USER,
+                USER2   => open,
                 SHIFT   => SHIFT,
                 TDI     => TDI_i,
                 Update  => UPDATE,
@@ -205,7 +219,6 @@ begin
     ipdbg_tap: if TARGET_TECHNOLOGY = 0 generate -- ipdbg-tap
         component TAP is
             port(
-                rst     : in  std_logic;
                 Capture : out std_logic;
                 Shift   : out std_logic;
                 Update  : out std_logic;
@@ -222,14 +235,13 @@ begin
     begin
         TAP_l : component TAP
             port map(
-                rst     => rst,
                 Capture => CAPTURE,
                 Shift   => SHIFT,
                 Update  => UPDATE,
                 TDI_o   => TDI_i,
                 TDO_i   => TDO1,
-                SEL     => USER1,
-                DRCK    => DRCLK1,
+                SEL     => USER,
+                DRCK    => DRCLK,
 
                 TDI     => TDI,
                 TDO     => TDO,
@@ -239,13 +251,12 @@ begin
     end generate;
 
 
-    CDC : component JTAG_CDC_Komponente
+    CDC : component JtagCdc
         generic map(
             MFF_LENGTH => MFF_LENGTH
         )
         port map(
             clk                => clk,
-            rst                => rst,
             ce                 => ce,
 
             DATAOUT            => DATAOUT,
@@ -263,21 +274,13 @@ begin
             DATAIN_IOVIEW      => DATAIN_IOVIEW,
             DATAIN_GDB         => DATAIN_GDB,
 
-            DRCLK1             => DRCLK1,
-            DRCLK2             => '0',
-            USER1              => USER1,
-            USER2              => '0',
+            DRCLK              => DRCLK,
+            USER               => USER,
             UPDATE             => UPDATE,
             CAPTURE            => CAPTURE,
             SHIFT              => SHIFT,
             TDI                => TDI_i,
-            TDO1               => TDO1,
-            TDO2               => open
-
+            TDO                => TDO1
         );
-
-
-
-
 
 end architecture structure;
