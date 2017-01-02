@@ -5,24 +5,19 @@ use ieee.numeric_std.all;
 
 entity TAP is
     port(
-        --clk             : out std_logic;
-        rst             : in  std_logic;
+        Capture : out std_logic;
+        Shift   : out std_logic;
+        Update  : out std_logic;
+        TDI_o   : out std_logic; -- "buffered" output
+        TDO_i   : in  std_logic;
+        SEL     : out std_logic;
+        DRCK    : out std_logic;
 
-        Capture         : out std_logic;
-        Shift           : out std_logic;
-        Update          : out std_logic;
-        TDI_o           : out std_logic; -- "buffered" output
-        TDO_i           : in  std_logic;
-        SEL             : out std_logic;
-        DRCK            : out std_logic;
-
-        TDI             : in  std_logic;
-        TDO             : out std_logic;
-        TMS             : in  std_logic;
-        TCK             : in  std_logic
-
-
-         );
+        TDI     : in  std_logic;
+        TDO     : out std_logic;
+        TMS     : in  std_logic;
+        TCK     : in  std_logic
+    );
 end entity;
 
 
@@ -34,8 +29,9 @@ architecture tab of TAP is
 
     constant IdValue            : std_logic_vector(31 downto 0) := "11110000111100001111000011110001";
 
-    type TAP_Controller is(Test_logic_reset, Run_test, Select_dr_scan, Capture_dr, Shift_dr, Exit1_dr, Pause_dr, Exit2_dr, Update_dr, Select_ir_scan, Capture_ir, Shift_ir, Exit1_ir, Pause_ir, Exit2_ir, Update_ir);
-    signal TAP    : TAP_Controller :=  Test_logic_reset;
+    type TAP_States             is(Test_logic_reset, Run_test, Select_dr_scan, Capture_dr, Shift_dr, Exit1_dr, Pause_dr,
+                                   Exit2_dr, Update_dr, Select_ir_scan, Capture_ir, Shift_ir, Exit1_ir, Pause_ir, Exit2_ir, Update_ir);
+    signal TAP                  : TAP_States;
 
     signal InstuctionRegister   : std_logic_vector(7 downto 0) := IDCode;
     signal BypassRegister       : std_logic;
@@ -48,10 +44,8 @@ architecture tab of TAP is
 begin
 
 
-    process(TCK, rst)begin
-        if rst = '1' then
-            TAP <= Test_logic_reset;
-        elsif rising_edge(TCK) then
+    process(TCK)begin
+        if rising_edge(TCK) then
             case TAP is
             when Test_logic_reset => if TMS = '0' then TAP <= Run_test; end if;
             when Run_test         => if TMS = '1' then TAP <= Select_dr_scan; end if;
@@ -82,11 +76,10 @@ begin
     Update   <= '1' when TAP = Update_dr  else '0';
 
     SEL <= User1Selected;
-    DRCK <= TCK ;
-
+    DRCK <= TCK;
 
     outputMultiplexer: block
-        signal DrMuxOutput          : std_logic;
+        signal DrMuxOutput : std_logic;
     begin
         process(TAP, InstuctionRegister, DrMuxOutput)begin
             if TAP = shift_ir then
@@ -96,13 +89,11 @@ begin
             end if;
         end process;
 
-        process(User1Selected, BypassSelected, TDO_i, BypassRegister, IDCodeRegister--, IdRegisterSelected
-        )begin
+        process(User1Selected, BypassSelected, TDO_i, BypassRegister, IDCodeRegister)begin
             if User1Selected = '1' then
                 DrMuxOutput <= TDO_i;
             elsif BypassSelected = '1' then
                 DrMuxOutput <= BypassRegister;
-            --elsif IdRegisterSelected = '1' then
             else
                 DrMuxOutput <= IDCodeRegister(0);
             end if;
@@ -151,7 +142,5 @@ begin
 
         end if;
     end process;
-
-
 
 end architecture tab;
