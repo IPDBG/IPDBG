@@ -107,8 +107,6 @@ int main(int argc, const char *argv[])
     sprintf(vid, "vid=0x%x", vidNumber);
     sprintf(pid, "pid=0x%x", pidNumber);
 
-
-
     /// select cable
     //char *Programmer_params[] = {"ft2232", "vid=0x0403", "pid=0x6010", 0};
     char *Programmer_params[] = {cable, vid, pid, 0};
@@ -119,6 +117,15 @@ int main(int argc, const char *argv[])
     }
 
     urj_tap_reset(chain);
+
+
+    unsigned int freq = 100000;
+    printf("select frequency [Hz]: ");
+    scanf("%d", &freq);
+
+    urj_tap_cable_set_frequency (chain->cable, freq);
+
+
 
 
     /// detect devices in chain
