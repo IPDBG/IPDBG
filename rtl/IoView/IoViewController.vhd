@@ -9,7 +9,7 @@ entity IoViewController is
         rst          : in  std_logic;
         ce           : in  std_logic;
 
-        --      host interface (JTAG-HUB or UART or ....)
+        -- host interface (JTAG-HUB or UART or ....)
         DataInValid  : in  std_logic;
         DataIn       : in  std_logic_vector(7 downto 0);
         DataOutReady : in  std_logic;
@@ -25,54 +25,44 @@ end entity;
 
 architecture behavioral of IoViewController is
 
-    constant HOST_WORD_SIZE     : natural := 8;
-    constant OUTPUT_WIDTH       : natural := Output'length;
-    constant INPUT_WIDTH        : natural := Input'length;
+    constant HOST_WORD_SIZE           : natural := 8;
+    constant OUTPUT_WIDTH             : natural := Output'length;
+    constant INPUT_WIDTH              : natural := Input'length;
 
-    constant INPUT_WIDTH_BYTES  : natural := (INPUT_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;
-    constant OUTPUT_WIDTH_BYTES : natural := (OUTPUT_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;
-    constant INPUT_WIDTH_slv    : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(INPUT_WIDTH, 32));
-    constant OUTPUT_WIDTH_slv   : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(OUTPUT_WIDTH, 32));
+    constant INPUT_WIDTH_BYTES        : natural := (INPUT_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;
+    constant OUTPUT_WIDTH_BYTES       : natural := (OUTPUT_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;
+    constant INPUT_WIDTH_slv          : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(INPUT_WIDTH, 32));
+    constant OUTPUT_WIDTH_slv         : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(OUTPUT_WIDTH, 32));
 
-    ------------------------------------------------------------------ Commands for IoViewController -------------
-    constant ReadWidthsCmd      : std_logic_vector := x"AB";
-    constant WriteOutputCmd     : std_logic_vector := x"BB";
-    constant ReadIputsCmd       : std_logic_vector := x"AA";
+    -- Commands for IoViewController
+    constant ReadWidthsCmd            : std_logic_vector := x"AB";
+    constant WriteOutputCmd           : std_logic_vector := x"BB";
+    constant ReadIputsCmd             : std_logic_vector := x"AA";
 
-    --State machines
-    type states_t        is(init, I_O_WIDTH, set_Output, read_Input);
-    signal state        : states_t;
+    -- State machines
+    type states_t                     is(init, I_O_WIDTH, set_Output, read_Input);
+    signal state                      : states_t;
 
-    type Output_W               is(start, Zwischenspeicher, schieben, next_Data);
-    signal init_Output          : Output_W;
+    type Output_W                     is(start, Zwischenspeicher, schieben, next_Data);
+    signal init_Output                : Output_W;
 
+    signal OUTPUT_WIDTH_BYTES_ZAEHLER : natural range 0 to OUTPUT_WIDTH_BYTES;
 
-    --Zähler
-    signal OUTPUT_WIDTH_BYTES_ZAEHLER              : natural range 0 to OUTPUT_WIDTH_BYTES;
-    --signal Zaehler              : natural ;
+    signal DataInReg                  : std_logic_vector(HOST_WORD_SIZE-1 downto 0);
+    signal DataInRegValid             : std_logic;
+    signal DataInRegLast              : std_logic;
 
-    signal DataInReg      : std_logic_vector(HOST_WORD_SIZE-1 downto 0);
-    signal DataInRegValid : std_logic;
-    signal DataInRegLast  : std_logic;
-
-
-
-    signal zaehler                  : unsigned(INPUT_WIDTH-1 downto 0):= (others => '0');
-    signal import_ADDR              : std_logic;
-    signal IOZwischenspeicher       : std_logic_vector(31 downto 0);
-    signal DatenOutZwischenspeicher : std_logic_vector(INPUT'length-1 downto 0);
-
-
+    signal zaehler                    : unsigned(INPUT_WIDTH-1 downto 0):= (others => '0');
+    signal import_ADDR                : std_logic;
+    signal IOZwischenspeicher         : std_logic_vector(31 downto 0);
+    signal DatenOutZwischenspeicher   : std_logic_vector(INPUT'length-1 downto 0);
 
 begin
 
     assert INPUT_WIDTH >= 8 report "input width must at least be 8, (hint: connect unused input to a constant)" severity failure;
 
     process (clk, rst) begin
-
-
         if rst = '1' then
-
             state <= init;
             init_Output       <= start;
             DataInReg      <= (others => '-');
@@ -151,7 +141,6 @@ begin
                    end case;
 
                 when set_Output =>
-
                     if DataInValid = '1' then
                         OUTPUT_WIDTH_BYTES_ZAEHLER <= OUTPUT_WIDTH_BYTES_ZAEHLER + 1;
                         DataInReg <= DataIn;
@@ -176,7 +165,6 @@ begin
                         end if;
 
                     when schieben =>
-
                         DataOutValid <= '0';
                         if DataOutReady = '0' then
                             if Zaehler = INPUT_WIDTH_BYTES then
