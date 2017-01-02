@@ -5,21 +5,21 @@ use ieee.numeric_std.all;
 
 entity IoView is
     port(
-        clk                 : in  std_logic;
-        rst                 : in  std_logic;
-        ce                  : in  std_logic;
+        clk          : in  std_logic;
+        rst          : in  std_logic;
+        ce           : in  std_logic;
 
-        --      host interface (JtagHub or UART or ....)
-        DataInValid         : in  std_logic;
-        DataIn              : in  std_logic_vector(7 downto 0);
+        -- host interface (JtagHub or UART or ....)
+        DataInValid  : in  std_logic;
+        DataIn       : in  std_logic_vector(7 downto 0);
 
-        DataOutReady        : in  std_logic;
-        DataOutValid        : out std_logic;
-        DataOut             : out std_logic_vector(7 downto 0);
+        DataOutReady : in  std_logic;
+        DataOutValid : out std_logic;
+        DataOut      : out std_logic_vector(7 downto 0);
 
         --- Input & Ouput--------
-        INPUT_DeviceUnderTest_Ioview    : in std_logic_vector;
-        OUTPUT_DeviceUnderTest_Ioview   : out std_logic_vector
+        ProbeInputs  : in  std_logic_vector;
+        ProbeOutputs : out std_logic_vector
     );
 end entity;
 
@@ -68,8 +68,8 @@ begin
             DataOutReady => DataOutReady,
             DataOutValid => DataOutValid,
             DataOut      => DataOut,
-            Input        => INPUT_DeviceUnderTest_Ioview,
-            Output       => OUTPUT_DeviceUnderTest_Ioview
+            Input        => ProbeInputs,
+            Output       => ProbeOutputs
         );
 
     esc : component Escape
