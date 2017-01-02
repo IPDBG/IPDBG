@@ -142,13 +142,16 @@ int main(int argc, const char *argv[])
         return -2;
     }
 
-    /// select active part in chain
-    printf("select the active part in chain: \n");
+    int active_part = 0;
+    if ( numberOfParts > 1)
+    {
+        /// select active part in chain
+        printf("select the active part in chain: \n");
 
-    int active_part = 7;
-    scanf("%d", &active_part);
+        scanf("%d", &active_part);
 
-    printf("selected part: %d\n", active_part);
+        printf("selected part: %d\n", active_part);
+    }
 
 
     if(ipdbgJtagInit(chain, active_part) != 0 )
