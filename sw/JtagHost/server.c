@@ -91,7 +91,28 @@ int main(int argc, const char *argv[])
 
     int vidNumber;
     int pidNumber;
+    char feed;
+    unsigned int freq = 100000;
 
+    printf("::Use Default Settings? [y/n]\n::cable:ft2232\n::vid:0x0403\n::pid:0x6010\n::freq:2MHz\n");
+    scanf("%c", &feed);
+
+    if(feed == 'y'|| feed == 'Y')
+    {
+        cable[0] = 'f';
+        cable[1] = 't';
+        cable[2] = '2';
+        cable[3] = '2';
+        cable[4] = '3';
+        cable[5] = '2';
+        cable[6] = '\0';
+        vidNumber = 0x0403;
+        pidNumber = 0x6010;
+        freq = 2000000;
+
+    }
+    else if (feed == 'n'||feed == 'N')
+    {
     printf("select the cable:");
     scanf("%s", &cable);
 
@@ -101,6 +122,9 @@ int main(int argc, const char *argv[])
     printf("select pid:");
     scanf("%x", &pidNumber);
 
+    printf("select frequency [Hz]: ");
+    scanf("%d", &freq);
+    }
 
     char vid[200];
     char pid[200];
@@ -119,9 +143,7 @@ int main(int argc, const char *argv[])
     urj_tap_reset(chain);
 
 
-    unsigned int freq = 100000;
-    printf("select frequency [Hz]: ");
-    scanf("%d", &freq);
+
 
     urj_tap_cable_set_frequency (chain->cable, freq);
 
@@ -192,7 +214,6 @@ int main(int argc, const char *argv[])
         apr_socket_t *listening_sock = create_listen_sock(mp, ch);
         assert(listening_sock);
 
-
         apr_pollfd_t pfd = { mp, APR_POLL_SOCKET, APR_POLLIN, 0, { NULL }, serv_ctx };
         pfd.desc.s = listening_sock;
         apr_pollset_add(pollset, &pfd);
@@ -225,46 +246,46 @@ int main(int argc, const char *argv[])
         if (rv == APR_SUCCESS)
         {
             int i;
-            assert(num > 0);
             /* scan the active sockets */
             for (i = 0; i < num; i++)
             {
                 serv_ctx_t *serv_ctx = ret_pfd[i].client_data;
-                assert(serv_ctx);
-                if (serv_ctx->channel_state == listening)
+                if(serv_ctx)
                 {
-                    apr_socket_t *listening_sock = ret_pfd[i].desc.s;
-                    /* the listen socket is readable. that indicates we accepted a new connection */
-                    do_accept(serv_ctx, pollset, listening_sock, mp);
-                    apr_socket_close(listening_sock);
-                    apr_pollset_remove(pollset, &ret_pfd[i]);
-                }
-                else
-                {
-                    int ret = TRUE;
-                    if(ret_pfd[i].rtnevents & (APR_POLLIN | APR_POLLHUP))
+                    if (serv_ctx->channel_state == listening)
                     {
-                        ret = connection_rx_cb(serv_ctx, pollset, ret_pfd[i].desc.s);
-                    }
-                    else // (ret_pfd[i].rtnevents & APR_POLLOUT)
-                    {
-                        ret = connection_tx_cb(serv_ctx, pollset, ret_pfd[i].desc.s);
-                    }
-                    if (ret == FALSE)
-                    {
-                        printf("closing connection %d", serv_ctx->channel_number);
-                        apr_socket_t *sock = ret_pfd[i].desc.s;
-
-                        apr_socket_close(sock);
+                        apr_socket_t *listening_sock = ret_pfd[i].desc.s;
+                         /* the listen socket is readable. that indicates we accepted a new connection */
+                        do_accept(serv_ctx, pollset, listening_sock, mp);
+                        apr_socket_close(listening_sock);
                         apr_pollset_remove(pollset, &ret_pfd[i]);
+                    }
+                    else
+                    {
+                        int ret = TRUE;
+                        if(ret_pfd[i].rtnevents & (APR_POLLIN | APR_POLLHUP))
+                        {
+                            ret = connection_rx_cb(serv_ctx, pollset, ret_pfd[i].desc.s);
+                        }
+                        else // (ret_pfd[i].rtnevents & APR_POLLOUT)
+                        {
+                            ret = connection_tx_cb(serv_ctx, pollset, ret_pfd[i].desc.s);
+                        }
+                        if (ret == FALSE)
+                        {
+                            printf("closing connection %d", serv_ctx->channel_number);
+                            apr_socket_t *sock = ret_pfd[i].desc.s;
 
-                        apr_socket_t *listening_sock = create_listen_sock(mp, serv_ctx->channel_number);
-                        assert(listening_sock);
-                        serv_ctx->channel_state = listening;
+                            apr_socket_close(sock);
+                            apr_pollset_remove(pollset, &ret_pfd[i]);
 
-                        apr_pollfd_t pfd = { mp, APR_POLL_SOCKET, APR_POLLIN, 0, { NULL }, serv_ctx };
-                        pfd.desc.s = listening_sock;
-                        apr_pollset_add(pollset, &pfd);
+                            apr_socket_t *listening_sock = create_listen_sock(mp, serv_ctx->channel_number);
+                            serv_ctx->channel_state = listening;
+
+                            apr_pollfd_t pfd = { mp, APR_POLL_SOCKET, APR_POLLIN, 0, { NULL }, serv_ctx };
+                            pfd.desc.s = listening_sock;
+                            apr_pollset_add(pollset, &pfd);
+                        }
                     }
                 }
             }
