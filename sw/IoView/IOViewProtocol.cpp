@@ -26,14 +26,16 @@ void IOViewProtocol::open()
 
     config->Read("LastIp",&LastIp);
     wxString IpAdress = wxGetTextFromUser(wxT("IP Adresse"),wxT("IP Adress to Connect"),LastIp);
-    config->Write("LastIp",IpAdress);
 
     if(IpAdress.IsEmpty())
     {
+        wxMessageBox(_("Not able to connect to JtagHost"));
         delete client;
         client = nullptr;
         return;
     }
+    else
+        config->Write("LastIp",IpAdress);
 
 
     wxIPV4address address;
@@ -63,7 +65,7 @@ void IOViewProtocol::open()
     client->Write(buffer, 1);
 
     size_t len = 0;
-    size_t tries = 0;
+    //size_t tries = 0;
     do
     {
         client->Read(&buffer[len], 8-len);
@@ -98,7 +100,7 @@ void IOViewProtocol::open()
     if(protocolObserver)
         protocolObserver->setPortWidths(NumberOfInputs, NumberOfOutputs);
 
-    wxTimer::Start(200);
+    wxTimer::Start(10);
 }
 
 void IOViewProtocol::close()
@@ -127,7 +129,7 @@ void IOViewProtocol::setOutput(uint8_t *buffer, size_t len)
 
     const size_t NumberOfOutputBytes = (NumberOfOutputs+7)/8;
 
-    assert(NumberOfOutputBytes == len);
+    //assert(NumberOfOutputBytes == len);
 
     uint8_t cmd = IOViewIPCommands::WriteOutput;
     client->Write(&cmd, 1);
