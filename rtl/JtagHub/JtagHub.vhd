@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity JtagHub is
     generic(
         MFF_LENGTH        : natural := 3;
-        TARGET_TECHNOLOGY : natural range 0 to 3 := 2 -- '0': "ipdbgtap"    1: xilinx spartan 3   2: LFE2;   3: xilinx 7series
+        TARGET_TECHNOLOGY : natural range 0 to 3 := 3 -- '0': "ipdbgtap"    1: xilinx spartan 3   2: LFE2;   3: xilinx 7series
     );
     port(
        clk                : in  std_logic;
@@ -29,7 +29,7 @@ entity JtagHub is
        DATAINVALID_IOVIEW : in  std_logic;
        DATAINVALID_GDB    : in  std_logic;
        DATAIN_LA          : in  std_logic_vector(7 downto 0);
-       DATAIN_IOVIEW      : in  std_logic_vector(7 downto 0);
+       DATAIN_IOVIEW      : in  std_logic_vector(7 downto 0);          
        DATAIN_GDB         : in  std_logic_vector(7 downto 0)
     );
 end JtagHub;
@@ -78,34 +78,39 @@ architecture structure of JtagHub is
 
 begin
 
---    xilinx_7series: if TARGET_TECHNOLOGY = 3 generate
---        component BSCAN is
---            port(
---                capture : out std_logic;
---                DRCLK1  : out std_logic;
---                RESET   : out std_logic;
---                USER1   : out std_logic;
---                SHIFT   : out std_logic;
---                TCK     : out std_logic;
---                TDI     : out std_logic;
---                TMS     : out std_logic;
---                TDO     : in  std_logic
---            );
---        end component BSCAN;
---    begin
---        bscane2_inst : component BSCAN
---            port map(
---                capture => CAPTURE,
---                DRCLK1  => DRCLK1,
---                USER1   => USER1,
---                SHIFT   => SHIFT,
---                TCK     => TCK_i,
---                TDI     => TDI_i,
---                TMS     => TMS_i,
---                TDO     => TDO1
---            );
---        TDO <= '0'; -- to decrease  number of warnings only
---    end generate;
+    xilinx_7series: if TARGET_TECHNOLOGY = 3 generate
+        component BSCAN is
+            port(
+                capture : out std_logic;
+                DRCLK1  : out std_logic;
+                RESET   : out std_logic;
+                USER1   : out std_logic;
+                SHIFT   : out std_logic;
+                UPDATE  : out  std_logic;
+                TCK     : out std_logic;
+                TDI     : out std_logic;
+                TMS     : out std_logic;
+                TDO1    : in  std_logic
+            );
+        end component BSCAN;
+
+    begin
+
+        BSCAN_7Series_inst  :  component BSCAN
+            port map(
+                capture => capture,
+                DRCLK1  => DRCLK,
+                RESET   => open,
+                USER1   => USER,
+                SHIFT   => SHIFT,
+                UPDATE  => UPDATE,
+                TCK     => open,
+                TDI     => TDI_i,
+                TMS     => open,
+                TDO1    => TDO1
+            );
+        TDO <= '0'; -- to decrease  number of warnings only
+    end generate;
 
     Lattice_LFE2_12E: if TARGET_TECHNOLOGY = 2 generate -- Lattice LFE2
         signal UPDATE1        : std_logic;
@@ -177,7 +182,7 @@ begin
                 end if;
             end if;
         end process;
-        TDO <= '0'; -- to decrease  number of warnings only
+      TDO <= '0'; -- to decrease  number of warnings only
     end generate;
 
     xilinx_spartan3: if TARGET_TECHNOLOGY = 1 generate -- spartan 3

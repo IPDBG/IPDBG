@@ -12,6 +12,7 @@ entity BSCAN is
         RESET           : out  std_logic;
         USER1           : out  std_logic;
         SHIFT           : out  std_logic;
+        UPDATE          : out  std_logic;
         TCK             : out  std_logic;
         TDI             : out  std_logic;
         TMS             : out  std_logic;
@@ -39,7 +40,8 @@ begin
         TCK         => TCK,
         TDI         => TDI,                --  TDI  output  from  TAP  controller
         TMS         => TMS,
-        TDO         => TDO1,               --  Data  input  for  USER1  function
+        UPDATE      => UPDATE,
+        TDO         => TDO1               --  Data  input  for  USER1  function
     );
 
 
