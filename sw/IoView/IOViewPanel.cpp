@@ -67,9 +67,9 @@ void IOViewPanel::setLeds(uint8_t *buffer, size_t len)
     for (size_t idx = 0 ; idx < NumberOfInputs ; ++idx)
     {
         if (buffer[idx >> 3] & (0x01 << (idx & 0x07)))
-            leds[NumberOfInputs-1-idx]->SetState(wxLED_ON);
+            leds[NumberOfInputs-1-idx]->SetState(awxLED_ON);
         else
-            leds[NumberOfInputs-1-idx]->SetState(wxLED_OFF);
+            leds[NumberOfInputs-1-idx]->SetState(awxLED_OFF);
     }
 }
 
@@ -103,11 +103,11 @@ void IOViewPanel::setInputs(unsigned int inputs)
 
 	for(size_t i = 0 ; i < NumberOfInputs ; ++i)
     {
-        wxLed *led = new wxLed(this);
+        awxLed *led = new awxLed(this, wxID_ANY);
         sbLedsSizer->Add( led, 0, wxALL, 5 );
-        led->SetColour(wxLED_RED);
+        led->SetColour(awxLED_RED);
         if(i%2)
-            led->SetState(wxLED_ON);
+            led->SetState(awxLED_ON);
         leds.push_back(led);
     }
 

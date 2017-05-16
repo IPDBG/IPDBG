@@ -31,7 +31,7 @@
 /// Class IOViewPanel
 ///////////////////////////////////////////////////////////////////////////////
 
-class wxLed;
+class awxLed;
 
 class IOViewPanel : public wxPanel
 {
@@ -57,7 +57,7 @@ private:
 
 protected:
     std::vector<wxCheckBox*> checkBoxes;
-    std::vector<wxLed*> leds;
+    std::vector<awxLed*> leds;
 
 
 

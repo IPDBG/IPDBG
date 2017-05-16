@@ -15,27 +15,29 @@
 #include <wx/timer.h>
 #include <wx/window.h>
 
-enum wxLedState {
-    wxLED_OFF = 0,
-    wxLED_ON,
-    wxLED_BLINK
+enum awxLedState {
+    awxLED_OFF = 0,
+    awxLED_ON,
+    awxLED_BLINK
 };
 
-enum wxLedColour {
-    wxLED_LUCID = 0,
-    wxLED_RED,
-    wxLED_GREEN,
-    wxLED_YELLOW
+enum awxLedColour {
+    awxLED_LUCID = 0,
+    awxLED_RED,
+    awxLED_GREEN,
+    awxLED_YELLOW
 };
 
+class BlinkTimer;
 
-class wxLed : public wxWindow
+class awxLed : public wxWindow
 {
 protected:
     // bitmap for double buffering
     wxBitmap* m_bitmap;
     wxIcon* m_icons[2];
-    wxLedState m_state;
+    awxLedState m_state;
+    BlinkTimer* m_timer;
     int m_blink;
     int m_x;
     int m_y;
@@ -43,13 +45,13 @@ protected:
     // protected member functions
     void DrawOnBitmap();
 public:
-    wxLed(wxWindow* parent,
-		wxWindowID id= wxID_ANY,
+    awxLed(wxWindow* parent,
+		wxWindowID id,
 		const wxPoint& pos = wxPoint(0,0),
 		const wxSize& size = wxSize(16,16),
 		// red LED is default
-        wxLedColour color = wxLED_RED);
-    ~wxLed();
+		awxLedColour color = awxLED_RED);
+    ~awxLed();
     void Blink();
     void OnErase(wxEraseEvent& WXUNUSED(erase)) {
 	   Redraw();
@@ -71,10 +73,22 @@ public:
 	   DrawOnBitmap();
 	   dc.DrawBitmap(*m_bitmap,0,0,false);
     };
-    void SetColour(wxLedColour color);
-    void SetState(wxLedState state);
+    void SetColour(awxLedColour color);
+    void SetState(awxLedState state);
     DECLARE_EVENT_TABLE()
 };
 
+class BlinkTimer : public wxTimer
+{
+protected:
+    awxLed* m_led;
+public:
+    BlinkTimer(awxLed *led) : wxTimer() {
+	   m_led = led;
+    };
+    void Notify() {
+	   m_led->Blink();
+    };
+};
 
 #endif
