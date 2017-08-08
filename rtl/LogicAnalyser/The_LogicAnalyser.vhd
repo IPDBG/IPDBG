@@ -23,17 +23,11 @@ entity The_LogicAnalyser is
 
         -- LA interface
         SampleEn            : in  std_logic;
-        DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-
-        stateDebug          : out std_logic_vector(7 downto 0)
-
+        DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0)
     );
 end entity;
 
-
-
-
-architecture tab of The_LogicAnalyser is
+architecture structure of The_LogicAnalyser is
 
 
     component Memory is
@@ -54,7 +48,6 @@ architecture tab of The_LogicAnalyser is
             DataOut       : out std_logic_vector(DATA_WIDTH-1 downto 0);
             DataValid     : out std_logic;
             ReqNextData   : in  std_logic;
-            stateDebug    : out std_logic_vector(7 downto 0);
             finish        : out std_logic
         );
     end component Memory;
@@ -102,7 +95,6 @@ architecture tab of The_LogicAnalyser is
             Daten_LA         : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             NextData_LA      : out std_logic;
             DataValid_LA     : in  std_logic;
-            stateDebug       : out std_logic_vector(7 downto 0);
             finish_LA        : in  std_logic
         );
     end component Controller;
@@ -120,11 +112,8 @@ architecture tab of The_LogicAnalyser is
             DataOutValid  : out std_logic;
             DataOut       : out std_logic_vector(7 downto 0);
             reset         : out std_logic
-
         );
     end component Escape;
-
-
 
 
     signal Trigger_end      : std_logic := '0';
@@ -139,7 +128,6 @@ architecture tab of The_LogicAnalyser is
     signal DataValid_LA     : std_logic := '0';
     signal finish_LA        : std_logic := '0';
     signal delay            : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
-    --signal DataOut          : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal Mask             : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal Mask_last        : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal Value            : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
@@ -150,33 +138,24 @@ architecture tab of The_LogicAnalyser is
     signal Value_last_O     : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal delayOut_LA      : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
     signal Daten_LA         : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal DataInValid_e   : std_logic;
+    signal DataInValid_e    : std_logic;
     signal DataIn_e         : std_logic_vector(7 downto 0);
-    signal reset          : std_logic;
+    signal reset            : std_logic;
 
 
 
 begin
 
 
-    process (clk, rst)
-
-
-    begin
-
+    process (clk, rst) begin
         if rst = '1' then
             Trigger_end <= '0';
-
-
         elsif rising_edge(clk) then
-
             if ce = '1' then
                 Trigger_end <= Trigger_LA or trigger_s;
             end if;
-
         end if;
-
-   end process ;
+    end process;
 
 
     Mem : component Memory
@@ -197,7 +176,6 @@ begin
             DataOut       => Daten_LA,
             DataValid     => DataValid_LA,
             ReqNextData   => NextData_LA,
-            stateDebug    => open,
             finish        => finish_LA
         );
 
@@ -244,26 +222,22 @@ begin
             Daten_LA         => Daten_LA,
             NextData_LA      => NextData_LA,
             DataValid_LA     => DataValid_LA,
-            stateDebug       => stateDebug,
             finish_LA        => finish_LA
         );
---
-    Esp : component Escape
+
+    Esc : component Escape
         generic map(
             DATA_WIDTH => DATA_WIDTH
         )
         port map(
-            clk           => clk,
-            rst           => rst,
-            ce            => ce,
+            clk          => clk,
+            rst          => rst,
+            ce           => ce,
             DataInValid  => DataInValid,
-            DataIn        => DataIn,
-
+            DataIn       => DataIn,
             DataOutValid => DataInValid_e,
-            DataOut       => DataIn_e,
-            reset         => reset
+            DataOut      => DataIn_e,
+            reset        => reset
         );
 
-
-
-end architecture tab;
+end architecture structure;

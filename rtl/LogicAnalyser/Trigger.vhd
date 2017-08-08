@@ -13,24 +13,24 @@ entity Trigger is
         ce              : in  std_logic;
 
         SampleEn        : in  std_logic;
-        DatenIn         : in std_logic_vector(DATA_WIDTH-1 downto 0);                           --Eingangsdaten die Überprüft werden müssen.
+        DatenIn         : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- Eingangsdaten die Überprüft werden müssen.
 
-        Mask            : in std_logic_vector(DATA_WIDTH-1 downto 0);                           --Mask gibt an welche Bits von den Ausgangsdaten relevant sind.
-        Mask_last       : in std_logic_vector(DATA_WIDTH-1 downto 0);                           --Mask_last gibt an, welche Daten von den letzten Zyklus des DatenIn relevant sind.
-        Value           : in std_logic_vector(DATA_WIDTH-1 downto 0);                           --VarMask gibt an, welche Daten am DatenIn anliegen sollten
-        Value_last      : in std_logic_vector(DATA_WIDTH-1 downto 0);                           --VarMask gibt an, welche Daten beim letzten Zyklus hätten anliegen müssen.
+        Mask            : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- Mask gibt an welche Bits von den Ausgangsdaten relevant sind.
+        Mask_last       : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- Mask_last gibt an, welche Daten von den letzten Zyklus des DatenIn relevant sind.
+        Value           : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- VarMask gibt an, welche Daten am DatenIn anliegen sollten
+        Value_last      : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- VarMask gibt an, welche Daten beim letzten Zyklus hätten anliegen müssen.
 
-        Trigger         : out std_logic                                                         --Trigger ist der Trigger, welcher dann auf den Logic Analyser geführt wird.
+        Trigger         : out std_logic                                               -- Trigger ist der Trigger, welcher dann auf den Logic Analyser geführt wird.
 
-         );
+    );
 end entity;
 
 
-architecture tab of Trigger is
-    signal DataIn_last  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');           -- Daten des letzten Clocks
+architecture behavioral of Trigger is
+    signal DataIn_last  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0'); -- Daten des letzten Clocks
     signal Mask_n       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal Mask_last_n  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    constant allOnes    : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');           -- alles "1"
+    constant allOnes    : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
 
 begin
 
@@ -76,11 +76,13 @@ begin
                     else
                         Trigger <= '0';
                     end if;
+
                 end if;
             end if;
         end if;
-    end process ;
-end architecture tab;
+    end process;
+
+end architecture behavioral;
 
 
 
