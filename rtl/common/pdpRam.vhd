@@ -94,9 +94,7 @@ begin
     end process;
 
     gen_oreg : if OUTPUT_REG generate
-    begin
-        process (clk)
-        begin
+        process (clk) begin
             if rising_edge (clk) then
                 if ce = '1' then
                     readData <= readDataNext;
