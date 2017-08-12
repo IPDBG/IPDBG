@@ -129,8 +129,16 @@ begin
                             adr_r <= adr_r + 1;
                         end if;
                     end if;
+
+                    -- This is depending on the timing of the pdpRam. (i.e. we have a strong coupling to the pdpRam)
+                    -- An alternative solution was to spend an additional bit of the waveform - a big waste.
+                    -- So we live with this coupling.
                     firstAddressSet_d <= firstAddressSet;
-                    FirstSample_s <= firstAddressSet_d;
+                    if RAM_OUTPUT_REG then
+                        FirstSample_s <= firstAddressSet_d;
+                    else
+                        FirstSample_s <= firstAddressSet;
+                    end if;
                 end if;
             end if;
         end process;
