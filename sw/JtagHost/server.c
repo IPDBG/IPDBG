@@ -86,7 +86,7 @@ int main(int argc, const char *argv[])
         printf("failed to allocate chain");
         return -1;
     }
-    printf("ipdbgJtagInit\n");
+    printf("ipdbgJtagInit2\n");
     char cable[200];
 
     int vidNumber;
@@ -153,7 +153,7 @@ int main(int argc, const char *argv[])
     /// detect devices in chain
     const int maxIrLen = 0;
 #ifdef __unix__
-    int numberOfParts = urj_tap_detect_parts(chain, "/usr/local/share/urjtag", maxIrLen);
+    int numberOfParts = urj_tap_detect_parts(chain, "/usr/share/urjtag", maxIrLen);
 #else
     int numberOfParts = urj_tap_detect_parts(chain, "urjtag", maxIrLen);
 #endif
@@ -425,5 +425,5 @@ void distribute_to_up_buffer(uint16_t val, serv_ctx_t *channel_contexts[])
         size_t index = channel_contexts[2]->up_buf_level;
         channel_contexts[2]->up_buf[index] = val & 0x00FF;
         channel_contexts[2]->up_buf_level++;
-}
+    }
 }
