@@ -16,7 +16,7 @@ end entity;
 architecture behavioral of dffp is
     -- WARNING this is only useful for the simulation!
 begin
-
+    -- pragma translate_off
     gen: process (clk) begin
         if rising_edge(clk) then
             if ce = '1' then
@@ -24,6 +24,7 @@ begin
             end if;
         end if;
     end process;
+    -- pragma translate_on
 
 end architecture behavioral;
 

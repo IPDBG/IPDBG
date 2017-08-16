@@ -365,7 +365,7 @@ int initiCE40(urj_chain_t *chain)
 
     urj_part_instruction_t *instr = urj_part_instruction_define(part, "USER1", "01010101", user1register_register_name);
 
-    if(instr == URJ_STATUS_FAIL)
+    if(!instr)
     {
         printf("defining instruction failed\n");
         return -7;
