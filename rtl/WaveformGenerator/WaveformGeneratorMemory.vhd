@@ -3,10 +3,10 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 
-entity WaveformGeneratoremory is
+entity WaveformGeneratorMemory is
     generic(
-         DATA_WIDTH      : natural := 8;
-         ADDR_WIDTH      : natural := 8
+        DATA_WIDTH       : natural := 8;
+        ADDR_WIDTH       : natural := 8
     );
     port(
         clk              : in  std_logic;
@@ -24,10 +24,10 @@ entity WaveformGeneratoremory is
         DataValid        : in  std_logic;
         DataIfReset      : in  std_logic
     );
-end entity WaveformGeneratoremory;
+end entity WaveformGeneratorMemory;
 
 
-architecture behavioral of WaveformGeneratoremory is
+architecture behavioral of WaveformGeneratorMemory is
 
     component pdpRam is
         generic(
@@ -47,21 +47,23 @@ architecture behavioral of WaveformGeneratoremory is
         );
     end component pdpRam;
 
-    signal FirstSample_s : std_logic;
+    constant RAM_OUTPUT_REG  : boolean := true;
 
-    signal adr_r         :  unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
-    signal readData     : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal FirstSample_s     : std_logic;
 
-    signal we            : std_logic;
-    signal writeData     : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal adr_w         : unsigned(ADDR_WIDTH-1 downto 0);
+    signal adr_r             :  unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
+    signal readData          : std_logic_vector(DATA_WIDTH-1 downto 0);
+
+    signal we                : std_logic;
+    signal writeData         : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal adr_w             : unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
 
 begin
 
     writeFsm: process (clk, rst) begin
         if rst = '1' then
             we <= '0';
-            adr_w <= (others => '-');
+            adr_w <= (others => '0');---
             writeData <= (others => '-');
         elsif rising_edge(clk) then
             if ce = '1' then
@@ -93,7 +95,7 @@ begin
                 DATA_WIDTH     => DATA_WIDTH,
                 ADDR_WIDTH     => ADDR_WIDTH,
                 INIT_FILE_NAME => "",
-                OUTPUT_REG     => true
+                OUTPUT_REG     => RAM_OUTPUT_REG
             )
             port map(
                 clk          => clk,
@@ -107,43 +109,50 @@ begin
     end block mem;
 
     readFsm: block
-        signal fs : std_logic_vector(1 downto 0);
+        signal firstAddressSet   : std_logic;
+        signal firstAddressSet_d : std_logic;
     begin
         process (clk, rst) begin
             if rst = '1' then
-                adr_r <= (others => '-');
-                fs <= "00";
+                adr_r <= (others => '0');---
                 FirstSample_s <= '0';
+                firstAddressSet <= '0';
+                firstAddressSet_d <= '0';
             elsif rising_edge(clk) then
                 if ce = '1' then
-                    fs(0) <= '0';
                     if SampleEnable = '1' then
+                        firstAddressSet <= '0';
                         if adr_r = unsigned(AddrOfLastSample) then
                             adr_r <= (others => '0');
-                            fs(0) <= '1';
+                            firstAddressSet <= '1';
                         else
                             adr_r <= adr_r + 1;
                         end if;
-                        if fs(1) = '1' then
-                            FirstSample_s <= '0';
-                        end if;
                     end if;
-                    if fs(0) = '1' then
-                        fs(1) <= '1';
-                    elsif SampleEnable = '1' then
-                        fs(1) <= '0';
+
+                    -- This is depending on the timing of the pdpRam. (i.e. we have a strong coupling to the pdpRam)
+                    -- An alternative solution was to spend an additional bit of the waveform - a big waste.
+                    -- So we live with this coupling.
+                    firstAddressSet_d <= firstAddressSet;
+                    if RAM_OUTPUT_REG then
+                        FirstSample_s <= firstAddressSet_d;
+                    else
+                        FirstSample_s <= firstAddressSet;
                     end if;
                 end if;
             end if;
         end process;
     end block;
 
+
     output: process (clk) begin
         if rising_edge(clk) then
             if ce = '1' then
                 if Enable = '1' then
-                    FirstSample <= FirstSample_s;
-                    DataOut <= readData;
+                    if SampleEnable = '1' then
+                        FirstSample <= FirstSample_s;
+                        DataOut <= readData;
+                    end if;
                 else
                     FirstSample <= '0';
                     DataOut <= (others => '0');
@@ -153,7 +162,3 @@ begin
     end process;
 
 end architecture behavioral;
-
-
-
-
