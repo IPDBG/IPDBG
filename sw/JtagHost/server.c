@@ -12,6 +12,8 @@
 //#include <stdio.h>
 //#include <stdlib.h>
 //#include <string.h>
+#include <urjtag/tap.h>
+#include <urjtag/cable.h>
 
 
 /* default listen port number */
@@ -113,17 +115,17 @@ int main(int argc, const char *argv[])
     }
     else if (feed == 'n'||feed == 'N')
     {
-    printf("select the cable:");
-    scanf("%s", &cable);
+        printf("select the cable:");
+        scanf("%s", cable);
 
-    printf("select vid(in hex):");
-    scanf("%x", &vidNumber);
+        printf("select vid(in hex):");
+        scanf("%x", &vidNumber);
 
-    printf("select pid:");
-    scanf("%x", &pidNumber);
+        printf("select pid:");
+        scanf("%x", &pidNumber);
 
-    printf("select frequency [Hz]: ");
-    scanf("%d", &freq);
+        printf("select frequency [Hz]: ");
+        scanf("%d", &freq);
     }
 
     char vid[200];
@@ -145,7 +147,7 @@ int main(int argc, const char *argv[])
 
 
 
-    urj_tap_cable_set_frequency (chain->cable, freq);
+    urj_tap_cable_set_frequency(chain->cable, freq);
 
 
 
