@@ -26,13 +26,13 @@
 
 #include <urjtag/chain.h>
 #include <urjtag/tap.h>
-#include <urjtag/part.h> //urj_parts_t
+#include <urjtag/part.h>                //urj_parts_t
 
 
-#include <urjtag/data_register.h> // urj_part_data_register_define
+#include <urjtag/data_register.h>       // urj_part_data_register_define
 
-#include <urjtag/part_instruction.h> // urj_part_instruction
-#include <urjtag/tap_register.h> // urj_tap_register_set_value
+#include <urjtag/part_instruction.h>    // urj_part_instruction
+#include <urjtag/tap_register.h>        // urj_tap_register_set_value
 
 #define URJ_STATUS_OK             0
 #define URJ_STATUS_FAIL           1
@@ -116,7 +116,7 @@ int ipdbgJtagInit(urj_chain_t *chain, int apart)
                 strcmp(part->part, "xc7a100t") == 0 ||
                 strcmp(part->part, "xc7a200t") == 0 ||
 
-                strcmp(part->part, "XC7K325T-FFG676") == 0 )
+                strcmp(part->part, "xc7k325t") == 0 )
             return init7Series(chain);
         else
         {
@@ -365,7 +365,7 @@ int initiCE40(urj_chain_t *chain)
 
     urj_part_instruction_t *instr = urj_part_instruction_define(part, "USER1", "01010101", user1register_register_name);
 
-    if(instr == URJ_STATUS_FAIL)
+    if(!instr)
     {
         printf("defining instruction failed\n");
         return -7;
@@ -402,6 +402,7 @@ int ipdbgJTAGtransfer(urj_chain_t *chain, uint16_t *upData, uint16_t downData)
 
     uint64_t dr_value_tx = downData;
     printf("jtagtransfer %04x\n", downData);
+    printf("jtagtransfer %04x\n", upData);
     urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
     urj_tap_chain_shift_data_registers(chain, 1);
     *upData = urj_tap_register_get_value (part->active_instruction->data_register->out);

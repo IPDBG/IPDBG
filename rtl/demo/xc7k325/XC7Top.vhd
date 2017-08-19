@@ -1,10 +1,9 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
 library unisim;
 use unisim.vcomponents.all;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
-use ieee.std_logic_arith;
 
 entity XC7Top is
     generic(
@@ -117,21 +116,32 @@ architecture structure of XC7Top is
 
 begin
     
-        Counter : process (Clk) begin
-            if rising_edge(Clk) then
-                if output = "11111111" then
-                    output <= "00000000";
-                end if;
-                if count =   "10111110101111000010000000000" then
-                    count <= "00000000000000000000000000000";
-                    output <= output +1;
-                else
-                    count <= count +1;
-                end if;
+    Counter : process (Clk) begin
+        if rising_edge(Clk) then
+            if DataIn_LogicAnalyser = x"ff" then
+                DataIn_LogicAnalyser <= x"00";
+            else
+                DataIn_LogicAnalyser <= std_logic_vector(unsigned(DataIn_LogicAnalyser)+1);
             end if;
-        end process;
-        Input_DeviceunderTest_IOVIEW <= output;
-        --Output_DeviceunderTest_IOVIEW <= count(3 downto 0); 
+                
+            if count =   "10111110101111000010000000000" then
+                count <= "00000000000000000000000000000";
+                 if output = "11111111" then
+                     output <= "00000000";
+                 else
+                    output <= std_logic_vector(unsigned(output) + 1);
+                 end if;
+            else
+                count <= std_logic_vector(unsigned(count) + 1);
+            end if;
+        end if;
+    end process;
+    Input_DeviceunderTest_IOVIEW <= output;
+    --Output_DeviceunderTest_IOVIEW <= count(3 downto 0); 
+    
+    
+    
+    
 
     la : component The_LogicAnalyser
         generic map(

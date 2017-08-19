@@ -27,10 +27,7 @@ entity Memory is
         DataValid       : out std_logic;
         ReqNextData     : in  std_logic;
 
-
-        stateDebug      : out std_logic_vector(7 downto 0);
         finish          : out std_logic
-
     );
 end entity;
 
@@ -51,7 +48,7 @@ architecture tab of memory is
             writeAddress : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
             writeData    : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             readAddress  : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-            readData     : out std_logic_vector(DATA_WIDTH-1 downto 0) := "00000000"
+            readData     : out std_logic_vector(DATA_WIDTH-1 downto 0)
         );
     end component pdpRam;
 
@@ -70,35 +67,14 @@ architecture tab of memory is
     signal writeData    : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal Datenlesen   : std_logic_vector(DATA_WIDTH-1 downto 0):= (others => '0');
 
-
     signal Adr_w        : signed(ADDR_WIDTH-1 downto 0);
     signal Adr_r        : signed(ADDR_WIDTH-1 downto 0);
-    signal Adrw_slv     : std_logic_vector(ADDR_WIDTH-1 downto 0);
-    signal Adrr_slv     : std_logic_vector(ADDR_WIDTH-1 downto 0);
 
-    signal delay_s        : signed(ADDR_WIDTH-1 downto 0);
-
-
-
-
+    signal delay_s      : signed(ADDR_WIDTH-1 downto 0);
 
 begin
 
-    process(W_R_State)begin
-        case W_R_State is
-        when idle           => stateDebug <= x"A5";
-        when armed          => stateDebug <= x"0F";
-        when wait_Trigger   => stateDebug <= x"FF";
-        when fill_up        => stateDebug <= x"F0";
-        when write_s        => stateDebug <= x"F1";
-        when spend          => stateDebug <= x"F3";
-        end case;
-     end process;
-
-    process (clk, rst)
-
-    begin
-
+    process (clk, rst) begin
         if rst = '1' then
             we <= '0';
             zaehler <= (others => '0');
@@ -118,18 +94,16 @@ begin
 
                 case W_R_State is
                 when idle =>
+                    finish <= '0';
+                    if TriggerActive = '1' then                         -- warten auf ein pos. Signal von  TriggerActive
+                        adr_r <= (others => '0');
+                        W_R_State <= armed;
+                        zaehler <= (others => '0');
+                        Full <= '0';
+                        adr_w <= (others => '1');
                         finish <= '0';
-                        if TriggerActive = '1' then                         -- warten auf ein pos. Signal von  TriggerActive
-                            adr_w <= (others => '0');
-                            adr_r <= (others => '0');
-                            W_R_State <= armed;
-                            zaehler <= (others => '0');
-                            Full <= '0';
-                            adr_w <= (others => '1');
-                            finish <= '0';
-                            delay_s <= signed(delay);
-                        end if;
-
+                        delay_s <= signed(delay);
+                    end if;
 
                 when armed =>
                     if TriggerActive = '0' then
@@ -143,8 +117,6 @@ begin
                         end if;
                     end if;
 
-
-
                 when wait_Trigger =>                                            -- auf den Trigger warten und weiter die Eingangswerte abspeichern
                     if TriggerActive = '0' then
                         W_R_State <= idle;
@@ -156,7 +128,6 @@ begin
                             zaehler <= zaehler + 1;
                         end if;
                     end if;
-
 
                 when fill_up =>                                                 -- Die Werte nach dem Trigger abspeichern
                     if TriggerActive = '0' then
@@ -184,7 +155,7 @@ begin
                             W_R_State <= spend ;
                         else
                            Dataready <= Dataready + 1;
-                       end if ;
+                       end if;
                     end if;
 
                 when spend =>                                                   -- Auf ein Siagnal von Aussen warte, dass die Daten am Eingang abgespeichert wurden.
@@ -198,37 +169,43 @@ begin
                             finish <= '1';
                         else
                             W_R_State <= write_s;
-
-                            end if;
                         end if;
+                    end if;
                 end case ;
             end if;
         end if;
-    end process ;
-
-
-    Adrw_slv <= std_logic_vector(adr_w);
-    Adrr_slv <= std_logic_vector(adr_r);
+    end process;
 
 
 
+    mem: block
+        signal Adrw_slv     : std_logic_vector(ADDR_WIDTH-1 downto 0);
+        signal Adrr_slv     : std_logic_vector(ADDR_WIDTH-1 downto 0);
+    begin
 
-    our_pdpRam : component pdpRam
-        generic map(
-            DATA_WIDTH     => DATA_WIDTH,
-            ADDR_WIDTH     => ADDR_WIDTH,
-            INIT_FILE_NAME => "",
-            OUTPUT_REG     => true
-        )
-        port map(
-            clk          => clk,
-            ce           => ce,
-            writeEnable  => we,
-            writeAddress => Adrw_slv,
-            writeData    => DatenIn,
-            readAddress  => Adrr_slv,
-            readData     => Datenlesen
-        );
+        Adrw_slv <= std_logic_vector(adr_w);
+        Adrr_slv <= std_logic_vector(adr_r);
+
+
+
+
+        samples : component pdpRam
+            generic map(
+                DATA_WIDTH     => DATA_WIDTH,
+                ADDR_WIDTH     => ADDR_WIDTH,
+                INIT_FILE_NAME => "",
+                OUTPUT_REG     => true
+            )
+            port map(
+                clk          => clk,
+                ce           => ce,
+                writeEnable  => we,
+                writeAddress => Adrw_slv,
+                writeData    => DatenIn,
+                readAddress  => Adrr_slv,
+                readData     => Datenlesen
+            );
+    end block mem;
 
 
 end architecture tab;

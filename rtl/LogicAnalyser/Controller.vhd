@@ -37,10 +37,8 @@ entity Controller is
         NextData_LA         : out std_logic;
         DataValid_LA        : in  std_logic;
 
-
         -- init
-        stateDebug               : out std_logic_vector(7 downto 0);
-        finish_LA                : in  std_logic
+        finish_LA           : in  std_logic
     );
 end entity;
 
@@ -85,8 +83,6 @@ architecture tab of Controller is
     signal K_s              : natural ;
     signal M_s              : natural ;
 
-
-
     signal Mask_s           : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal Value_s          : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal Mask_last_s      : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
@@ -96,7 +92,7 @@ architecture tab of Controller is
 
 
     signal zaehler                   : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0');
-    signal import_ADDR                         : std_logic := '0';
+    signal import_ADDR               : std_logic := '0';
     signal ende_ausgabe              : std_logic := '0';
     signal theend                    : std_logic := '0';
     signal LaDatenOutZwischenspeicher: std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -108,30 +104,7 @@ begin
 
     assert(DATA_WIDTH >= 8) report "DATA_WIDTH has to be at least 8 bits" severity error;
 
-
-    process(init_statemachine)begin
-      case init_statemachine is
-              when init => stateDebug <= x"11";
-              when Text_c => stateDebug <= x"BB";
-              when wait_Import => stateDebug <= x"BB";
-              when Logic_Analyser => stateDebug <= x"CC";
-              when delay => stateDebug <= x"AA";
-              when Trigger => stateDebug <= x"22";
-              when Masks => stateDebug <= x"33";
-              when Mask => stateDebug <= x"44";
-              when Value => stateDebug <= x"55";
-              when Last_Masks => stateDebug <= x"66";
-              when Mask_last => stateDebug <= x"77";
-              when Value_last => stateDebug <= x"88";
-              when Datenausgabe => stateDebug <= x"99";
-        end case;
-     end process;
-
-    process (clk, rst)
-
-
-    begin
-
+    process (clk, rst) begin
         if rst = '1' then
            K_s <= 0;
            M_s <= 0;
@@ -152,16 +125,12 @@ begin
 
             Cancel_s         <= '0';
 
-
             zaehler <= (others => '0');
             import_ADDR <= '0';
             LaDatenOutZwischenspeicher <= (others => '0');
             KMOutZwischenspeicher <= (others => '0');
             ende_ausgabe <= '0';
             theend <= '0';
-
-
-
 
         elsif rising_edge(clk) then
 
@@ -171,12 +140,12 @@ begin
                 case init_statemachine is
                 when init =>
                     if Full_LA = '1' then
-                            NextData_LA <= '1';
-                            init_statemachine <= Datenausgabe;
-                            zaehler <= (others => '0');
-                            LaDatenOutZwischenspeicher <= (others => '0');
-                            ende_ausgabe <= '0';
-                            theend <= '0';
+                        NextData_LA <= '1';
+                        init_statemachine <= Datenausgabe;
+                        zaehler <= (others => '0');
+                        LaDatenOutZwischenspeicher <= (others => '0');
+                        ende_ausgabe <= '0';
+                        theend <= '0';
                     end if;
 
                     if DatenInValid = '1' then
@@ -195,23 +164,23 @@ begin
 
                         if DatenIn_Befehle = Start_c then
                             TriggerActive_LA <= '1';
-                        end if ;
+                        end if;
 
                         if DatenIn_Befehle = set_Trigger_c then
                             Trigger_LA <= '1';
-                        end if ;
+                        end if;
 
                         if Cancel_s = '1' then
                             TriggerActive_LA <= '0';
-                        end if ;
+                        end if;
 
                         if DatenIn_Befehle = Trigger_c then
                             init_statemachine <= Trigger;
-                        end if ;
+                        end if;
 
                         if DatenIn_Befehle = Logic_Analyser_c then
                             init_statemachine <= Logic_Analyser;
-                        end if ;
+                        end if;
 
                     end if;
 
@@ -241,19 +210,19 @@ begin
                        if Zaehler = to_unsigned(1, Zaehler'length) then
                             send <= D;
                              init_Output <= Zwischenspeicher;
-                       end if ;
+                       end if;
                        if Zaehler = to_unsigned(2, Zaehler'length) then
                             send <= B;
                             init_Output <= Zwischenspeicher;
-                       end if ;
+                       end if;
                        if Zaehler = to_unsigned(3, Zaehler'length) then
                             send <= G;
                             init_Output <= Zwischenspeicher;
-                       end if ;
+                       end if;
                        if Zaehler = to_unsigned(4, Zaehler'length) then
                             init_Output <= start;
                             init_statemachine <= init;
-                       end if ;
+                       end if;
 
                     end case;
 
@@ -287,7 +256,7 @@ begin
                             if import_ADDR = '0' then
                                 init_Output <= next_Data;
                             end if;
-                        end if ;
+                        end if;
 
                         if Zaehler = to_unsigned(4, Zaehler'length) then
                             if import_ADDR = '1' then
@@ -297,19 +266,16 @@ begin
                         end if;
 
                     when next_Data =>
-
                         if DatenReady_HOST = '1' then
                             Zaehler <= (others => '0');
                             import_ADDR <= '1';
                             KMOutZwischenspeicher <= ADDR_WIDTH_slv;
                             init_Output <= Zwischenspeicher;
                         end if;
-
                     end case;
 
                 when Logic_Analyser =>
                     M_s <= 0;
-
                     if DatenInValid = '1' then
                         if DatenIn_Befehle = delay_c then
                             init_statemachine <= delay;
@@ -318,13 +284,10 @@ begin
                         if Cancel_s = '1' then
                             init_statemachine <= init;
                         end if;
-
                     end if;
-
 
                 when delay =>
                     if DatenInValid = '1' then
-
                         if M_s + 1 = M  then
                             init_statemachine <= init;
                         end if;
@@ -335,8 +298,6 @@ begin
                         if  Cancel_s = '1' then
                             init_statemachine <= init;
                         end if;
-
-
                     end if;
 
 
@@ -345,7 +306,7 @@ begin
 
                         if DatenIn_Befehle = Masks_c then
                             init_statemachine <= Masks;
-                        end if ;
+                        end if;
 
                         if DatenIn_Befehle = Last_Masks_c then
                             init_statemachine <= Last_Masks;
@@ -383,10 +344,6 @@ begin
                         if K_s + 1 = K   then
                             init_statemachine <= init;
                         end if;
-
-                        --if  Cancel_s = '1' then
-                        --    init_statemachine <= init;
-                        --end if;
                     end if;
 
                 when Value =>
@@ -402,7 +359,6 @@ begin
                             init_statemachine <= init;
                        end if;
                     end if;
-
 
                 when Last_Masks =>
                     K_s <= 0 ;
@@ -433,7 +389,7 @@ begin
                         if  Cancel_s = '1' then
                             init_statemachine <= init;
                         end if;
-                    end if ;
+                    end if;
 
                 when Value_last =>
                     if DatenInValid = '1' then
@@ -490,7 +446,7 @@ begin
                         if Zaehler = K then
                             NextData_LA <= '1';
                             init_Output <= next_Data;
-                        end if ;
+                        end if;
 
                     when next_Data =>
                         if ende_ausgabe = '1' then
@@ -513,7 +469,6 @@ begin
     Value_O      <= Value_s;
     Mask_last_O  <= Mask_last_s;
     Value_last_O <= Value_last_s;
-
 
 
 end architecture tab;
