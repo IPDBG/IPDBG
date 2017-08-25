@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity Escape is
+entity IpdbgEscaping is
     port(
         clk          : in  std_logic;
         rst          : in  std_logic;
@@ -15,10 +15,10 @@ entity Escape is
 
         reset        : out std_logic
     );
-end entity;
+end entity IpdbgEscaping;
 
 
-architecture behavioral of Escape is
+architecture behavioral of IpdbgEscaping is
     constant EscapeSymbol : std_logic_vector (7 downto 0) := x"55"; --55
     constant ResetSymbol  : std_logic_vector (7 downto 0) := x"EE"; --EE
 

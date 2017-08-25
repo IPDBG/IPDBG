@@ -51,7 +51,7 @@ architecture structure of XC7Top is
     end component JTAGHUB;
 
 
-    component The_LogicAnalyser is
+    component LogicAnalyserTop is
         generic(
             DATA_WIDTH : natural;
             ADDR_WIDTH : natural
@@ -69,9 +69,9 @@ architecture structure of XC7Top is
             DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0)
 
         );
-    end component The_LogicAnalyser;
+    end component LogicAnalyserTop;
 
-    component IOView is
+    component IOViewTop is
         port(
             clk                             : in  std_logic;
             rst                             : in  std_logic;
@@ -85,7 +85,7 @@ architecture structure of XC7Top is
             ProbeOutputs                    : out std_logic_vector
 
         );
-    end component IOView;
+    end component IOViewTop;
 
     signal Clk                : std_logic;
 
@@ -142,7 +142,7 @@ begin
     
     
 
-    la : component The_LogicAnalyser
+    la : component LogicAnalyserTop
         generic map(
             DATA_WIDTH => DATA_WIDTH,
             ADDR_WIDTH => ADDR_WIDTH
@@ -165,7 +165,7 @@ begin
     --DATAINVALID_LA <= '0';
     --LEDs <= Statedebug;
 
-    IO : component IOView
+    IO : component IOViewTop
         port map(
             clk                             => Clk,
             rst                             => '0',

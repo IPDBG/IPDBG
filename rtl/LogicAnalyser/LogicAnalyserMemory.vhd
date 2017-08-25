@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 
-entity Memory is
+entity LogicAnalyserMemory is
     generic(
          DATA_WIDTH     : natural := 8;
          ADDR_WIDTH     : natural := 8
@@ -29,10 +29,10 @@ entity Memory is
 
         finish          : out std_logic
     );
-end entity;
+end entity LogicAnalyserMemory;
 
 
-architecture tab of memory is
+architecture tab of LogicAnalyserMemory is
 
     component pdpRam is
         generic(

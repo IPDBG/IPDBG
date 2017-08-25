@@ -39,31 +39,14 @@ entity TopTestBplR3x is
 end;
 
 architecture rtl of TopTestBplR3x is
---    component TAP is
---        port(
---            rst     : in  std_logic;
---            Capture : out std_logic;
---            Shift   : out std_logic;
---            Update  : out std_logic;
---            TDI_o   : out std_logic;
---            TDO_i   : in  std_logic;
---            SEL     : out std_logic;
---            DRCK    : out std_logic;
---            TDI     : in  std_logic;
---            TDO     : out std_logic;
---            TMS     : in  std_logic;
---            TCK     : in  std_logic
---        );
---    end component TAP;
 
-    component JTAG_HUB is
+    component JtagHub is
         generic(
             MFF_LENGTH        : natural;
             TARGET_TECHNOLOGY : natural
         );
         port(
             clk                : in  std_logic;
-            rst                : in  std_logic;
             ce                 : in  std_logic;
             DATAOUT            : out std_logic_vector(7 downto 0);
             Enable_LA          : out std_logic;
@@ -83,50 +66,28 @@ architecture rtl of TopTestBplR3x is
             TCK                : in  std_logic;
             TDO                : out std_logic
         );
-    end component JTAG_HUB;
-    component IO_View is
+    end component JtagHub;
+    component IoViewTop is
         port(
-            clk                           : in  std_logic;
-            rst                           : in  std_logic;
-            ce                            : in  std_logic;
-            DataInValid                   : in  std_logic;
-            DataIn                        : in  std_logic_vector(7 downto 0);
-            DataOutReady                  : in  std_logic;
-            DataOutValid                  : out std_logic;
-            DataOut                       : out std_logic_vector(7 downto 0);
-            INPUT_DeviceUnderTest_Ioview  : in  std_logic_vector;
-            OUTPUT_DeviceUnderTest_Ioview : out std_logic_vector
+            clk          : in  std_logic;
+            rst          : in  std_logic;
+            ce           : in  std_logic;
+            DataInValid  : in  std_logic;
+            DataIn       : in  std_logic_vector(7 downto 0);
+            DataOutReady : in  std_logic;
+            DataOutValid : out std_logic;
+            DataOut      : out std_logic_vector(7 downto 0);
+	        ProbeInputs  : in  std_logic_vector;
+	        ProbeOutputs : out std_logic_vector
         );
-    end component IO_View;
+    end component IoViewTop;
 
-
-
-
-    signal Capture                       : std_logic;
-    signal Shift                         : std_logic;
-    signal Update                        : std_logic;
-    signal TDI_o                         : std_logic;
-    signal TDO_i                         : std_logic;
-    signal SEL                           : std_logic;
-    signal DRCK                          : std_logic;
-    signal DataInValid                   : std_logic;
-    signal DataIn                        : std_logic_vector(7 downto 0);
-    signal DataOutReady                  : std_logic;
-    signal DataOutValid                  : std_logic;
     signal DataOut                       : std_logic_vector(7 downto 0);
-
 
     signal Enable_IOVIEW                 : std_logic;
     signal DATAINREADY_IOVIEW            : std_logic;
     signal DATAINVALID_IOVIEW            : std_logic;
     signal DATAIN_IOVIEW                 : std_logic_vector(7 downto 0);
-
-
-
-    --signal INPUT_DeviceUnderTest_Ioview  : std_logic_vector;
-    --signal OUTPUT_DeviceUnderTest_Ioview : std_logic_vector;
-
-    --signal TMS                          : std_logic;
 
     component SB_DFF
         port(
@@ -152,14 +113,13 @@ begin
     rst_tap <= not rst_tap_n;
 
 
-    jtag : component JTAG_HUB
+    jtag : component JtagHub
         generic map(
             MFF_LENGTH => MFF_LENGTH,
             TARGET_TECHNOLOGY => 0 -- ipdbg-tap
         )
         port map(
             clk                => clk,
-            rst                => rst_tap,
             ce                 => '1',
             DATAOUT            => DATAOUT,
             Enable_LA          => open,
@@ -179,18 +139,18 @@ begin
             TCK                => TCK,
             TDO                => TDO
         );
-    IO : component IO_View
+    IO : component IoViewTop
         port map(
-            clk                           => clk,
-            rst                           => '0',
-            ce                            => '1',
-            DataInValid                   => Enable_IOVIEW,
-            DataIn                        => DATAOUT,
-            DataOutReady                  => DATAINREADY_IOVIEW,
-            DataOutValid                  => DATAINVALID_IOVIEW,
-            DataOut                       => DATAIN_IOVIEW,
-            INPUT_DeviceUnderTest_Ioview  => INPUT_DeviceUnderTest_Ioview,
-            OUTPUT_DeviceUnderTest_Ioview => OUTPUT_DeviceUnderTest_Ioview
+            clk          => clk,
+            rst          => '0',
+            ce           => '1',
+            DataInValid  => Enable_IOVIEW,
+            DataIn       => DATAOUT,
+            DataOutReady => DATAINREADY_IOVIEW,
+            DataOutValid => DATAINVALID_IOVIEW,
+            DataOut      => DATAIN_IOVIEW,
+            ProbeInputs  => INPUT_DeviceUnderTest_Ioview,
+            ProbeOutputs => OUTPUT_DeviceUnderTest_Ioview
         );
 
 

@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 
-entity Controller is
+entity LogicAnalyserController is
     generic(
          DATA_WIDTH         : natural := 8;                                    --! width of a sample
          ADDR_WIDTH         : natural := 4                                     --! 2**ADDR_WIDTH = size if sample memory
@@ -40,10 +40,10 @@ entity Controller is
         -- init
         finish_LA           : in  std_logic
     );
-end entity;
+end entity LogicAnalyserController;
 
 
-architecture tab of Controller is
+architecture tab of LogicAnalyserController is
 
     constant HOST_WORD_SIZE : natural := 8;
 

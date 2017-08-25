@@ -68,6 +68,7 @@ begin
             DataInReg      <= (others => '-');
             DataInRegValid <= '0';
             DataInRegLast  <= '0';
+            IOZwischenspeicher <= (others => '-');
 
         elsif rising_edge(clk) then
 
