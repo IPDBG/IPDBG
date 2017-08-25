@@ -81,8 +81,8 @@ begin
             Dataready <= (others => '0');
             W_R_State <= idle;
             writeData <= (others => '0');
-            Adr_w <= (others => '0');
-            Adr_r <= (others => '0');
+            Adr_w <= (others => '-');
+            Adr_r <= (others => '-');
             Full <= '0';
             DataValid <= '0';
             we <= '0';
@@ -201,7 +201,7 @@ begin
                 ce           => ce,
                 writeEnable  => we,
                 writeAddress => Adrw_slv,
-                writeData    => DatenIn,
+                writeData    => writeData,
                 readAddress  => Adrr_slv,
                 readData     => Datenlesen
             );
