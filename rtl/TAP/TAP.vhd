@@ -2,6 +2,11 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.TAP_pkg.ipdbg_TDI;
+use work.TAP_pkg.ipdbg_TDO;
+use work.TAP_pkg.ipdbg_TMS;
+use work.TAP_pkg.ipdbg_TCK;
 
 entity TAP is
     port(
@@ -11,12 +16,7 @@ entity TAP is
         TDI_o   : out std_logic; -- "buffered" output
         TDO_i   : in  std_logic;
         SEL     : out std_logic;
-        DRCK    : out std_logic;
-
-        TDI     : in  std_logic;
-        TDO     : out std_logic;
-        TMS     : in  std_logic;
-        TCK     : in  std_logic
+        DRCK    : out std_logic
     );
 end entity;
 
@@ -41,8 +41,17 @@ architecture tab of TAP is
     signal User1Selected        : std_logic;
     signal BypassSelected       : std_logic;
 
+    signal TDI                  : std_logic;
+    signal TDO                  : std_logic;
+    signal TMS                  : std_logic;
+    signal TCK                  : std_logic;
+
 begin
 
+    TCK <= work.TAP_pkg.ipdbg_TCK;
+    TDI <= work.TAP_pkg.ipdbg_TDI;
+    TMS <= work.TAP_pkg.ipdbg_TMS;
+    work.TAP_pkg.ipdbg_TDO <= TDO;
 
     process(TCK)begin
         if rising_edge(TCK) then

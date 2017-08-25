@@ -10,12 +10,7 @@ entity JtagHub is
     port(
        clk                : in  std_logic;
        ce                 : in  std_logic;
-
-       TMS                : in  std_logic := '0';
-       TCK                : in  std_logic := '0';
-       TDI                : in  std_logic := '1';
-       TDO                : out std_logic;
-
+       
        DATAOUT            : out std_logic_vector(7 downto 0);
 
        Enable_LA          : out std_logic;
@@ -109,7 +104,6 @@ begin
                 TMS     => open,
                 TDO1    => TDO1
             );
-        TDO <= '0'; -- to decrease  number of warnings only
     end generate;
 
     Lattice_LFE2_12E: if TARGET_TECHNOLOGY = 2 generate -- Lattice LFE2
@@ -182,7 +176,6 @@ begin
                 end if;
             end if;
         end process;
-      TDO <= '0'; -- to decrease  number of warnings only
     end generate;
 
     xilinx_spartan3: if TARGET_TECHNOLOGY = 1 generate -- spartan 3
@@ -216,7 +209,6 @@ begin
                 TDO1    => TDO1,
                 TDO2    => '0'
             );
-        TDO <= '0'; -- to decrease  number of warnings only
     end generate;
 
     ipdbg_tap: if TARGET_TECHNOLOGY = 0 generate -- ipdbg-tap
@@ -228,11 +220,7 @@ begin
                 TDI_o   : out std_logic;
                 TDO_i   : in  std_logic;
                 SEL     : out std_logic;
-                DRCK    : out std_logic;
-                TDI     : in  std_logic;
-                TDO     : out std_logic;
-                TMS     : in  std_logic;
-                TCK     : in  std_logic
+                DRCK    : out std_logic
             );
         end component TAP;
     begin
@@ -244,12 +232,7 @@ begin
                 TDI_o   => TDI_i,
                 TDO_i   => TDO1,
                 SEL     => USER,
-                DRCK    => DRCLK,
-
-                TDI     => TDI,
-                TDO     => TDO,
-                TMS     => TMS,
-                TCK     => TCK
+                DRCK    => DRCLK
             );
     end generate;
 

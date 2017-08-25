@@ -25,7 +25,7 @@ end XC7Top;
 
 architecture structure of XC7Top is
 
-    component JTAGHUB is
+    component JtagHub is
         generic(
             MFF_LENGTH : natural;
             TARGET_TECHNOLOGY : natural
@@ -45,10 +45,9 @@ architecture structure of XC7Top is
             DATAINVALID_GDB    : in  std_logic;
             DATAIN_LA          : in  std_logic_vector (7 downto 0);
             DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
-           --DRCLK              : out std_logic;
             DATAIN_GDB         : in  std_logic_vector (7 downto 0)
         );
-    end component JTAGHUB;
+    end component JtagHub;
 
 
     component LogicAnalyserTop is
@@ -186,7 +185,7 @@ begin
     --LEDs <= Output_DeviceunderTest_IOVIEW;
 
 
-    JTAG : component JTAGHUB
+    JTAG : component JtagHub
         generic map(
             MFF_LENGTH => MFF_LENGTH,
             TARGET_TECHNOLOGY => 3 --Kintex7

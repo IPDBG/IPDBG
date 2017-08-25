@@ -60,11 +60,7 @@ architecture rtl of TopTestBplR3x is
             DATAINVALID_GDB    : in  std_logic;
             DATAIN_LA          : in  std_logic_vector (7 downto 0);
             DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
-            DATAIN_GDB         : in  std_logic_vector (7 downto 0);
-            TDI                : in  std_logic;
-            TMS                : in  std_logic;
-            TCK                : in  std_logic;
-            TDO                : out std_logic
+            DATAIN_GDB         : in  std_logic_vector (7 downto 0)
         );
     end component JtagHub;
     component IoViewTop is
@@ -81,6 +77,14 @@ architecture rtl of TopTestBplR3x is
 	        ProbeOutputs : out std_logic_vector
         );
     end component IoViewTop;
+    component TAPExtPins is
+        port(
+            TDI : in  std_logic;
+            TDO : out std_logic;
+            TMS : in  std_logic;
+            TCK : in  std_logic
+        );
+    end component TAPExtPins;
 
     signal DataOut                       : std_logic_vector(7 downto 0);
 
@@ -112,7 +116,13 @@ begin
     );
     rst_tap <= not rst_tap_n;
 
-
+    JtagExtPins : component TAPExtPins
+        port map(
+            TDI => TDI,
+            TDO => TDO,
+            TMS => TMS,
+            TCK => TCK
+        );
     jtag : component JtagHub
         generic map(
             MFF_LENGTH => MFF_LENGTH,
@@ -133,11 +143,7 @@ begin
             DATAINVALID_GDB    => '0',
             DATAIN_LA          => (others => '0'),
             DATAIN_IOVIEW      => DATAIN_IOVIEW,
-            DATAIN_GDB         => (others => '0'),
-            TDI                => TDI,
-            TMS                => TMS,
-            TCK                => TCK,
-            TDO                => TDO
+            DATAIN_GDB         => (others => '0')
         );
     IO : component IoViewTop
         port map(
