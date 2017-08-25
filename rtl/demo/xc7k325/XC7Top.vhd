@@ -66,8 +66,7 @@ architecture structure of XC7Top is
             DataValidOut        : out std_logic;
             DataOut             : out std_logic_vector(7 downto 0);
             SampleEn            : in  std_logic;
-            DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            stateDebug          : out std_logic_vector(7 downto 0)
+            DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0)
 
         );
     end component The_LogicAnalyser;
@@ -160,9 +159,7 @@ begin
             DataOut             => DATAIN_LA,
 
             SampleEn            => '1',
-            DataDeviceunderTest => DataIn_LogicAnalyser,
-
-            stateDebug          => open
+            DataDeviceunderTest => DataIn_LogicAnalyser
 
         );
     --DATAINVALID_LA <= '0';
