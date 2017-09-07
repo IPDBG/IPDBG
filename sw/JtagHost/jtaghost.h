@@ -43,9 +43,6 @@ extern "C"
 urj_chain_t *ipdbgJtagAllocChain(void);
 int ipdbgJtagInit(urj_chain_t *chain, int apart);
 int ipdbgJTAGtransfer(urj_chain_t *chain, uint16_t *upData, uint16_t downData);
-//int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths, int Mask_DataValid);
-//int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts, int MaskPending);
-int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts);
 void ipdbgJtagClose(urj_chain_t *chain);
 
 
