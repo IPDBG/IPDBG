@@ -27,8 +27,7 @@ architecture structure of XC7Top is
 
     component JtagHub is
         generic(
-            MFF_LENGTH : natural;
-            TARGET_TECHNOLOGY : natural
+            MFF_LENGTH : natural
         );
         port(
             clk                : in  std_logic;
@@ -109,11 +108,11 @@ architecture structure of XC7Top is
     signal count              : std_logic_vector (28 downto 0);
     signal output             : std_logic_vector (7 downto 0);
     signal temp               : std_logic_vector(7 downto 0);
-    
+
     signal IoViewOutputs      : std_logic_vector(3 downto 0);
 
 begin
-    
+
     Counter : process (Clk) begin
         if rising_edge(Clk) then
             if DataIn_LogicAnalyser = x"ff" then
@@ -121,7 +120,7 @@ begin
             else
                 DataIn_LogicAnalyser <= std_logic_vector(unsigned(DataIn_LogicAnalyser)+1);
             end if;
-                
+
             if count =   "10111110101111000010000000000" then
                 count <= "00000000000000000000000000000";
                  if output = "11111111" then
@@ -135,11 +134,11 @@ begin
         end if;
     end process;
     Input_DeviceunderTest_IOVIEW <= output;
-    --Output_DeviceunderTest_IOVIEW <= count(3 downto 0); 
-    
-    
-    
-    
+    --Output_DeviceunderTest_IOVIEW <= count(3 downto 0);
+
+
+
+
 
     la : component LogicAnalyserTop
         generic map(
@@ -185,11 +184,9 @@ begin
     --LEDs <= Output_DeviceunderTest_IOVIEW;
 
 
-    JTAG : component JtagHub
+    JH : component JtagHub
         generic map(
-            MFF_LENGTH => MFF_LENGTH,
-            TARGET_TECHNOLOGY => 3 --Kintex7
-            
+            MFF_LENGTH => MFF_LENGTH
         )
         port map(
             clk                => Clk,
@@ -207,32 +204,32 @@ begin
             DATAINVALID_GDB    => '0',
             DATAIN_LA          => DATAIN_LA,
             DATAIN_IOVIEW      => DATAIN_IOVIEW,
-          
+
             DATAIN_GDB         => (others => '0')
         );
-        
-        Clk_fpga_gen: block
-            signal  buffOut: std_logic;
-        begin
-            InputBufferInst: IBUFGDS
-                generic map
-                (
-                    DIFF_TERM    => true,
-                    IBUF_LOW_PWR => false
-                )
-                port map
-                (
-                    I  => Clk200M_P,
-                    IB => Clk200M_N,
-                    O  => buffOut
-                );
-            GlobalBufferInst : BUFG
-                port map
-                (
-                    I => buffOut,
-                    O => Clk
-                );
-        end block;
+
+    Clk_fpga_gen: block
+        signal  buffOut: std_logic;
+    begin
+        InputBufferInst: IBUFGDS
+            generic map
+            (
+                DIFF_TERM    => true,
+                IBUF_LOW_PWR => false
+            )
+            port map
+            (
+                I  => Clk200M_P,
+                IB => Clk200M_N,
+                O  => buffOut
+            );
+        GlobalBufferInst : BUFG
+            port map
+            (
+                I => buffOut,
+                O => Clk
+            );
+    end block;
 
 
 

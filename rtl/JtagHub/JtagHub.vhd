@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 entity JtagHub is
     generic(
-        MFF_LENGTH        : natural := 3;
+        MFF_LENGTH        : natural := 3
     );
     port(
        clk                : in  std_logic;
@@ -26,7 +26,7 @@ entity JtagHub is
        DATAIN_IOVIEW      : in  std_logic_vector(7 downto 0);
        DATAIN_GDB         : in  std_logic_vector(7 downto 0)
     );
-end JtagHub;
+end entity JtagHub;
 
 architecture structure of JtagHub is
     component JtagCdc is
@@ -69,7 +69,7 @@ architecture structure of JtagHub is
             shift           : out std_logic;
             update          : out std_logic;
             tdi             : out std_logic;
-            tdo             : in  std_logic;
+            tdo             : in  std_logic
         );
     end component IpdbgTap;
 
@@ -79,7 +79,7 @@ architecture structure of JtagHub is
     signal CAPTURE      : std_logic;
     signal SHIFT        : std_logic;
     signal TDI          : std_logic;
-    signal TDO1         : std_logic;
+    signal TDO          : std_logic;
 
 begin
 
