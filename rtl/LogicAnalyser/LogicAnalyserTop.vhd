@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 
-entity The_LogicAnalyser is
+entity LogicAnalyserTop is
     generic(
          DATA_WIDTH         : natural := 4;        --! width of a sample
          ADDR_WIDTH         : natural := 4          --! 2**ADDR_WIDTH = size if sample memory
@@ -25,12 +25,12 @@ entity The_LogicAnalyser is
         SampleEn            : in  std_logic;
         DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0)
     );
-end entity;
+end entity LogicAnalyserTop;
 
-architecture structure of The_LogicAnalyser is
+architecture structure of LogicAnalyserTop is
 
 
-    component Memory is
+    component LogicAnalyserMemory is
         generic(
             DATA_WIDTH : natural;
             ADDR_WIDTH : natural
@@ -50,9 +50,9 @@ architecture structure of The_LogicAnalyser is
             ReqNextData   : in  std_logic;
             finish        : out std_logic
         );
-    end component Memory;
+    end component LogicAnalyserMemory;
 
-    component Trigger is
+    component LogicAnalyserTrigger is
         generic(
             DATA_WIDTH : natural
         );
@@ -68,9 +68,9 @@ architecture structure of The_LogicAnalyser is
             Value_last : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             Trigger    : out std_logic
         );
-    end component Trigger;
+    end component LogicAnalyserTrigger;
 
-    component Controller is
+    component LogicAnalyserController is
         generic(
             DATA_WIDTH : natural;
             ADDR_WIDTH : natural
@@ -97,9 +97,9 @@ architecture structure of The_LogicAnalyser is
             DataValid_LA     : in  std_logic;
             finish_LA        : in  std_logic
         );
-    end component Controller;
+    end component LogicAnalyserController;
 
-    component Escape is
+    component IpdbgEscaping is
         generic(
             DATA_WIDTH : natural
         );
@@ -113,7 +113,7 @@ architecture structure of The_LogicAnalyser is
             DataOut       : out std_logic_vector(7 downto 0);
             reset         : out std_logic
         );
-    end component Escape;
+    end component IpdbgEscaping;
 
 
     signal Trigger_end      : std_logic := '0';
@@ -158,7 +158,7 @@ begin
     end process;
 
 
-    Mem : component Memory
+    Memory : component LogicAnalyserMemory
         generic map(
             DATA_WIDTH => DATA_WIDTH,
             ADDR_WIDTH => ADDR_WIDTH
@@ -180,7 +180,7 @@ begin
         );
 
 
-    Trig : component Trigger
+    Trigger : component LogicAnalyserTrigger
         generic map(
             DATA_WIDTH => DATA_WIDTH
         )
@@ -197,7 +197,7 @@ begin
             Trigger      => Trigger_s
         );
 
-    Ctr : component Controller
+    Controller : component LogicAnalyserController
         generic map(
             DATA_WIDTH => DATA_WIDTH,
             ADDR_WIDTH => ADDR_WIDTH
@@ -225,7 +225,7 @@ begin
             finish_LA        => finish_LA
         );
 
-    Esc : component Escape
+    Escaping : component IpdbgEscaping
         generic map(
             DATA_WIDTH => DATA_WIDTH
         )

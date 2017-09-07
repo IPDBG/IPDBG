@@ -34,13 +34,13 @@ architecture structure of IPDBG is
 
 
 
-    component JTAG_HUB is
+    component JtagHub is
         generic(
-            MFF_LENGTH : natural
+            MFF_LENGTH        : natural;
+            TARGET_TECHNOLOGY : natural
         );
         port(
             clk                : in  std_logic;
-            rst                : in  std_logic;
             ce                 : in  std_logic;
             DATAOUT            : out std_logic_vector(7 downto 0);
             Enable_LA          : out std_logic;
@@ -56,10 +56,10 @@ architecture structure of IPDBG is
             DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
             DATAIN_GDB         : in  std_logic_vector (7 downto 0)
         );
-    end component JTAG_HUB;
+    end component JtagHub;
 
 
-    component The_LogicAnalyser is
+    component LogicAnalyserTop is
         generic(
             DATA_WIDTH : natural;
             ADDR_WIDTH : natural
@@ -74,27 +74,24 @@ architecture structure of IPDBG is
             DataValidOut        : out std_logic;
             DataOut             : out std_logic_vector(7 downto 0);
             SampleEn            : in  std_logic;
-            DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            stateDebug          : out std_logic_vector(7 downto 0)
-
+            DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0)
         );
-    end component The_LogicAnalyser;
+    end component LogicAnalyserTop;
 
-    component IO_View is
+    component IoViewTop is
         port(
-            clk                             : in  std_logic;
-            rst                             : in  std_logic;
-            ce                              : in  std_logic;
-            DataInValid                     : in  std_logic;
-            DataIn                          : in  std_logic_vector(7 downto 0);
-            DataOutReady                    : in  std_logic;
-            DataOutValid                    : out std_logic;
-            DataOut                         : out std_logic_vector(7 downto 0);
-            INPUT_DeviceUnderTest_Ioview    : in  std_logic_vector;
-            OUTPUT_DeviceUnderTest_Ioview   : out std_logic_vector
-
+            clk          : in  std_logic;
+            rst          : in  std_logic;
+            ce           : in  std_logic;
+            DataInValid  : in  std_logic;
+            DataIn       : in  std_logic_vector(7 downto 0);
+            DataOutReady : in  std_logic;
+            DataOutValid : out std_logic;
+            DataOut      : out std_logic_vector(7 downto 0);
+            ProbeInputs  : in  std_logic_vector;
+            ProbeOutputs : out std_logic_vector
         );
-    end component IO_View;
+    end component IoViewTop;
 
 
     signal DRCLK1       : std_logic;
@@ -147,7 +144,7 @@ begin
 
 
 
-    la : component The_LogicAnalyser
+    la : component LogicAnalyserTop
         generic map(
             DATA_WIDTH => DATA_WIDTH,
             ADDR_WIDTH => ADDR_WIDTH
@@ -158,47 +155,39 @@ begin
             ce                  => '1',
             DataInValid         => Enable_LA,
             DataIn              => DATAOUT,
-
             DataReadyOut        => DATAINREADY_LA,
             DataValidOut        => DATAINVALID_LA,
             DataOut             => DATAIN_LA,
-
             SampleEn            => '1',
-            DataDeviceunderTest => DataIn_LogicAnalyser,
-
-            stateDebug          => open
-
+            DataDeviceunderTest => DataIn_LogicAnalyser
         );
     --DATAINVALID_LA <= '0';
     --LEDs <= Statedebug;
 
-    IO : component IO_View
+    IO : component IoViewTop
         port map(
-            clk                             => clk,
-            rst                             => '0',
-            ce                              => '1',
-
-            DataInValid                     => Enable_IOVIEW,
-            DataIn                          => DATAOUT,
-
-            DataOutReady                    => DATAINREADY_IOVIEW,
-            DataOutValid                    => DATAINVALID_IOVIEW,
-            DataOut                         => DATAIN_IOVIEW,
-
-            INPUT_DeviceUnderTest_Ioview    => Input_DeviceunderTest_IOVIEW,
-            OUTPUT_DeviceUnderTest_Ioview   => Output_DeviceunderTest_IOVIEW
+            clk          => clk,
+            rst          => '0',
+            ce           => '1',
+            DataInValid  => Enable_IOVIEW,
+            DataIn       => DATAOUT,
+            DataOutReady => DATAINREADY_IOVIEW,
+            DataOutValid => DATAINVALID_IOVIEW,
+            DataOut      => DATAIN_IOVIEW,
+            ProbeInputs  => Input_DeviceunderTest_IOVIEW,
+            ProbeOutputs => Output_DeviceunderTest_IOVIEW
 
         );
     --LEDs <= Output_DeviceunderTest_IOVIEW;
 
 
-    JTAG : component JTAG_HUB
+    JTAG : component JtagHub
         generic map(
-            MFF_LENGTH => MFF_LENGTH
+            MFF_LENGTH        => MFF_LENGTH,
+            TARGET_TECHNOLOGY => 1
         )
         port map(
             clk                => clk,
-            rst                => '0',
             ce                 => '1',
             DATAOUT            => DATAOUT,
             Enable_LA          => Enable_LA,

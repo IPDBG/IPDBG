@@ -60,23 +60,25 @@ architecture behavioral of WaveformGeneratorMemory is
 
 begin
 
-    writeFsm: process (clk, rst) begin
-        if rst = '1' then
-            we <= '0';
-            adr_w <= (others => '0');---
-            writeData <= (others => '-');
-        elsif rising_edge(clk) then
-            if ce = '1' then
+    writeFsm: process (clk) begin
+        if rising_edge(clk) then
+            if rst = '1' then
                 we <= '0';
-                if DataIfReset = '1' then
-                    adr_w <= (others => '0');
-                elsif we = '1' then
-                    adr_w <= adr_w + 1;
-                end if;
+                adr_w <= (others => '-');
+                writeData <= (others => '-');
+            else
+                if ce = '1' then
+                    we <= '0';
+                    if DataIfReset = '1' then
+                        adr_w <= (others => '0');
+                    elsif we = '1' then
+                        adr_w <= adr_w + 1;
+                    end if;
 
-                if DataValid = '1' then
-                    we <= '1';
-                    writeData <= DataIn;
+                    if DataValid = '1' then
+                        we <= '1';
+                        writeData <= DataIn;
+                    end if;
                 end if;
             end if;
         end if;
@@ -112,32 +114,34 @@ begin
         signal firstAddressSet   : std_logic;
         signal firstAddressSet_d : std_logic;
     begin
-        process (clk, rst) begin
-            if rst = '1' then
-                adr_r <= (others => '0');---
-                FirstSample_s <= '0';
-                firstAddressSet <= '0';
-                firstAddressSet_d <= '0';
-            elsif rising_edge(clk) then
-                if ce = '1' then
-                    if SampleEnable = '1' then
-                        firstAddressSet <= '0';
-                        if adr_r = unsigned(AddrOfLastSample) then
-                            adr_r <= (others => '0');
-                            firstAddressSet <= '1';
-                        else
-                            adr_r <= adr_r + 1;
+        process (clk) begin
+            if rising_edge(clk) then
+                if rst = '1' then
+                    adr_r <= (others => '-');
+                    FirstSample_s <= '0';
+                    firstAddressSet <= '0';
+                    firstAddressSet_d <= '0';
+                else
+                    if ce = '1' then
+                        if SampleEnable = '1' then
+                            firstAddressSet <= '0';
+                            if adr_r = unsigned(AddrOfLastSample) then
+                                adr_r <= (others => '0');
+                                firstAddressSet <= '1';
+                            else
+                                adr_r <= adr_r + 1;
+                            end if;
                         end if;
-                    end if;
 
-                    -- This is depending on the timing of the pdpRam. (i.e. we have a strong coupling to the pdpRam)
-                    -- An alternative solution was to spend an additional bit of the waveform - a big waste.
-                    -- So we live with this coupling.
-                    firstAddressSet_d <= firstAddressSet;
-                    if RAM_OUTPUT_REG then
-                        FirstSample_s <= firstAddressSet_d;
-                    else
-                        FirstSample_s <= firstAddressSet;
+                        -- This is depending on the timing of the pdpRam. (i.e. we have a strong coupling to the pdpRam)
+                        -- An alternative solution was to spend an additional bit of the waveform - a big waste.
+                        -- So we live with this coupling.
+                        firstAddressSet_d <= firstAddressSet;
+                        if RAM_OUTPUT_REG then
+                            FirstSample_s <= firstAddressSet_d;
+                        else
+                            FirstSample_s <= firstAddressSet;
+                        end if;
                     end if;
                 end if;
             end if;

@@ -1,10 +1,9 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
 library unisim;
 use unisim.vcomponents.all;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
-use ieee.std_logic_arith;
 
 entity XC7Top is
     generic(
@@ -26,7 +25,7 @@ end XC7Top;
 
 architecture structure of XC7Top is
 
-    component JTAGHUB is
+    component JtagHub is
         generic(
             MFF_LENGTH : natural;
             TARGET_TECHNOLOGY : natural
@@ -46,13 +45,12 @@ architecture structure of XC7Top is
             DATAINVALID_GDB    : in  std_logic;
             DATAIN_LA          : in  std_logic_vector (7 downto 0);
             DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
-           --DRCLK              : out std_logic;
             DATAIN_GDB         : in  std_logic_vector (7 downto 0)
         );
-    end component JTAGHUB;
+    end component JtagHub;
 
 
-    component The_LogicAnalyser is
+    component LogicAnalyserTop is
         generic(
             DATA_WIDTH : natural;
             ADDR_WIDTH : natural
@@ -67,13 +65,12 @@ architecture structure of XC7Top is
             DataValidOut        : out std_logic;
             DataOut             : out std_logic_vector(7 downto 0);
             SampleEn            : in  std_logic;
-            DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            stateDebug          : out std_logic_vector(7 downto 0)
+            DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0)
 
         );
-    end component The_LogicAnalyser;
+    end component LogicAnalyserTop;
 
-    component IOView is
+    component IOViewTop is
         port(
             clk                             : in  std_logic;
             rst                             : in  std_logic;
@@ -87,7 +84,7 @@ architecture structure of XC7Top is
             ProbeOutputs                    : out std_logic_vector
 
         );
-    end component IOView;
+    end component IOViewTop;
 
     signal Clk                : std_logic;
 
@@ -117,23 +114,34 @@ architecture structure of XC7Top is
 
 begin
     
-        Counter : process (Clk) begin
-            if rising_edge(Clk) then
-                if output = "11111111" then
-                    output <= "00000000";
-                end if;
-                if count =   "10111110101111000010000000000" then
-                    count <= "00000000000000000000000000000";
-                    output <= output +1;
-                else
-                    count <= count +1;
-                end if;
+    Counter : process (Clk) begin
+        if rising_edge(Clk) then
+            if DataIn_LogicAnalyser = x"ff" then
+                DataIn_LogicAnalyser <= x"00";
+            else
+                DataIn_LogicAnalyser <= std_logic_vector(unsigned(DataIn_LogicAnalyser)+1);
             end if;
-        end process;
-        Input_DeviceunderTest_IOVIEW <= output;
-        --Output_DeviceunderTest_IOVIEW <= count(3 downto 0); 
+                
+            if count =   "10111110101111000010000000000" then
+                count <= "00000000000000000000000000000";
+                 if output = "11111111" then
+                     output <= "00000000";
+                 else
+                    output <= std_logic_vector(unsigned(output) + 1);
+                 end if;
+            else
+                count <= std_logic_vector(unsigned(count) + 1);
+            end if;
+        end if;
+    end process;
+    Input_DeviceunderTest_IOVIEW <= output;
+    --Output_DeviceunderTest_IOVIEW <= count(3 downto 0); 
+    
+    
+    
+    
 
-    la : component The_LogicAnalyser
+    la : component LogicAnalyserTop
         generic map(
             DATA_WIDTH => DATA_WIDTH,
             ADDR_WIDTH => ADDR_WIDTH
@@ -150,15 +158,13 @@ begin
             DataOut             => DATAIN_LA,
 
             SampleEn            => '1',
-            DataDeviceunderTest => DataIn_LogicAnalyser,
-
-            stateDebug          => open
+            DataDeviceunderTest => DataIn_LogicAnalyser
 
         );
     --DATAINVALID_LA <= '0';
     --LEDs <= Statedebug;
 
-    IO : component IOView
+    IO : component IOViewTop
         port map(
             clk                             => Clk,
             rst                             => '0',
@@ -179,7 +185,7 @@ begin
     --LEDs <= Output_DeviceunderTest_IOVIEW;
 
 
-    JTAG : component JTAGHUB
+    JTAG : component JtagHub
         generic map(
             MFF_LENGTH => MFF_LENGTH,
             TARGET_TECHNOLOGY => 3 --Kintex7
