@@ -5,16 +5,12 @@
 #include <wx/string.h>
 #include <string>
 #include <wx/textdlg.h>
-#include <wx/fileconf.h>
-#include <wx/confbase.h>
-#include <wx/config.h>
 
-wxConfig *config = new wxConfig("I/O-View");
-wxString LastIp;
 
 IOViewProtocol::IOViewProtocol(IOViewProtocolObserver *obs):
 client(nullptr),
-protocolObserver(obs)
+protocolObserver(obs),
+config("I/O-View")
 {
 
 }
@@ -23,10 +19,10 @@ void IOViewProtocol::open()
 {
     client = new wxSocketClient();
 
-    config->Read("LastIp",&LastIp);
-    wxString IpAdress = wxGetTextFromUser(wxT("IP Adresse"),wxT("IP Adress to Connect"),LastIp);
+    config.Read("LastIp" , &lastIp);
+    wxString ipAdress = wxGetTextFromUser(_("IP Adresse"), _("IP Adress to Connect"), lastIp);
 
-    if(IpAdress.IsEmpty())
+    if(ipAdress.IsEmpty())
     {
         wxMessageBox(_("Not able to connect to JtagHost"));
         delete client;
@@ -34,12 +30,12 @@ void IOViewProtocol::open()
         return;
     }
     else
-        config->Write("LastIp",IpAdress);
+        config.Write("LastIp", ipAdress);
 
 
     wxIPV4address address;
-    address.Hostname(_(IpAdress));
-    address.Service(_("4243"));
+    address.Hostname(ipAdress);
+    address.Service("4243");
 
     client->SetFlags(wxSOCKET_NOWAIT);
     //client->SetEventHandler(*this, SOCKET_ID);
