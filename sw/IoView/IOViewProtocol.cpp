@@ -6,7 +6,6 @@
 #include <string>
 #include <wx/textdlg.h>
 #include <wx/fileconf.h>
-#include <wx/msw/regconf.h>
 #include <wx/confbase.h>
 #include <wx/config.h>
 
@@ -59,7 +58,26 @@ void IOViewProtocol::open()
     uint8_t buffer[8];
     buffer[0] = IOViewIPCommands::Reset;
     client->Write(buffer, 1);
-    client->Write(buffer, 1);
+
+    while(1)
+    {
+        uint8_t buf[10];
+        size_t readBytes = 0;
+        //wxTimer timer;
+        //timer.StartOnce(1000);
+        int k = 100000;
+        while(k--)
+        {
+            client->Read(buf, 10);
+            readBytes += client->LastCount();
+        }
+
+        client->Write(buffer, 1);
+
+        if(readBytes == 0)
+            break;
+    }
+
 
     buffer[0] = IOViewIPCommands::ReadPortWidths;
     client->Write(buffer, 1);
