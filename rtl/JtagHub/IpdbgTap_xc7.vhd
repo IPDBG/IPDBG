@@ -17,9 +17,7 @@ entity IpdbgTap is
     );
 end entity;
 
-
 architecture SevenSeries_BSCAN2 of IpdbgTap is
-
 
 begin
 
@@ -42,6 +40,3 @@ begin
     );
 
 end architecture SevenSeries_BSCAN2;
-
-
-

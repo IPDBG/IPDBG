@@ -123,12 +123,11 @@ begin
         mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
 
             MFF : dffpc
-                port map
-                (
-                  clk => clk,
-                  ce  => ce,
-                  d   => x(K),
-                  q   => x(K+1)
+                port map(
+                    clk => clk,
+                    ce  => ce,
+                    d   => x(K),
+                    q   => x(K+1)
                 );
         end generate;
 
@@ -279,25 +278,19 @@ begin
                 q   : out std_logic
             );
         end component dffpc;
-
     begin
-
         x(0) <= pending and USER;
 
         mffx_flops: for K in 0 to 10 generate begin
-
             MFF : dffpc
-                port map
-                (
-                  clk => DRCLK,
-                  ce  => '1',
-                  d   => x(K),
-                  q   => x(K+1)
+                port map(
+                    clk => DRCLK,
+                    ce  => '1',
+                    d   => x(K),
+                    q   => x(K+1)
                 );
-        end generate;
-
+            end generate;
         pending_synched <= x(11);
-
     end block;
 
 end architecture behavioral;
