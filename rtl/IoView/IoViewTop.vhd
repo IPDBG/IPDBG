@@ -2,24 +2,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-
 entity IoViewTop is
     port(
-        clk          : in  std_logic;
-        rst          : in  std_logic;
-        ce           : in  std_logic;
+        clk            : in  std_logic;
+        rst            : in  std_logic;
+        ce             : in  std_logic;
 
         -- host interface (JtagHub or UART or ....)
-        DataInValid  : in  std_logic;
-        DataIn       : in  std_logic_vector(7 downto 0);
-
-        DataOutReady : in  std_logic;
-        DataOutValid : out std_logic;
-        DataOut      : out std_logic_vector(7 downto 0);
+        data_in_valid  : in  std_logic;
+        data_in        : in  std_logic_vector(7 downto 0);
+        data_out_ready : in  std_logic;
+        data_out_valid : out std_logic;
+        data_out       : out std_logic_vector(7 downto 0);
 
         --- Input & Ouput--------
-        ProbeInputs  : in  std_logic_vector;
-        ProbeOutputs : out std_logic_vector
+        probe_inputs   : in  std_logic_vector;
+        probe_outputs  : out std_logic_vector
     );
 end entity IoViewTop;
 
@@ -27,61 +25,61 @@ architecture struct of IoViewTop is
 
     component IoViewController is
         port(
-            clk          : in  std_logic;
-            rst          : in  std_logic;
-            ce           : in  std_logic;
-            DataInValid  : in  std_logic;
-            DataIn       : in  std_logic_vector(7 downto 0);
-            DataOutReady : in  std_logic;
-            DataOutValid : out std_logic;
-            DataOut      : out std_logic_vector(7 downto 0);
-            Input        : in  std_logic_vector;
-            Output       : out std_logic_vector
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_in_valid  : in  std_logic;
+            data_in        : in  std_logic_vector(7 downto 0);
+            data_out_ready : in  std_logic;
+            data_out_valid : out std_logic;
+            data_out       : out std_logic_vector(7 downto 0);
+            input          : in  std_logic_vector;
+            output         : out std_logic_vector
         );
     end component IoViewController;
 
     component IpdbgEscaping is
         port(
-            clk          : in  std_logic;
-            rst          : in  std_logic;
-            ce           : in  std_logic;
-            DataInValid  : in  std_logic;
-            DataIn       : in  std_logic_vector(7 downto 0);
-            DataOutValid : out std_logic;
-            DataOut      : out std_logic_vector(7 downto 0);
-            reset        : out std_logic
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_in_valid  : in  std_logic;
+            data_in        : in  std_logic_vector(7 downto 0);
+            data_out_valid : out std_logic;
+            data_out       : out std_logic_vector(7 downto 0);
+            reset          : out std_logic
         );
     end component IpdbgEscaping;
 
-    signal Data         : std_logic_vector(7 downto 0);
-    signal DataValid    : std_logic;
-    signal reset        : std_logic;
+    signal data_in_unescaped       : std_logic_vector(7 downto 0);
+    signal data_in_valid_unescaped : std_logic;
+    signal reset                   : std_logic;
 begin
 
     controller : component IoViewController
         port map(
-            clk          => clk,
-            rst          => reset,
-            ce           => ce,
-            DataInValid  => DataValid,
-            DataIn       => Data,
-            DataOutReady => DataOutReady,
-            DataOutValid => DataOutValid,
-            DataOut      => DataOut,
-            Input        => ProbeInputs,
-            Output       => ProbeOutputs
+            clk            => clk,
+            rst            => reset,
+            ce             => ce,
+            data_in_valid  => data_in_valid_unescaped,
+            data_in        => data_in_unescaped,
+            data_out_ready => data_out_ready,
+            data_out_valid => data_out_valid,
+            data_out       => data_out,
+            input          => probe_inputs,
+            output         => probe_outputs
         );
 
     escaping : component IpdbgEscaping
         port map(
-            clk          => clk,
-            rst          => rst,
-            ce           => ce,
-            DataInValid  => DataInValid,
-            DataIn       => DataIn,
-            DataOutValid => DataValid,
-            DataOut      => Data,
-            reset        => reset
+            clk            => clk,
+            rst            => rst,
+            ce             => ce,
+            data_in_valid  => data_in_valid,
+            data_in        => data_in,
+            data_out_valid => data_in_valid_unescaped,
+            data_out       => data_in_unescaped,
+            reset          => reset
         );
 
 end architecture struct;
