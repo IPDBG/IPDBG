@@ -47,8 +47,8 @@ public:
 private:
     void onCheckBox(wxCommandEvent& event);
 
-    unsigned int NumberOfInputs;
-    unsigned int NumberOfOutputs;
+    uint32_t NumberOfInputs;
+    uint32_t NumberOfOutputs;
     IOViewPanelObserver *observer;
 
     wxBoxSizer* mainSizer;

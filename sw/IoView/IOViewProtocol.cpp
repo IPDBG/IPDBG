@@ -59,43 +59,17 @@ void IOViewProtocol::open()
     buffer[0] = IOViewIPCommands::Reset;
     client->Write(buffer, 1);
 
-    while(1)
-    {
-        uint8_t buf[10];
-        size_t readBytes = 0;
-        //wxTimer timer;
-        //timer.StartOnce(1000);
-        int k = 100000;
-        while(k--)
-        {
-            client->Read(buf, 10);
-            readBytes += client->LastCount();
-        }
-
-        client->Write(buffer, 1);
-
-        if(readBytes == 0)
-            break;
-    }
-
 
     buffer[0] = IOViewIPCommands::ReadPortWidths;
     client->Write(buffer, 1);
 
     size_t len = 0;
-    //size_t tries = 0;
     do
     {
         client->Read(&buffer[len], 8-len);
         len += client->LastCount();
     }while(len < 8 /*&& ++tries < 10000*/);
-    /*if(tries>=10000)
-    {
-        wxMessageBox("too many tries to read");
-        delete client;
-        client = nullptr;
-        return;
-    }*/
+
 
     NumberOfOutputs = buffer[0] |
                       buffer[1] << 8 |
