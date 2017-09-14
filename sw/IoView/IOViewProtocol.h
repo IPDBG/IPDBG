@@ -2,6 +2,7 @@
 #define IOVIEWPROTOCOL_H_INCLUDED
 
 #include <wx/timer.h>
+#include <wx/config.h>
 #include "IOViewObserver.h"
 #include "IOViewProtocolI.h"
 
@@ -37,6 +38,9 @@ private:
     unsigned int NumberOfInputs;
 
     virtual void Notify();
+
+    wxConfig config;
+    wxString lastIp;
 
 };
 

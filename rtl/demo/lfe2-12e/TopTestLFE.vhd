@@ -14,7 +14,7 @@ entity TopTestLFE is
 
         Input_DeviceunderTest_IOVIEW     : in  std_logic_vector(7 downto 0);
         Output_DeviceunderTest_IOVIEW    : out std_logic_vector(7 downto 0);
-		
+
         Leds                             : out std_logic_vector(7 downto 0);
         debug                            : out std_logic_vector(3 downto 0)
     );
@@ -48,21 +48,21 @@ architecture structure of TopTestLFE is
 
     component IoViewTop is
         port(
-            clk          : in  std_logic;
-			rst          : in  std_logic;
-			ce           : in  std_logic;
+            clk           : in  std_logic;
+			rst           : in  std_logic;
+			ce            : in  std_logic;
 
 			-- host interface (JtagHub or UART or ....)
-			DataInValid  : in  std_logic;
-			DataIn       : in  std_logic_vector(7 downto 0);
+			data_in_valid  : in  std_logic;
+			data_in        : in  std_logic_vector(7 downto 0);
 
-			DataOutReady : in  std_logic;
-			DataOutValid : out std_logic;
-			DataOut      : out std_logic_vector(7 downto 0);
+			data_out_ready : in  std_logic;
+			data_out_valid : out std_logic;
+			data_out       : out std_logic_vector(7 downto 0);
 
-			--- Input & Ouput--------
-			ProbeInputs  : in  std_logic_vector;
-			ProbeOutputs : out std_logic_vector
+			--- input & Ouput--------
+			probe_inputs   : in  std_logic_vector;
+			probe_outputs  : out std_logic_vector
         );
     end component IoViewTop;
 
@@ -71,21 +71,7 @@ architecture structure of TopTestLFE is
 	end component;
 
 
-
-    --signal Capture                       : std_logic;
-    --signal Shift                         : std_logic;
-    --signal Update                        : std_logic;
-    --signal TDI_o                         : std_logic;
-    --signal TDO_i                         : std_logic;
-    --signal SEL                           : std_logic;
-    --signal DRCK                          : std_logic;
-    --signal DataInValid                   : std_logic;
-    --signal DataIn                        : std_logic_vector(7 downto 0);
-    --signal DataOutReady                  : std_logic;
-    --signal DataOutValid                  : std_logic;
     signal DataOut                       : std_logic_vector(7 downto 0);
-
-
     signal Enable_IOVIEW                 : std_logic;
     signal DATAINREADY_IOVIEW            : std_logic;
     signal DATAINVALID_IOVIEW            : std_logic;
@@ -147,16 +133,16 @@ begin
         );
     IoView : component IoViewTop
         port map(
-            clk          => clk,
-            rst          => rst,
-            ce           => '1',
-            DataInValid  => Enable_IOVIEW,
-            DataIn       => DATAOUT,
-            DataOutReady => DATAINREADY_IOVIEW,
-            DataOutValid => DATAINVALID_IOVIEW,
-            DataOut      => DATAIN_IOVIEW,
-            ProbeInputs  => INPUT_DeviceUnderTest_Ioview,
-            ProbeOutputs => OUTPUT_DeviceUnderTest_Ioview_s
+            clk            => clk,
+            rst            => rst,
+            ce             => '1',
+            data_in_valid  => Enable_IOVIEW,
+            data_in        => DATAOUT,
+            data_out_ready => DATAINREADY_IOVIEW,
+            data_out_valid => DATAINVALID_IOVIEW,
+            data_out       => DATAIN_IOVIEW,
+            probe_inputs   => INPUT_DeviceUnderTest_Ioview,
+            probe_outputs  => OUTPUT_DeviceUnderTest_Ioview_s
         );
     OUTPUT_DeviceUnderTest_Ioview <= OUTPUT_DeviceUnderTest_Ioview_s;
 end;

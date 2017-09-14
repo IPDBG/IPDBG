@@ -22,8 +22,6 @@ entity Tap_Technologie is
 end Tap_Technologie;
 
 architecture Structure of Tap_Technologie is
-
-
     component jtagc
         generic(
             ER1             : String  := "ENABLED";

@@ -4,52 +4,51 @@ use ieee.numeric_std.all;
 
 entity IpdbgEscaping is
     port(
-        clk          : in  std_logic;
-        rst          : in  std_logic;
-        ce           : in  std_logic;
+        clk            : in  std_logic;
+        rst            : in  std_logic;
+        ce             : in  std_logic;
 
-        DataInValid  : in std_logic;
-        DataIn       : in std_logic_vector(7 downto 0);   --Eingangsdaten die Überprüft werden müssen
-        DataOutValid : out std_logic;
-        DataOut      : out std_logic_vector(7 downto 0);   --Eingangsdaten die Überprüft werden müssen.
+        data_in_valid  : in  std_logic;
+        data_in        : in  std_logic_vector(7 downto 0);
+        data_out_valid : out std_logic;
+        data_out       : out std_logic_vector(7 downto 0);
 
-        reset        : out std_logic
+        reset          : out std_logic
     );
 end entity IpdbgEscaping;
 
-
 architecture behavioral of IpdbgEscaping is
-    constant EscapeSymbol : std_logic_vector (7 downto 0) := x"55"; --55
-    constant ResetSymbol  : std_logic_vector (7 downto 0) := x"EE"; --EE
+    constant escape_symbol : std_logic_vector (7 downto 0) := x"55"; --55
+    constant reset_symbol  : std_logic_vector (7 downto 0) := x"EE"; --EE
 
-    type EscapingStates_t is(Normal_s, Escaping_s);
-    signal state          : EscapingStates_t :=  Normal_s;
+    type escaping_states_t is(normal_s, escaping_s);
+    signal state          : escaping_states_t :=  normal_s;
 begin
 
     process (clk, rst) begin
         if rst = '1' then
             reset <= '0';
-            DataOut <= (others => '0');
-            state <= Normal_s;
-            DataOutValid <= '0';
+            data_out_valid <= '0';
+            data_out <= (others => '-');
+            state <= normal_s;
         elsif rising_edge(clk) then
             if ce = '1' then
-                DataOutValid <= '0';
+                data_out_valid <= '0';
                 reset <= '0';
-                DataOut <= DataIn;
-                if DataInValid = '1' then
+                data_out <= data_in;
+                if data_in_valid = '1' then
                     case state is
-                    when Normal_s =>
-                        if DataIn = EscapeSymbol then
-                            state <= Escaping_s;
-                        elsif DataIn = ResetSymbol  then
+                    when normal_s =>
+                        if data_in = escape_symbol then
+                            state <= escaping_s;
+                        elsif data_in = reset_symbol  then
                             reset <= '1';
                         else
-                            DataOutValid <= '1';
+                            data_out_valid <= '1';
                         end if;
-                    when Escaping_s =>
-                        state <= Normal_s;
-                        DataOutValid <= '1';
+                    when escaping_s =>
+                        state <= normal_s;
+                        data_out_valid <= '1';
                     end case;
                 end if;
             end if;

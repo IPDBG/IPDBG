@@ -7,24 +7,24 @@ entity JtagHub is
         MFF_LENGTH        : natural := 3
     );
     port(
-       clk                : in  std_logic;
-       ce                 : in  std_logic;
+        clk                : in  std_logic;
+        ce                 : in  std_logic;
 
-       DATAOUT            : out std_logic_vector(7 downto 0);
+        DATAOUT            : out std_logic_vector(7 downto 0);
 
-       Enable_LA          : out std_logic;
-       Enable_IOVIEW      : out std_logic;
-       Enable_GDB         : out std_logic;
+        Enable_LA          : out std_logic;
+        Enable_IOVIEW      : out std_logic;
+        Enable_GDB         : out std_logic;
 
-       DATAINREADY_LA     : out std_logic;
-       DATAINREADY_IOVIEW : out std_logic;
-       DATAINREADY_GDB    : out std_logic;
-       DATAINVALID_LA     : in  std_logic;
-       DATAINVALID_IOVIEW : in  std_logic;
-       DATAINVALID_GDB    : in  std_logic;
-       DATAIN_LA          : in  std_logic_vector(7 downto 0);
-       DATAIN_IOVIEW      : in  std_logic_vector(7 downto 0);
-       DATAIN_GDB         : in  std_logic_vector(7 downto 0)
+        DATAINREADY_LA     : out std_logic;
+        DATAINREADY_IOVIEW : out std_logic;
+        DATAINREADY_GDB    : out std_logic;
+        DATAINVALID_LA     : in  std_logic;
+        DATAINVALID_IOVIEW : in  std_logic;
+        DATAINVALID_GDB    : in  std_logic;
+        DATAIN_LA          : in  std_logic_vector(7 downto 0);
+        DATAIN_IOVIEW      : in  std_logic_vector(7 downto 0);
+        DATAIN_GDB         : in  std_logic_vector(7 downto 0)
     );
 end entity JtagHub;
 

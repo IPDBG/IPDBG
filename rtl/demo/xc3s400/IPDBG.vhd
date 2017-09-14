@@ -65,31 +65,31 @@ architecture structure of IPDBG is
             ADDR_WIDTH : natural
         );
         port(
-            clk                 : in  std_logic;
-            rst                 : in  std_logic;
-            ce                  : in  std_logic;
-            DataInValid         : in  std_logic;
-            DataIn              : in  std_logic_vector(7 downto 0);
-            DataReadyOut        : in  std_logic;
-            DataValidOut        : out std_logic;
-            DataOut             : out std_logic_vector(7 downto 0);
-            SampleEn            : in  std_logic;
-            DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0)
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_in_valid  : in  std_logic;
+            data_in        : in  std_logic_vector(7 downto 0);
+            data_out_ready : in  std_logic;
+            data_out_valid : out std_logic;
+            data_out       : out std_logic_vector(7 downto 0);
+            sample_en      : in  std_logic;
+            probe          : in  std_logic_vector(DATA_WIDTH-1 downto 0)
         );
     end component LogicAnalyserTop;
 
     component IoViewTop is
         port(
-            clk          : in  std_logic;
-            rst          : in  std_logic;
-            ce           : in  std_logic;
-            DataInValid  : in  std_logic;
-            DataIn       : in  std_logic_vector(7 downto 0);
-            DataOutReady : in  std_logic;
-            DataOutValid : out std_logic;
-            DataOut      : out std_logic_vector(7 downto 0);
-            ProbeInputs  : in  std_logic_vector;
-            ProbeOutputs : out std_logic_vector
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_in_valid  : in  std_logic;
+            data_in        : in  std_logic_vector(7 downto 0);
+            data_out_ready : in  std_logic;
+            data_out_valid : out std_logic;
+            data_out       : out std_logic_vector(7 downto 0);
+            probe_inputs   : in  std_logic_vector;
+            probe_outputs  : out std_logic_vector
         );
     end component IoViewTop;
 
@@ -150,32 +150,32 @@ begin
             ADDR_WIDTH => ADDR_WIDTH
         )
         port map(
-            clk                 => clk,
-            rst                 => '0',
-            ce                  => '1',
-            DataInValid         => Enable_LA,
-            DataIn              => DATAOUT,
-            DataReadyOut        => DATAINREADY_LA,
-            DataValidOut        => DATAINVALID_LA,
-            DataOut             => DATAIN_LA,
-            SampleEn            => '1',
-            DataDeviceunderTest => DataIn_LogicAnalyser
+            clk            => clk,
+            rst            => '0',
+            ce             => '1',
+            data_in_valid  => Enable_LA,
+            data_in        => DATAOUT,
+            data_out_ready => DATAINREADY_LA,
+            data_out_valid => DATAINVALID_LA,
+            data_out       => DATAIN_LA,
+            sample_en      => '1',
+            probe          => DataIn_LogicAnalyser
         );
     --DATAINVALID_LA <= '0';
     --LEDs <= Statedebug;
 
     IO : component IoViewTop
         port map(
-            clk          => clk,
-            rst          => '0',
-            ce           => '1',
-            DataInValid  => Enable_IOVIEW,
-            DataIn       => DATAOUT,
-            DataOutReady => DATAINREADY_IOVIEW,
-            DataOutValid => DATAINVALID_IOVIEW,
-            DataOut      => DATAIN_IOVIEW,
-            ProbeInputs  => Input_DeviceunderTest_IOVIEW,
-            ProbeOutputs => Output_DeviceunderTest_IOVIEW
+            clk            => clk,
+            rst            => '0',
+            ce             => '1',
+            data_in_valid  => Enable_IOVIEW,
+            data_in        => DATAOUT,
+            data_out_ready => DATAINREADY_IOVIEW,
+            data_out_valid => DATAINVALID_IOVIEW,
+            data_out       => DATAIN_IOVIEW,
+            probe_inputs   => Input_DeviceunderTest_IOVIEW,
+            probe_outputs  => Output_DeviceunderTest_IOVIEW
 
         );
     --LEDs <= Output_DeviceunderTest_IOVIEW;

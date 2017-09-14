@@ -108,27 +108,26 @@ begin
 
     cdc: block
         signal x : std_logic_vector(MFF_LENGTH downto 0);
-        component dffp is
+        component dffpc is
             port(
                 clk : in  std_logic;
                 ce  : in  std_logic;
                 d   : in  std_logic;
                 q   : out std_logic
             );
-        end component dffp;
+        end component dffpc;
     begin
 
         x(0) <= UPDATE and USER;
 
         mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
 
-            MFF : dffp
-                port map
-                (
-                  clk => clk,
-                  ce  => ce,
-                  d   => x(K),
-                  q   => x(K+1)
+            MFF : dffpc
+                port map(
+                    clk => clk,
+                    ce  => ce,
+                    d   => x(K),
+                    q   => x(K+1)
                 );
         end generate;
 
@@ -269,35 +268,29 @@ begin
         end if;
     end process;
 
-    pending_dffp: block
+    pending_dffpc: block
         signal x : std_logic_vector(11 downto 0);
-        component dffp is
+        component dffpc is
             port(
                 clk : in  std_logic;
                 ce  : in  std_logic;
                 d   : in  std_logic;
                 q   : out std_logic
             );
-        end component dffp;
-
+        end component dffpc;
     begin
-
         x(0) <= pending and USER;
 
         mffx_flops: for K in 0 to 10 generate begin
-
-            MFF : dffp
-                port map
-                (
-                  clk => DRCLK,
-                  ce  => '1',
-                  d   => x(K),
-                  q   => x(K+1)
+            MFF : dffpc
+                port map(
+                    clk => DRCLK,
+                    ce  => '1',
+                    d   => x(K),
+                    q   => x(K+1)
                 );
-        end generate;
-
+            end generate;
         pending_synched <= x(11);
-
     end block;
 
 end architecture behavioral;

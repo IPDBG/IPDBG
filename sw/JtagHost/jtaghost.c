@@ -1,5 +1,5 @@
 /*
- * This file is part of the libsigrok project.
+ * This file is part of the  ipdbg.org project.
  *
  * Copyright (C) 2016 ek <ek>
  *

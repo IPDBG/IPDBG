@@ -17,13 +17,11 @@ entity IpdbgTap is
     );
 end entity;
 
-
 architecture xc3s_BSCAN of IpdbgTap is
-
 
 begin
 
-    BSCAN_SPARTAN3_inst  :  BSCAN_SPARTAN3
+    BSCAN_SPARTAN3_inst:  BSCAN_SPARTAN3
     port  map  (
         CAPTURE     =>  capture, -- CAPTURE  output  from  TAP  controller
         DRCK1       =>  drclk,   -- Data  register  output  for  USER1  functions
@@ -39,6 +37,3 @@ begin
     );
 
 end architecture xc3s_BSCAN;
-
-
-
