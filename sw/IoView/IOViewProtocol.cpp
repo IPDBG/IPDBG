@@ -10,7 +10,7 @@
 IOViewProtocol::IOViewProtocol(IOViewProtocolObserver *obs):
 client(nullptr),
 protocolObserver(obs),
-config("I/O-View")
+config("IO-View")
 {
 
 }
