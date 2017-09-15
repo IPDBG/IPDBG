@@ -76,6 +76,7 @@ IOViewFrame::IOViewFrame(wxFrame *frame, const wxString& title)
 
 IOViewFrame::~IOViewFrame()
 {
+    delete protocol;
 }
 
 void IOViewFrame::OnClose(wxCloseEvent &event)
