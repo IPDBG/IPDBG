@@ -8,8 +8,8 @@ use unisim.vcomponents.all;
 entity XC7Top is
     generic(
         MFF_LENGTH : natural := 3;
-        DATA_WIDTH : natural := 8;        --! width of a sample
-        ADDR_WIDTH : natural := 8
+        DATA_WIDTH : natural := 11;        --! width of a sample
+        ADDR_WIDTH : natural := 14
     );
     port(
         --clk                              : in  std_logic;
@@ -25,10 +25,9 @@ end XC7Top;
 
 architecture structure of XC7Top is
 
-    component JTAGHUB is
+    component JtagHub is
         generic(
-            MFF_LENGTH : natural;
-            TARGET_TECHNOLOGY : natural
+            MFF_LENGTH : natural
         );
         port(
             clk                : in  std_logic;
@@ -45,54 +44,53 @@ architecture structure of XC7Top is
             DATAINVALID_GDB    : in  std_logic;
             DATAIN_LA          : in  std_logic_vector (7 downto 0);
             DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
-           --DRCLK              : out std_logic;
             DATAIN_GDB         : in  std_logic_vector (7 downto 0)
         );
-    end component JTAGHUB;
+    end component JtagHub;
 
 
-    component The_LogicAnalyser is
+    component LogicAnalyserTop is
         generic(
             DATA_WIDTH : natural;
             ADDR_WIDTH : natural
         );
         port(
-            clk                 : in  std_logic;
-            rst                 : in  std_logic;
-            ce                  : in  std_logic;
-            DataInValid         : in  std_logic;
-            DataIn              : in  std_logic_vector(7 downto 0);
-            DataReadyOut        : in  std_logic;
-            DataValidOut        : out std_logic;
-            DataOut             : out std_logic_vector(7 downto 0);
-            SampleEn            : in  std_logic;
-            DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            stateDebug          : out std_logic_vector(7 downto 0)
-
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_in_valid  : in  std_logic;
+            data_in        : in  std_logic_vector(7 downto 0);
+            data_out_ready : in  std_logic;
+            data_out_valid : out std_logic;
+            data_out       : out std_logic_vector(7 downto 0);
+            sample_en      : in  std_logic;
+            probe          : in  std_logic_vector(DATA_WIDTH-1 downto 0)
         );
-    end component The_LogicAnalyser;
+    end component LogicAnalyserTop;
 
-    component IOView is
+    component IOViewTop is
         port(
-            clk                             : in  std_logic;
-            rst                             : in  std_logic;
-            ce                              : in  std_logic;
-            DataInValid                     : in  std_logic;
-            DataIn                          : in  std_logic_vector(7 downto 0);
-            DataOutReady                    : in  std_logic;
-            DataOutValid                    : out std_logic;
-            DataOut                         : out std_logic_vector(7 downto 0);
-            ProbeInputs                     : in  std_logic_vector;
-            ProbeOutputs                    : out std_logic_vector
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_in_valid  : in  std_logic;
+            data_in        : in  std_logic_vector(7 downto 0);
+            data_out_ready : in  std_logic;
+            data_out_valid : out std_logic;
+            data_out       : out std_logic_vector(7 downto 0);
+            probe_inputs   : in  std_logic_vector;
+            probe_outputs  : out std_logic_vector
 
         );
-    end component IOView;
+    end component IOViewTop;
 
     signal Clk                : std_logic;
+    signal rst                : std_logic := '1';
 
     signal Input_DeviceunderTest_IOVIEW     : std_logic_vector(7 downto 0);
     --signal Output_DeviceunderTest_IOVIEW    : std_logic_vector(7 downto 0);
     signal DataIn_LogicAnalyser             : std_logic_vector(DATA_WIDTH-1 downto 0);
+    constant DataIn_LogicAnalyser_max       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
     --signal stateDebug          : std_logic_vector(7 downto 0);
 
     signal DATAOUT            : std_logic_vector(7 downto 0);
@@ -111,19 +109,19 @@ architecture structure of XC7Top is
     signal count              : std_logic_vector (28 downto 0);
     signal output             : std_logic_vector (7 downto 0);
     signal temp               : std_logic_vector(7 downto 0);
-    
+
     signal IoViewOutputs      : std_logic_vector(3 downto 0);
 
 begin
-    
+
     Counter : process (Clk) begin
         if rising_edge(Clk) then
-            if DataIn_LogicAnalyser = x"ff" then
-                DataIn_LogicAnalyser <= x"00";
+            if DataIn_LogicAnalyser = DataIn_LogicAnalyser_max then
+                DataIn_LogicAnalyser <= (others => '0');
             else
                 DataIn_LogicAnalyser <= std_logic_vector(unsigned(DataIn_LogicAnalyser)+1);
             end if;
-                
+
             if count =   "10111110101111000010000000000" then
                 count <= "00000000000000000000000000000";
                  if output = "11111111" then
@@ -137,63 +135,54 @@ begin
         end if;
     end process;
     Input_DeviceunderTest_IOVIEW <= output;
-    --Output_DeviceunderTest_IOVIEW <= count(3 downto 0); 
-    
-    
-    
-    
+    --Output_DeviceunderTest_IOVIEW <= count(3 downto 0);
 
-    la : component The_LogicAnalyser
+    la : component LogicAnalyserTop
         generic map(
             DATA_WIDTH => DATA_WIDTH,
             ADDR_WIDTH => ADDR_WIDTH
         )
         port map(
-            clk                 => Clk,
-            rst                 => '0',
-            ce                  => '1',
-            DataInValid         => Enable_LA,
-            DataIn              => DATAOUT,
+            clk            => Clk,
+            rst            => rst,
+            ce             => '1',
+            data_in_valid  => Enable_LA,
+            data_in        => DATAOUT,
 
-            DataReadyOut        => DATAINREADY_LA,
-            DataValidOut        => DATAINVALID_LA,
-            DataOut             => DATAIN_LA,
+            data_out_ready => DATAINREADY_LA,
+            data_out_valid => DATAINVALID_LA,
+            data_out       => DATAIN_LA,
 
-            SampleEn            => '1',
-            DataDeviceunderTest => DataIn_LogicAnalyser,
-
-            stateDebug          => open
+            sample_en      => '1',
+            probe          => DataIn_LogicAnalyser
 
         );
     --DATAINVALID_LA <= '0';
     --LEDs <= Statedebug;
 
-    IO : component IOView
+    IO : component IOViewTop
         port map(
-            clk                             => Clk,
-            rst                             => '0',
-            ce                              => '1',
+            clk            => Clk,
+            rst            => rst,
+            ce             => '1',
 
-            DataInValid                     => Enable_IOVIEW,
-            DataIn                          => DATAOUT,
+            data_in_valid  => Enable_IOVIEW,
+            data_in        => DATAOUT,
 
-            DataOutReady                    => DATAINREADY_IOVIEW,
-            DataOutValid                    => DATAINVALID_IOVIEW,
-            DataOut                         => DATAIN_IOVIEW,
+            data_out_ready => DATAINREADY_IOVIEW,
+            data_out_valid => DATAINVALID_IOVIEW,
+            data_out       => DATAIN_IOVIEW,
 
-            ProbeInputs    => Input_DeviceunderTest_IOVIEW,
-            ProbeOutputs   => IoViewOutputs
-
+            probe_inputs   => Input_DeviceunderTest_IOVIEW,
+            probe_outputs  => IoViewOutputs
         );
     Output_DeviceunderTest_IOVIEW <= IoViewOutputs;
     --LEDs <= Output_DeviceunderTest_IOVIEW;
 
 
-    JTAG : component JTAGHUB
+    JH : component JtagHub
         generic map(
-            MFF_LENGTH => MFF_LENGTH,
-            TARGET_TECHNOLOGY => 3 --Kintex7
-            
+            MFF_LENGTH => MFF_LENGTH
         )
         port map(
             clk                => Clk,
@@ -211,32 +200,58 @@ begin
             DATAINVALID_GDB    => '0',
             DATAIN_LA          => DATAIN_LA,
             DATAIN_IOVIEW      => DATAIN_IOVIEW,
-          
+
             DATAIN_GDB         => (others => '0')
         );
-        
-        Clk_fpga_gen: block
-            signal  buffOut: std_logic;
-        begin
-            InputBufferInst: IBUFGDS
-                generic map
-                (
-                    DIFF_TERM    => true,
-                    IBUF_LOW_PWR => false
-                )
-                port map
-                (
-                    I  => Clk200M_P,
-                    IB => Clk200M_N,
-                    O  => buffOut
-                );
-            GlobalBufferInst : BUFG
-                port map
-                (
-                    I => buffOut,
-                    O => Clk
-                );
-        end block;
+
+    Clk_fpga_gen: block
+        signal  buffOut: std_logic;
+    begin
+        InputBufferInst: IBUFGDS
+            generic map
+            (
+                DIFF_TERM    => true,
+                IBUF_LOW_PWR => false
+            )
+            port map
+            (
+                I  => Clk200M_P,
+                IB => Clk200M_N,
+                O  => buffOut
+            );
+        GlobalBufferInst : BUFG
+            port map
+            (
+                I => buffOut,
+                O => Clk
+            );
+    end block;
+
+    rstgen:block
+        component clk_wiz_0
+        port
+            (-- Clock in ports
+            -- Clock out ports
+            clk_out1          : out    std_logic;
+            -- Status and control signals
+            locked            : out    std_logic;
+            clk_in1           : in     std_logic
+        );
+        end component;
+        signal rst_n : std_logic;
+    begin
+        instance_name : clk_wiz_0
+            port map (
+                -- Clock out ports
+                clk_out1 => open,
+                -- Status and control signals
+                locked => rst_n,
+                -- Clock in ports
+                clk_in1 => clk
+            );
+        rst <= not rst_n;
+    end block;
+
 
 
 

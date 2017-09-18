@@ -2,26 +2,26 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.IpdbgTap_pkg.ipdbg_TDI;
+use work.IpdbgTap_pkg.ipdbg_TDO;
+use work.IpdbgTap_pkg.ipdbg_TMS;
+use work.IpdbgTap_pkg.ipdbg_TCK;
 
-entity TAP is
+entity IpdbgTap is
     port(
-        Capture : out std_logic;
+        capture : out std_logic;
         Shift   : out std_logic;
         Update  : out std_logic;
-        TDI_o   : out std_logic; -- "buffered" output
-        TDO_i   : in  std_logic;
-        SEL     : out std_logic;
-        DRCK    : out std_logic;
-
-        TDI     : in  std_logic;
-        TDO     : out std_logic;
-        TMS     : in  std_logic;
-        TCK     : in  std_logic
+        user    : out std_logic;
+        drclk   : out std_logic;
+        tdi     : out std_logic; -- "buffered" output
+        tdo     : in  std_logic
     );
 end entity;
 
 
-architecture tab of TAP is
+architecture tab of IpdbgTap is
 
     constant BypassCode         : std_logic_vector(7 downto 0) := "11111111";
     constant User1Code          : std_logic_vector(7 downto 0) := "01010101";
@@ -41,8 +41,17 @@ architecture tab of TAP is
     signal User1Selected        : std_logic;
     signal BypassSelected       : std_logic;
 
+    signal TDI_s                : std_logic;
+    signal TDO_s                : std_logic;
+    signal TMS                  : std_logic;
+    signal TCK                  : std_logic;
+
 begin
 
+    TCK <= work.IpdbgTap_pkg.ipdbg_TCK;
+    TDI_s <= work.IpdbgTap_pkg.ipdbg_TDI;
+    TMS <= work.IpdbgTap_pkg.ipdbg_TMS;
+    work.IpdbgTap_pkg.ipdbg_TDO <= TDO_s;
 
     process(TCK)begin
         if rising_edge(TCK) then
@@ -75,23 +84,23 @@ begin
     Capture  <= '1' when TAP = Capture_dr else '0';
     Update   <= '1' when TAP = Update_dr  else '0';
 
-    SEL <= User1Selected;
-    DRCK <= TCK;
+    user <= User1Selected;
+    DRCLK <= TCK;
 
     outputMultiplexer: block
         signal DrMuxOutput : std_logic;
     begin
         process(TAP, InstuctionRegister, DrMuxOutput)begin
             if TAP = shift_ir then
-                TDO <= InstuctionRegister(0);
+                TDO_s <= InstuctionRegister(0);
             else
-                TDO <= DrMuxOutput;
+                TDO_s <= DrMuxOutput;
             end if;
         end process;
 
-        process(User1Selected, BypassSelected, TDO_i, BypassRegister, IDCodeRegister)begin
+        process(User1Selected, BypassSelected, TDO, BypassRegister, IDCodeRegister)begin
             if User1Selected = '1' then
-                DrMuxOutput <= TDO_i;
+                DrMuxOutput <= TDO;
             elsif BypassSelected = '1' then
                 DrMuxOutput <= BypassRegister;
             else
@@ -100,12 +109,12 @@ begin
         end process;
     end block;
 
-    TDI_o <= TDI;
+    TDI <= TDI_s;
 
     process(TCK)begin
         if rising_edge(TCK) then
             if TAP = Shift_ir then
-                InstuctionRegister <= TDI & InstuctionRegister(InstuctionRegister'left downto 1);
+                InstuctionRegister <= TDI_s & InstuctionRegister(InstuctionRegister'left downto 1);
             elsif TAP = Update_ir then
                 User1Selected <= '0';
                 BypassSelected <= '0';
@@ -126,7 +135,7 @@ begin
 
             if TAP = Shift_dr then
                 if BypassSelected = '1' then
-                    BypassRegister <= TDI;
+                    BypassRegister <= TDI_s;
                 elsif User1Selected = '1' then
                     null;
                 end if;
@@ -134,7 +143,7 @@ begin
 
             if TAP = Shift_dr then
                 if IdRegisterSelected = '1' then
-                    IDCodeRegister <= TDI & IDCodeRegister(IDCodeRegister'left downto 1);
+                    IDCodeRegister <= TDI_s & IDCodeRegister(IDCodeRegister'left downto 1);
                 end if;
             elsif TAP = capture_ir then
                 IDCodeRegister <= IdValue;

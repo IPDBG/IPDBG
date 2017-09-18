@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 
-entity Memory is
+entity LogicAnalyserMemory is
     generic(
          DATA_WIDTH     : natural := 8;
          ADDR_WIDTH     : natural := 8
@@ -29,10 +29,10 @@ entity Memory is
 
         finish          : out std_logic
     );
-end entity;
+end entity LogicAnalyserMemory;
 
 
-architecture tab of memory is
+architecture tab of LogicAnalyserMemory is
 
     component pdpRam is
         generic(
@@ -81,8 +81,8 @@ begin
             Dataready <= (others => '0');
             W_R_State <= idle;
             writeData <= (others => '0');
-            Adr_w <= (others => '0');
-            Adr_r <= (others => '0');
+            Adr_w <= (others => '-');
+            Adr_r <= (others => '-');
             Full <= '0';
             DataValid <= '0';
             we <= '0';
@@ -201,7 +201,7 @@ begin
                 ce           => ce,
                 writeEnable  => we,
                 writeAddress => Adrw_slv,
-                writeData    => DatenIn,
+                writeData    => writeData,
                 readAddress  => Adrr_slv,
                 readData     => Datenlesen
             );

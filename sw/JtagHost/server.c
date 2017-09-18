@@ -336,6 +336,8 @@ static int do_accept(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_socket_t 
     if (rv == APR_SUCCESS)
     {
         //serv_ctx_t *serv_ctx = apr_palloc(mp, sizeof(serv_ctx_t));
+        serv_ctx->up_buf_level = 0;
+        serv_ctx->down_buf_level = 0;
         serv_ctx->channel_state = connected;
 
 

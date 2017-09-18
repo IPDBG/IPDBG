@@ -5,17 +5,12 @@
 #include <wx/string.h>
 #include <string>
 #include <wx/textdlg.h>
-#include <wx/fileconf.h>
-#include <wx/msw/regconf.h>
-#include <wx/confbase.h>
-#include <wx/config.h>
 
-wxConfig *config = new wxConfig("I/O-View");
-wxString LastIp;
 
 IOViewProtocol::IOViewProtocol(IOViewProtocolObserver *obs):
 client(nullptr),
-protocolObserver(obs)
+protocolObserver(obs),
+config("IO-View")
 {
 
 }
@@ -24,10 +19,10 @@ void IOViewProtocol::open()
 {
     client = new wxSocketClient();
 
-    config->Read("LastIp",&LastIp);
-    wxString IpAdress = wxGetTextFromUser(wxT("IP Adresse"),wxT("IP Adress to Connect"),LastIp);
+    config.Read("LastIp" , &lastIp);
+    wxString ipAdress = wxGetTextFromUser(_("IP Adresse"), _("IP Adress to Connect"), lastIp);
 
-    if(IpAdress.IsEmpty())
+    if(ipAdress.IsEmpty())
     {
         wxMessageBox(_("Not able to connect to JtagHost"));
         delete client;
@@ -35,12 +30,12 @@ void IOViewProtocol::open()
         return;
     }
     else
-        config->Write("LastIp",IpAdress);
+        config.Write("LastIp", ipAdress);
 
 
     wxIPV4address address;
-    address.Hostname(_(IpAdress));
-    address.Service(_("4243"));
+    address.Hostname(ipAdress);
+    address.Service("4243");
 
     client->SetFlags(wxSOCKET_NOWAIT);
     //client->SetEventHandler(*this, SOCKET_ID);
@@ -59,25 +54,18 @@ void IOViewProtocol::open()
     uint8_t buffer[8];
     buffer[0] = IOViewIPCommands::Reset;
     client->Write(buffer, 1);
-    client->Write(buffer, 1);
+
 
     buffer[0] = IOViewIPCommands::ReadPortWidths;
     client->Write(buffer, 1);
 
     size_t len = 0;
-    //size_t tries = 0;
     do
     {
         client->Read(&buffer[len], 8-len);
         len += client->LastCount();
     }while(len < 8 /*&& ++tries < 10000*/);
-    /*if(tries>=10000)
-    {
-        wxMessageBox("too many tries to read");
-        delete client;
-        client = nullptr;
-        return;
-    }*/
+
 
     NumberOfOutputs = buffer[0] |
                       buffer[1] << 8 |

@@ -45,8 +45,12 @@
 		<Unit filename="IOViewApp.h" />
 		<Unit filename="IOViewMain.cpp" />
 		<Unit filename="IOViewMain.h" />
+		<Unit filename="IOViewObserver.h" />
 		<Unit filename="IOViewPanel.cpp" />
 		<Unit filename="IOViewPanel.h" />
+		<Unit filename="IOViewProtocol.cpp" />
+		<Unit filename="IOViewProtocol.h" />
+		<Unit filename="IOViewProtocolI.h" />
 		<Unit filename="led.cpp" />
 		<Unit filename="led.h" />
 		<Unit filename="leds.xpm" />

@@ -1,5 +1,5 @@
 /*
- * This file is part of the libsigrok project.
+ * This file is part of the ipdbg.org project.
  *
  * Copyright (C) 2016 ek <ek>
  *
@@ -9,7 +9,7 @@
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANYWARRANTY; without even the implied warranty of
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
@@ -43,9 +43,6 @@ extern "C"
 urj_chain_t *ipdbgJtagAllocChain(void);
 int ipdbgJtagInit(urj_chain_t *chain, int apart);
 int ipdbgJTAGtransfer(urj_chain_t *chain, uint16_t *upData, uint16_t downData);
-//int ipdbgJtagWrite(urj_chain_t *chain, uint8_t *buf, size_t lengths, int Mask_DataValid);
-//int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts, int MaskPending);
-int ipdbgJtagRead(urj_chain_t *chain, uint8_t *buf, size_t lengts);
 void ipdbgJtagClose(urj_chain_t *chain);
 
 

@@ -1,5 +1,5 @@
 /*
- * This file is part of the libsigrok project.
+ * This file is part of the  ipdbg.org project.
  *
  * Copyright (C) 2016 ek <ek>
  *
@@ -401,11 +401,11 @@ int ipdbgJTAGtransfer(urj_chain_t *chain, uint16_t *upData, uint16_t downData)
     assert(part != NULL && "part must not be NULL");
 
     uint64_t dr_value_tx = downData;
-    printf("jtagtransfer %04x\n", downData);
-    printf("jtagtransfer %04x\n", upData);
+    printf("jtagtransfer dn %04x\n", downData);
     urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
     urj_tap_chain_shift_data_registers(chain, 1);
     *upData = urj_tap_register_get_value (part->active_instruction->data_register->out);
+    printf("jtagtransfer up %04x\n", *upData);
 
     //urj_tap_chain_flush(chain);
 

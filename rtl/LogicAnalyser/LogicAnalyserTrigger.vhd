@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 
-entity Trigger is
+entity LogicAnalyserTrigger is
     generic(
          DATA_WIDTH     : natural := 8
     );
@@ -23,10 +23,10 @@ entity Trigger is
         Trigger         : out std_logic                                               -- Trigger ist der Trigger, welcher dann auf den Logic Analyser geführt wird.
 
     );
-end entity;
+end entity LogicAnalyserTrigger;
 
 
-architecture behavioral of Trigger is
+architecture behavioral of LogicAnalyserTrigger is
     signal DataIn_last  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0'); -- Daten des letzten Clocks
     signal Mask_n       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal Mask_last_n  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');

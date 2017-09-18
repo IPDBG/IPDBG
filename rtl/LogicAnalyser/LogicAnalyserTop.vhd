@@ -3,34 +3,34 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 
-entity The_LogicAnalyser is
+entity LogicAnalyserTop is
     generic(
-         DATA_WIDTH         : natural := 4;        --! width of a sample
-         ADDR_WIDTH         : natural := 4          --! 2**ADDR_WIDTH = size if sample memory
+         DATA_WIDTH : natural := 4;        --! width of a sample
+         ADDR_WIDTH : natural := 4          --! 2**ADDR_WIDTH = size if sample memory
     );
     port(
-        clk                 : in  std_logic;
-        rst                 : in  std_logic;
-        ce                  : in  std_logic;
+        clk            : in  std_logic;
+        rst            : in  std_logic;
+        ce             : in  std_logic;
 
         --      host interface (UART or ....)
-        DataInValid         : in  std_logic;
-        DataIn              : in  std_logic_vector(7 downto 0);
+        data_in_valid  : in  std_logic;
+        data_in        : in  std_logic_vector(7 downto 0);
 
-        DataReadyOut        : in  std_logic;
-        DataValidOut        : out std_logic;
-        DataOut             : out std_logic_vector(7 downto 0);
+        data_out_ready : in  std_logic;
+        data_out_valid : out std_logic;
+        data_out       : out std_logic_vector(7 downto 0);
 
         -- LA interface
-        SampleEn            : in  std_logic;
-        DataDeviceunderTest : in  std_logic_vector(DATA_WIDTH-1 downto 0)
+        sample_en      : in  std_logic;
+        probe          : in  std_logic_vector(DATA_WIDTH-1 downto 0)
     );
-end entity;
+end entity LogicAnalyserTop;
 
-architecture structure of The_LogicAnalyser is
+architecture structure of LogicAnalyserTop is
 
 
-    component Memory is
+    component LogicAnalyserMemory is
         generic(
             DATA_WIDTH : natural;
             ADDR_WIDTH : natural
@@ -50,9 +50,9 @@ architecture structure of The_LogicAnalyser is
             ReqNextData   : in  std_logic;
             finish        : out std_logic
         );
-    end component Memory;
+    end component LogicAnalyserMemory;
 
-    component Trigger is
+    component LogicAnalyserTrigger is
         generic(
             DATA_WIDTH : natural
         );
@@ -68,9 +68,9 @@ architecture structure of The_LogicAnalyser is
             Value_last : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             Trigger    : out std_logic
         );
-    end component Trigger;
+    end component LogicAnalyserTrigger;
 
-    component Controller is
+    component LogicAnalyserController is
         generic(
             DATA_WIDTH : natural;
             ADDR_WIDTH : natural
@@ -97,56 +97,50 @@ architecture structure of The_LogicAnalyser is
             DataValid_LA     : in  std_logic;
             finish_LA        : in  std_logic
         );
-    end component Controller;
+    end component LogicAnalyserController;
 
-    component Escape is
+    component IpdbgEscaping is
         generic(
             DATA_WIDTH : natural
         );
         port(
-            clk           : in  std_logic;
-            rst           : in  std_logic;
-            ce            : in  std_logic;
-            DataInValid   : in  std_logic;
-            DataIn        : in  std_logic_vector(7 downto 0);
-            DataOutValid  : out std_logic;
-            DataOut       : out std_logic_vector(7 downto 0);
-            reset         : out std_logic
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_in_valid  : in  std_logic;
+            data_in        : in  std_logic_vector(7 downto 0);
+            data_out_valid : out std_logic;
+            data_out       : out std_logic_vector(7 downto 0);
+            reset          : out std_logic
         );
-    end component Escape;
+    end component IpdbgEscaping;
 
-
-    signal Trigger_end      : std_logic := '0';
-    signal TriggerActive_LA : std_logic := '0';
-    signal Trigger_LA       : std_logic := '0';
-    signal Full_s           : std_logic := '0';
-    signal TriggerActive    : std_logic := '0';
-    signal DataValid        : std_logic := '0';
-    signal ReqNextData      : std_logic := '0';
-    signal Trigger_s        : std_logic := '0';
-    signal NextData_LA      : std_logic := '0';
-    signal DataValid_LA     : std_logic := '0';
-    signal finish_LA        : std_logic := '0';
-    signal delay            : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
-    signal Mask             : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal Mask_last        : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal Value            : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal Value_last       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal Mask_O           : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal Value_O          : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal Mask_last_O      : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal Value_last_O     : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal delayOut_LA      : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
-    signal Daten_LA         : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal DataInValid_e    : std_logic;
-    signal DataIn_e         : std_logic_vector(7 downto 0);
-    signal reset            : std_logic;
-
-
-
+    signal Trigger_end        : std_logic := '0';
+    signal TriggerActive_LA   : std_logic := '0';
+    signal Trigger_LA         : std_logic := '0';
+    signal Full_s             : std_logic := '0';
+    signal TriggerActive      : std_logic := '0';
+    signal DataValid          : std_logic := '0';
+    signal ReqNextData        : std_logic := '0';
+    signal Trigger_s          : std_logic := '0';
+    signal NextData_LA        : std_logic := '0';
+    signal DataValid_LA       : std_logic := '0';
+    signal finish_LA          : std_logic := '0';
+    signal delay              : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
+    signal Mask               : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal Mask_last          : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal Value              : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal Value_last         : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal Mask_O             : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal Value_O            : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal Mask_last_O        : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal Value_last_O       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal delayOut_LA        : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
+    signal Daten_LA           : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal data_in_valid_uesc : std_logic;
+    signal data_in_uesc       : std_logic_vector(7 downto 0);
+    signal reset              : std_logic;
 begin
-
-
     process (clk, rst) begin
         if rst = '1' then
             Trigger_end <= '0';
@@ -158,7 +152,7 @@ begin
     end process;
 
 
-    Mem : component Memory
+    Memory : component LogicAnalyserMemory
         generic map(
             DATA_WIDTH => DATA_WIDTH,
             ADDR_WIDTH => ADDR_WIDTH
@@ -167,8 +161,8 @@ begin
             clk           => clk,
             rst           => reset,
             ce            => ce,
-            SampleEn      => SampleEn,
-            DatenIn       => DataDeviceunderTest,
+            SampleEn      => sample_en,
+            DatenIn       => probe,
             TriggerActive => TriggerActive_LA,
             Trigger       => Trigger_end,
             Full          => Full_s,
@@ -180,7 +174,7 @@ begin
         );
 
 
-    Trig : component Trigger
+    Trigger : component LogicAnalyserTrigger
         generic map(
             DATA_WIDTH => DATA_WIDTH
         )
@@ -188,8 +182,8 @@ begin
             clk          => clk,
             rst          => reset,
             ce           => ce,
-            SampleEn     => SampleEn,
-            DatenIn      => DataDeviceunderTest,
+            SampleEn     => sample_en,
+            DatenIn      => probe,
             Mask         => Mask_O,
             Mask_last    => Mask_last_O,
             Value        => Value_O,
@@ -197,7 +191,7 @@ begin
             Trigger      => Trigger_s
         );
 
-    Ctr : component Controller
+    Controller : component LogicAnalyserController
         generic map(
             DATA_WIDTH => DATA_WIDTH,
             ADDR_WIDTH => ADDR_WIDTH
@@ -206,11 +200,11 @@ begin
             clk              => clk,
             rst              => reset,
             ce               => ce,
-            DatenInValid     => DataInValid_e,
-            DatenIn_Befehle  => DataIn_e,
-            DatenReady_HOST  => DataReadyOut,
-            DataValid_HOST   => DataValidOut,
-            DatenOut_HOST    => DataOut,
+            DatenInValid     => data_in_valid_uesc,
+            DatenIn_Befehle  => data_in_uesc,
+            DatenReady_HOST  => data_out_ready,
+            DataValid_HOST   => data_out_valid,
+            DatenOut_HOST    => data_out,
             Mask_O           => Mask_O,
             Value_O          => Value_O,
             Mask_last_O      => Mask_last_O,
@@ -225,19 +219,19 @@ begin
             finish_LA        => finish_LA
         );
 
-    Esc : component Escape
+    Escaping : component IpdbgEscaping
         generic map(
             DATA_WIDTH => DATA_WIDTH
         )
         port map(
-            clk          => clk,
-            rst          => rst,
-            ce           => ce,
-            DataInValid  => DataInValid,
-            DataIn       => DataIn,
-            DataOutValid => DataInValid_e,
-            DataOut      => DataIn_e,
-            reset        => reset
+            clk            => clk,
+            rst            => rst,
+            ce             => ce,
+            data_in_valid  => data_in_valid,
+            data_in        => data_in,
+            data_out_valid => data_in_valid_uesc,
+            data_out       => data_in_uesc,
+            reset          => reset
         );
 
 end architecture structure;

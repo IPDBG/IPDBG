@@ -81,7 +81,7 @@ void IOViewPanel::setOutputs(unsigned int outputs)
 
     NumberOfOutputs = outputs;
 
-	for(size_t i = 0 ; i < NumberOfOutputs ; ++i)
+	for(uint32_t i = 0 ; i < NumberOfOutputs ; ++i)
     {
         wxString str = wxString::Format(_T("P%d"), NumberOfOutputs-1-i);
         wxCheckBox *checkBox = new wxCheckBox( this, wxID_ANY, str, wxDefaultPosition, wxDefaultSize, 0 );
