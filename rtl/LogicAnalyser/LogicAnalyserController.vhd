@@ -80,14 +80,14 @@ architecture tab of LogicAnalyserController is
 
 
     --Zähler
-    signal K_s              : natural ;
-    signal M_s              : natural ;
+    signal K_s              : natural;
+    signal M_s              : natural;
 
     signal Mask_s           : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal Value_s          : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal Mask_last_s      : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal Value_last_s     : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
-    signal delay_s          : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal Value_last_s     : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal delay_s          : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
     signal Cancel_s         : std_logic := '0';
 
 
