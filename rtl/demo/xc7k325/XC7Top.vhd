@@ -143,18 +143,18 @@ begin
             ADDR_WIDTH => ADDR_WIDTH
         )
         port map(
-            clk                 => Clk,
-            rst                 => rst,
-            ce                  => '1',
-            DataInValid         => Enable_LA,
-            DataIn              => DATAOUT,
+            clk            => Clk,
+            rst            => rst,
+            ce             => '1',
+            data_in_valid  => Enable_LA,
+            data_in        => DATAOUT,
 
-            DataReadyOut        => DATAINREADY_LA,
-            DataValidOut        => DATAINVALID_LA,
-            DataOut             => DATAIN_LA,
+            data_out_ready => DATAINREADY_LA,
+            data_out_valid => DATAINVALID_LA,
+            data_out       => DATAIN_LA,
 
-            SampleEn            => '1',
-            DataDeviceunderTest => DataIn_LogicAnalyser
+            sample_en      => '1',
+            probe          => DataIn_LogicAnalyser
 
         );
     --DATAINVALID_LA <= '0';
@@ -162,20 +162,19 @@ begin
 
     IO : component IOViewTop
         port map(
-            clk                             => Clk,
-            rst                             => rst,
-            ce                              => '1',
+            clk            => Clk,
+            rst            => rst,
+            ce             => '1',
 
-            DataInValid                     => Enable_IOVIEW,
-            DataIn                          => DATAOUT,
+            data_in_valid  => Enable_IOVIEW,
+            data_in        => DATAOUT,
 
-            DataOutReady                    => DATAINREADY_IOVIEW,
-            DataOutValid                    => DATAINVALID_IOVIEW,
-            DataOut                         => DATAIN_IOVIEW,
+            data_out_ready => DATAINREADY_IOVIEW,
+            data_out_valid => DATAINVALID_IOVIEW,
+            data_out       => DATAIN_IOVIEW,
 
-            ProbeInputs    => Input_DeviceunderTest_IOVIEW,
-            ProbeOutputs   => IoViewOutputs
-
+            probe_inputs   => Input_DeviceunderTest_IOVIEW,
+            probe_outputs  => IoViewOutputs
         );
     Output_DeviceunderTest_IOVIEW <= IoViewOutputs;
     --LEDs <= Output_DeviceunderTest_IOVIEW;
