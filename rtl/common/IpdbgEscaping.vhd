@@ -27,7 +27,7 @@ begin
 
     process (clk, rst) begin
         if rst = '1' then
-            reset <= '0';
+            reset <= '1';
             data_out_valid <= '0';
             data_out <= (others => '-');
             state <= normal_s;
