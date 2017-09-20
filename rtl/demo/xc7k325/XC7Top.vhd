@@ -58,12 +58,12 @@ architecture structure of XC7Top is
             clk            : in  std_logic;
             rst            : in  std_logic;
             ce             : in  std_logic;
-            data_in_valid  : in  std_logic;
-            data_in        : in  std_logic_vector(7 downto 0);
-            data_out_ready : in  std_logic;
-            data_out_valid : out std_logic;
-            data_out       : out std_logic_vector(7 downto 0);
-            sample_en      : in  std_logic;
+            data_dwn_valid : in  std_logic;
+            data_dwn       : in  std_logic_vector(7 downto 0);
+            data_up_ready  : in  std_logic;
+            data_up_valid  : out std_logic;
+            data_up        : out std_logic_vector(7 downto 0);
+            sample_enable  : in  std_logic;
             probe          : in  std_logic_vector(DATA_WIDTH-1 downto 0)
         );
     end component LogicAnalyserTop;
@@ -73,11 +73,11 @@ architecture structure of XC7Top is
             clk            : in  std_logic;
             rst            : in  std_logic;
             ce             : in  std_logic;
-            data_in_valid  : in  std_logic;
-            data_in        : in  std_logic_vector(7 downto 0);
-            data_out_ready : in  std_logic;
-            data_out_valid : out std_logic;
-            data_out       : out std_logic_vector(7 downto 0);
+            data_dwn_valid : in  std_logic;
+            data_dwn       : in  std_logic_vector(7 downto 0);
+            data_up_ready  : in  std_logic;
+            data_up_valid  : out std_logic;
+            data_up        : out std_logic_vector(7 downto 0);
             probe_inputs   : in  std_logic_vector;
             probe_outputs  : out std_logic_vector
 
@@ -108,7 +108,7 @@ architecture structure of XC7Top is
     signal DATAIN_GDB         : std_logic_vector (7 downto 0);
     signal count              : std_logic_vector (28 downto 0);
     signal output             : std_logic_vector (7 downto 0);
-    signal temp               : std_logic_vector(7 downto 0);
+    signal temp               : std_logic_vector (7 downto 0);
 
     signal IoViewOutputs      : std_logic_vector(3 downto 0);
 
@@ -146,17 +146,41 @@ begin
             clk            => Clk,
             rst            => rst,
             ce             => '1',
-            data_in_valid  => Enable_LA,
-            data_in        => DATAOUT,
 
-            data_out_ready => DATAINREADY_LA,
-            data_out_valid => DATAINVALID_LA,
-            data_out       => DATAIN_LA,
+            data_dwn_valid => Enable_LA,
+            data_dwn       => DATAOUT,
 
-            sample_en      => '1',
+            data_up_ready  => DATAINREADY_LA,
+            data_up_valid  => DATAINVALID_LA,
+            data_up        => DATAIN_LA,
+
+            sample_enable  => '1',
             probe          => DataIn_LogicAnalyser
 
         );
+
+        la2 : component LogicAnalyserTop
+        generic map(
+            DATA_WIDTH => DATA_WIDTH,
+            ADDR_WIDTH => ADDR_WIDTH
+        )
+        port map(
+            clk            => Clk,
+            rst            => rst,
+            ce             => '1',
+
+            data_dwn_valid => Enable_GDB,
+            data_dwn       => DATAOUT,
+
+            data_up_ready  => DATAINREADY_GDB,
+            data_up_valid  => DATAINVALID_GDB,
+            data_up        => DATAIN_GDB,
+
+            sample_enable  => '1',
+            probe          => DataIn_LogicAnalyser
+
+        );
+
     --DATAINVALID_LA <= '0';
     --LEDs <= Statedebug;
 
@@ -166,12 +190,12 @@ begin
             rst            => rst,
             ce             => '1',
 
-            data_in_valid  => Enable_IOVIEW,
-            data_in        => DATAOUT,
+            data_dwn_valid => Enable_IOVIEW,
+            data_dwn       => DATAOUT,
 
-            data_out_ready => DATAINREADY_IOVIEW,
-            data_out_valid => DATAINVALID_IOVIEW,
-            data_out       => DATAIN_IOVIEW,
+            data_up_ready  => DATAINREADY_IOVIEW,
+            data_up_valid  => DATAINVALID_IOVIEW,
+            data_up        => DATAIN_IOVIEW,
 
             probe_inputs   => Input_DeviceunderTest_IOVIEW,
             probe_outputs  => IoViewOutputs
@@ -190,18 +214,19 @@ begin
             DATAOUT            => DATAOUT,
             Enable_LA          => Enable_LA,
             Enable_IOVIEW      => Enable_IOVIEW,
-            Enable_GDB         => open,
+            Enable_GDB         => Enable_GDB,
 
             DATAINREADY_LA     => DATAINREADY_LA,
             DATAINREADY_IOVIEW => DATAINREADY_IOVIEW,
             DATAINREADY_GDB    => DATAINREADY_GDB,
             DATAINVALID_LA     => DATAINVALID_LA,
             DATAINVALID_IOVIEW => DATAINVALID_IOVIEW,
-            DATAINVALID_GDB    => '0',
+            DATAINVALID_GDB    => DATAINVALID_GDB,
+
             DATAIN_LA          => DATAIN_LA,
             DATAIN_IOVIEW      => DATAIN_IOVIEW,
 
-            DATAIN_GDB         => (others => '0')
+            DATAIN_GDB         => DATAIN_GDB
         );
 
     Clk_fpga_gen: block
@@ -251,8 +276,8 @@ begin
             );
         rst <= not rst_n;
     end block;
-
-
+    --DATAIN_GDB <= (others => '-');
+    --DATAINVALID_GDB <= '0';
 
 
 end architecture structure;

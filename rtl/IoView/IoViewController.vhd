@@ -10,11 +10,11 @@ entity IoViewController is
         ce             : in  std_logic;
 
         -- host interface (JTAG-HUB or UART or ....)
-        data_in_valid  : in  std_logic;
-        data_in        : in  std_logic_vector(7 downto 0);
-        data_out_ready : in  std_logic;
-        data_out_valid : out std_logic;
-        data_out       : out std_logic_vector(7 downto 0);
+        data_dwn_valid  : in  std_logic;
+        data_dwn        : in  std_logic_vector(7 downto 0);
+        data_up_ready   : in  std_logic;
+        data_up_valid   : out std_logic;
+        data_up         : out std_logic_vector(7 downto 0);
 
         --- Input & Ouput--------
         input          : in  std_logic_vector;
@@ -73,17 +73,17 @@ begin
             if ce = '1' then
                 data_in_reg_valid <= '0';
                 data_in_reg_last  <= '0';
-                data_out_valid    <= '0';
+                data_up_valid    <= '0';
                 case state is
                 when init =>
-                    if data_in_valid = '1' then
-                        if data_in = read_widths_cmd then
+                    if data_dwn_valid = '1' then
+                        if data_dwn = read_widths_cmd then
                             state <= read_width;
                         end if;
-                        if data_in = write_output_cmd then
+                        if data_dwn = write_output_cmd then
                             state <= set_output;
                         end if;
-                        if data_in = read_input_cmd then
+                        if data_dwn = read_input_cmd then
                             state <= read_input;
                             data_out_temporary <= Input;
                             counter <= (others => '0');
@@ -94,7 +94,7 @@ begin
                 when read_width =>
                     case output_handshake_state is
                     when start =>
-                        if data_out_ready = '1' then
+                        if data_up_ready = '1' then
                             width_temporary_reg <= OUTPUT_WIDTH_slv;
                             output_handshake_state <= mem;
                             counter <= (others => '0');
@@ -102,18 +102,18 @@ begin
                         end if;
 
                     when mem =>
-                        if data_out_ready = '1' then
-                            data_out <= width_temporary_reg(data_out'range);
-                            data_out_valid <= '1';
-                            width_temporary_reg <= x"00" & width_temporary_reg(width_temporary_reg'left downto data_out'length);
+                        if data_up_ready = '1' then
+                            data_up <= width_temporary_reg(data_up'range);
+                            data_up_valid <= '1';
+                            width_temporary_reg <= x"00" & width_temporary_reg(width_temporary_reg'left downto data_up'length);
                             counter <= counter + 1;
                             output_handshake_state <= shift;
                         end if;
 
                     when shift =>
-                        data_out_valid <= '0';
+                        data_up_valid <= '0';
 
-                        if data_out_ready = '0' then
+                        if data_up_ready = '0' then
                             output_handshake_state <= mem;
                         end if;
 
@@ -127,7 +127,7 @@ begin
                         end if;
 
                     when next_data =>
-                        if data_out_ready = '1' then
+                        if data_up_ready = '1' then
                             counter <= (others => '0');
                             import_ADDR <= '1';
                             width_temporary_reg <= INPUT_WIDTH_slv;
@@ -136,9 +136,9 @@ begin
                    end case;
 
                 when set_output =>
-                    if data_in_valid = '1' then
+                    if data_dwn_valid = '1' then
                         width_bytes_sent_counter <= width_bytes_sent_counter + 1;
-                        data_in_reg <= data_in;
+                        data_in_reg <= data_dwn;
                         data_in_reg_valid <= '1';
 
                         if width_bytes_sent_counter + 1 = OUTPUT_WIDTH_BYTES then
@@ -152,21 +152,21 @@ begin
                     when start =>
                         output_handshake_state <= mem;
                     when mem =>
-                        if data_out_ready = '1' then
-                            data_out_valid <= '1';
-                            data_out <= data_out_temporary(data_out'range);
+                        if data_up_ready = '1' then
+                            data_up_valid <= '1';
+                            data_up <= data_out_temporary(data_up'range);
                             output_handshake_state <= shift;
                             counter <= counter + 1;
                         end if;
 
                     when shift =>
-                        data_out_valid <= '0';
-                        if data_out_ready = '0' then
+                        data_up_valid <= '0';
+                        if data_up_ready = '0' then
                             if counter = INPUT_WIDTH_BYTES then
                                 output_handshake_state <= next_data;
                             else
                                 output_handshake_state <= mem;
-                                data_out_temporary <= x"00" & data_out_temporary( data_out_temporary'left downto data_out'length);
+                                data_out_temporary <= x"00" & data_out_temporary( data_out_temporary'left downto data_up'length);
                             end if;
                         end if ;
 

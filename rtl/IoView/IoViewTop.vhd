@@ -9,11 +9,11 @@ entity IoViewTop is
         ce             : in  std_logic;
 
         -- host interface (JtagHub or UART or ....)
-        data_in_valid  : in  std_logic;
-        data_in        : in  std_logic_vector(7 downto 0);
-        data_out_ready : in  std_logic;
-        data_out_valid : out std_logic;
-        data_out       : out std_logic_vector(7 downto 0);
+        data_dwn_valid  : in  std_logic;
+        data_dwn        : in  std_logic_vector(7 downto 0);
+        data_up_ready : in  std_logic;
+        data_up_valid : out std_logic;
+        data_up       : out std_logic_vector(7 downto 0);
 
         --- Input & Ouput--------
         probe_inputs   : in  std_logic_vector;
@@ -28,11 +28,11 @@ architecture struct of IoViewTop is
             clk            : in  std_logic;
             rst            : in  std_logic;
             ce             : in  std_logic;
-            data_in_valid  : in  std_logic;
-            data_in        : in  std_logic_vector(7 downto 0);
-            data_out_ready : in  std_logic;
-            data_out_valid : out std_logic;
-            data_out       : out std_logic_vector(7 downto 0);
+            data_dwn_valid : in  std_logic;
+            data_dwn       : in  std_logic_vector(7 downto 0);
+            data_up_ready  : in  std_logic;
+            data_up_valid  : out std_logic;
+            data_up        : out std_logic_vector(7 downto 0);
             input          : in  std_logic_vector;
             output         : out std_logic_vector
         );
@@ -61,11 +61,11 @@ begin
             clk            => clk,
             rst            => reset,
             ce             => ce,
-            data_in_valid  => data_in_valid_unescaped,
-            data_in        => data_in_unescaped,
-            data_out_ready => data_out_ready,
-            data_out_valid => data_out_valid,
-            data_out       => data_out,
+            data_dwn_valid => data_in_valid_unescaped,
+            data_dwn       => data_in_unescaped,
+            data_up_ready  => data_up_ready,
+            data_up_valid  => data_up_valid,
+            data_up        => data_up,
             input          => probe_inputs,
             output         => probe_outputs
         );
@@ -75,8 +75,8 @@ begin
             clk            => clk,
             rst            => rst,
             ce             => ce,
-            data_in_valid  => data_in_valid,
-            data_in        => data_in,
+            data_in_valid  => data_dwn_valid,
+            data_in        => data_dwn,
             data_out_valid => data_in_valid_unescaped,
             data_out       => data_in_unescaped,
             reset          => reset

@@ -12,77 +12,77 @@ entity LogicAnalyserTrigger is
         rst             : in  std_logic;
         ce              : in  std_logic;
 
-        SampleEn        : in  std_logic;
-        DatenIn         : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- Eingangsdaten die Überprüft werden müssen.
+        sample_enable   : in  std_logic;
+        probe           : in  std_logic_vector(DATA_WIDTH-1 downto 0);
 
-        Mask            : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- Mask gibt an welche Bits von den Ausgangsdaten relevant sind.
-        Mask_last       : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- Mask_last gibt an, welche Daten von den letzten Zyklus des DatenIn relevant sind.
-        Value           : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- VarMask gibt an, welche Daten am DatenIn anliegen sollten
-        Value_last      : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- VarMask gibt an, welche Daten beim letzten Zyklus hätten anliegen müssen.
+        mask_curr       : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- mask_curr gibt an welche Bits von den Ausgangsdaten relevant sind.
+        mask_last       : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- mask_last gibt an, welche Daten von den letzten Zyklus des probe relevant sind.
+        --mask_edge       : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+        value_curr      : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- Varmask gibt an, welche Daten am probe anliegen sollten
+        value_last      : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- Varmask gibt an, welche Daten beim letzten Zyklus hätten anliegen müssen.
 
-        Trigger         : out std_logic                                               -- Trigger ist der Trigger, welcher dann auf den Logic Analyser geführt wird.
+        trigger         : out std_logic                                               -- Trigger ist der Trigger, welcher dann auf den Logic Analyser geführt wird.
 
     );
 end entity LogicAnalyserTrigger;
 
 
 architecture behavioral of LogicAnalyserTrigger is
-    signal DataIn_last  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0'); -- Daten des letzten Clocks
-    signal Mask_n       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal Mask_last_n  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    constant allOnes    : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
+    signal probe_last  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal mask_curr_n : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal mask_last_n : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal mask_edge_n : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    constant all_ones  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
+
+    --constant mask_edge : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
 
 begin
 
-    Mask_last_n <= not Mask_last;
-    Mask_n      <= not Mask;
+    mask_last_n <= not mask_last;
+    mask_curr_n <= not mask_curr;
+    --mask_edge_n <= not mask_edge;
 
     process (clk, rst)
-        variable currentSampleEqValue         : std_logic_vector(DATA_WIDTH-1 downto 0):= (others => '0');
-        variable lastSampleMatch              : std_logic_vector(DATA_WIDTH-1 downto 0):= (others => '0');
-        variable lastAndCurrentSampleMatch    : std_logic_vector(DATA_WIDTH-1 downto 0):= (others => '0');
-        variable lastSampleEqValue            : std_logic_vector(DATA_WIDTH-1 downto 0):= (others => '0');
-
+        variable current_probe_eq_value       : std_logic_vector(DATA_WIDTH-1 downto 0);
+        variable last_probe_match             : std_logic_vector(DATA_WIDTH-1 downto 0);
+        variable last_and_current_probe_match : std_logic_vector(DATA_WIDTH-1 downto 0);
+        variable last_probe_eq_value          : std_logic_vector(DATA_WIDTH-1 downto 0);
+        --variable edge_match                   : std_logic_vector(DATA_WIDTH-1 downto 0);
     begin
-
         if rst = '1' then
-            Trigger <= '0';
-
+            trigger <= '0';
         elsif rising_edge(clk) then
             if ce = '1' then
-                if SampleEn = '1' then
+                if sample_enable = '1' then
 
                     for idx in 0 to DATA_WIDTH-1 loop
-                        DataIn_last(idx) <= DatenIn(idx);
+                        probe_last(idx) <= probe(idx);
 
-                        currentSampleEqValue(idx) := '0';
-                        if DatenIn(idx) = Value(idx) then
-                            currentSampleEqValue(idx) := '1';
+                        current_probe_eq_value(idx) := '0';
+                        if probe(idx) = value_curr(idx) then
+                            current_probe_eq_value(idx) := '1';
                         end if;
 
-
-                        lastSampleEqValue(idx) := '0';
-                        if DataIn_last(idx) = Value_last(idx) then
-                            lastSampleEqValue(idx) := '1';
+                        last_probe_eq_value(idx) := '0';
+                        if probe_last(idx) = value_last(idx) then
+                            last_probe_eq_value(idx) := '1';
                         end if;
 
-                        lastSampleMatch (idx):= lastSampleEqValue(idx) or Mask_last_n(idx);
-                        lastAndCurrentSampleMatch(idx) := lastSampleMatch(idx) and currentSampleEqValue(idx);
+                        last_probe_match(idx):= last_probe_eq_value(idx) or mask_last_n(idx);
+                        last_and_current_probe_match(idx) := last_probe_match(idx) and current_probe_eq_value(idx);
+
+                        --edge_match(idx) := mask_edge_n(idx) or (probe_last(idx) xor probe(idx));
 
                     end loop;
 
-                    if (lastAndCurrentSampleMatch or Mask_n) = allOnes then
-                        Trigger <= '1';
+                    if (last_and_current_probe_match or mask_curr_n) = all_ones then
+                        trigger <= '1';
                     else
-                        Trigger <= '0';
+                        trigger <= '0';
                     end if;
-
                 end if;
             end if;
         end if;
     end process;
 
 end architecture behavioral;
-
-
-

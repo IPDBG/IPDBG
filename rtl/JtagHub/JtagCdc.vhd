@@ -65,6 +65,7 @@ architecture behavioral of JtagCdc is
     signal data_in_ready_ioview_s : std_logic;
     signal data_in_ready_la_s     : std_logic;
     signal data_in_ready_gdb_s    : std_logic;
+    signal clear                  : std_logic;
 
     signal register_la            : std_logic_vector(7 downto 0);
     signal register_gdb           : std_logic_vector(7 downto 0);
@@ -152,6 +153,7 @@ begin
                 Enable_LA <= '0';
                 Enable_IOVIEW <= '0';
                 Enable_GDB <= '0';
+                clear <= '0';
                 if data_out_register_enable = '1' and shift_register(10 downto 8) = "100" and shift_register (11) = '1' then
                     Enable_LA <= '1';
                 end if;
@@ -160,6 +162,9 @@ begin
                 end if;
                 if data_out_register_enable = '1' and shift_register(10 downto 8) = "001"  and shift_register (11) = '1' then
                     Enable_GDB <= '1';
+                end if;
+                if data_out_register_enable = '1' and shift_register(10 downto 8) = "111"  and shift_register (11) = '1' then
+                    clear <= '1';
                 end if;
             end if;
         end process;
@@ -180,41 +185,51 @@ begin
     DATAINREADY_IOVIEW <= data_in_ready_ioview_s;
     process (clk) begin
         if rising_edge(clk) then
-            if set_pending = '1' then
-                pending <= '1';
-            end if;
-            if data_in_ready_la_s = '1' then
-                if DATAINVALID_LA = '1' then
-                    data_in_ready_la_s <= '0';
-                    register_la <= DATAIN_LA;
+            if clear = '1' then
+                pending <= '0';
+                data_in_ready_gdb_s <= '1';
+                data_in_ready_la_s <= '1';
+                data_in_ready_ioview_s <= '1';
+                register_la <= (others => '-');
+                register_ioview <= (others => '-');
+                register_gdb <= (others => '-');
+            else
+                if set_pending = '1' then
+                    pending <= '1';
                 end if;
-            end if;
-
-            if data_in_ready_ioview_s = '1' then
-                if DATAINVALID_IOVIEW = '1' then
-                    data_in_ready_ioview_s <= '0';
-                    register_ioview <= DATAIN_IOVIEW;
-                end if;
-            end if;
-
-            if data_in_ready_gdb_s = '1' then
-                if DATAINVALID_GDB = '1' then
-                    data_in_ready_gdb_s <= '0';
-                    register_gdb <= DATAIN_GDB;
-                end if;
-            end if;
-            if update_synced = '1' and update_synced_prev = '0' then
-                if acknowledge = '1' then
-                    pending <= '0';
-                    if channel_register = "001" then
-                        data_in_ready_gdb_s <= '1';
+                if data_in_ready_la_s = '1' then
+                    if DATAINVALID_LA = '1' then
+                        data_in_ready_la_s <= '0';
+                        register_la <= DATAIN_LA;
                     end if;
+                end if;
 
-                    if channel_register = "100" then
-                        data_in_ready_la_s <= '1';
+                if data_in_ready_ioview_s = '1' then
+                    if DATAINVALID_IOVIEW = '1' then
+                        data_in_ready_ioview_s <= '0';
+                        register_ioview <= DATAIN_IOVIEW;
                     end if;
-                    if channel_register = "010" then
-                        data_in_ready_ioview_s <= '1';
+                end if;
+
+                if data_in_ready_gdb_s = '1' then
+                    if DATAINVALID_GDB = '1' then
+                        data_in_ready_gdb_s <= '0';
+                        register_gdb <= DATAIN_GDB;
+                    end if;
+                end if;
+                if update_synced = '1' and update_synced_prev = '0' then
+                    if acknowledge = '1' then
+                        pending <= '0';
+                        if channel_register = "001" then
+                            data_in_ready_gdb_s <= '1';
+                        end if;
+
+                        if channel_register = "100" then
+                            data_in_ready_la_s <= '1';
+                        end if;
+                        if channel_register = "010" then
+                            data_in_ready_ioview_s <= '1';
+                        end if;
                     end if;
                 end if;
             end if;
@@ -223,47 +238,54 @@ begin
 
     process (clk) begin
         if rising_edge(clk) then
-            set_pending <= '0';
-            case ent_mux is
-                when GDB_s =>
-                    if data_in_ready_gdb_s = '1' then
-                        ent_mux <= LA_s;
-                        transfer <= is_idle;
-                    else
-                        la_transfer_register <= register_gdb;
-                        if transfer = is_idle then
-                            set_pending <= '1';
-                            transfer <= is_active;
+            if clear = '1' then
+                set_pending <= '0';
+                ent_mux <= GDB_s;
+                transfer <= is_idle;
+                channel_register <= "---";
+            else
+                set_pending <= '0';
+                case ent_mux is
+                    when GDB_s =>
+                        if data_in_ready_gdb_s = '1' then
+                            ent_mux <= LA_s;
+                            transfer <= is_idle;
+                        else
+                            la_transfer_register <= register_gdb;
+                            if transfer = is_idle then
+                                set_pending <= '1';
+                                transfer <= is_active;
+                            end if;
+                            channel_register <= "001";
                         end if;
-                        channel_register <= "001";
-                    end if;
 
-                when LA_s =>
-                    if data_in_ready_la_s = '1' then
-                        ent_mux <= IOVIEW_s;
-                        transfer <= is_idle;
-                    else
-                        la_transfer_register <= register_la;
-                        if transfer = is_idle then
-                            set_pending <= '1';
-                            transfer <= is_active;
+                    when LA_s =>
+                        if data_in_ready_la_s = '1' then
+                            ent_mux <= IOVIEW_s;
+                            transfer <= is_idle;
+                        else
+                            la_transfer_register <= register_la;
+                            if transfer = is_idle then
+                                set_pending <= '1';
+                                transfer <= is_active;
+                            end if;
+                            channel_register <= "100";
                         end if;
-                        channel_register <= "100";
-                    end if;
 
-                when IOVIEW_s =>
-                    if data_in_ready_ioview_s = '1' then
-                        ent_mux <= GDB_s;
-                        transfer <= is_idle;
-                    else
-                        la_transfer_register <= register_ioview;
-                        if transfer = is_idle then
-                            set_pending <= '1';
-                            transfer <= is_active;
+                    when IOVIEW_s =>
+                        if data_in_ready_ioview_s = '1' then
+                            ent_mux <= GDB_s;
+                            transfer <= is_idle;
+                        else
+                            la_transfer_register <= register_ioview;
+                            if transfer = is_idle then
+                                set_pending <= '1';
+                                transfer <= is_active;
+                            end if;
+                            channel_register <= "010";
                         end if;
-                        channel_register <= "010";
-                    end if;
-            end case;
+                end case;
+            end if;
         end if;
     end process;
 
