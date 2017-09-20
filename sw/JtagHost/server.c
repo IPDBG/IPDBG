@@ -221,6 +221,10 @@ int main(int argc, const char *argv[])
         apr_pollset_add(pollset, &pfd);
     }
 
+    // reset JtagCDC
+    uint16_t val;
+    ipdbgJTAGtransfer(chain, &val, 0xf00);
+
     while (1)
     {
         size_t transfers = 0;
@@ -229,7 +233,6 @@ int main(int argc, const char *argv[])
             for(size_t idx = 0 ; idx < channel_contexts[ch]->down_buf_level; ++idx)
             {
                 uint16_t val;
-
                 ipdbgJTAGtransfer(chain, &val, channel_contexts[ch]->down_buf[idx] | channel_contexts[ch]->valid_mask);
                 transfers++;
 
