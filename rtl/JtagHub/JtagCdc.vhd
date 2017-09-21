@@ -8,37 +8,37 @@ entity JtagCdc is
         MFF_LENGTH : natural := 3
     );
     port(
-        clk                 : in  std_logic;
-        ce                  : in  std_logic;
+        clk                   : in  std_logic;
+        ce                    : in  std_logic;
 -------------------------- to Device under Test --------------------------
-        DATAOUT             : out std_logic_vector(7 downto 0);
+        data_dwn              : out std_logic_vector(7 downto 0);
 
-        Enable_LA           : out std_logic;
-        Enable_IOVIEW       : out std_logic;
-        Enable_GDB          : out std_logic;
+        data_dwn_valid_la     : out std_logic;
+        data_dwn_valid_ioview : out std_logic;
+        data_dwn_valid_gdb    : out std_logic;
 
 -------------------------- from Device under Test ------------------------
-        DATAINREADY_LA      : out std_logic;
-        DATAINREADY_IOVIEW  : out std_logic;
-        DATAINREADY_GDB     : out std_logic;
+        data_up_ready_la      : out std_logic;
+        data_up_ready_ioview  : out std_logic;
+        data_up_ready_gdb     : out std_logic;
 
         --DATAINVALID     : in std_logic;
-        DATAINVALID_LA      : in std_logic;
-        DATAINVALID_IOVIEW  : in std_logic;
-        DATAINVALID_GDB     : in std_logic;
+        data_up_valid_la      : in std_logic;
+        data_up_valid_ioview  : in std_logic;
+        data_up_valid_gdb     : in std_logic;
 
-        DATAIN_LA           : in std_logic_vector(7 downto 0);
-        DATAIN_IOVIEW       : in std_logic_vector(7 downto 0);
-        DATAIN_GDB          : in std_logic_vector(7 downto 0);
+        data_up_la            : in std_logic_vector(7 downto 0);
+        data_up_ioview        : in std_logic_vector(7 downto 0);
+        data_up_gdb           : in std_logic_vector(7 downto 0);
 
 -------------------------- BSCAN-Componente (Debugging) ------------------
-        DRCLK               : in  std_logic;
-        USER                : in  std_logic;
-        UPDATE              : in  std_logic;
-        CAPTURE             : in  std_logic;
-        SHIFT               : in  std_logic;
-        TDI                 : in  std_logic;
-        TDO                 : out std_logic
+        DRCLK                : in  std_logic;
+        USER                 : in  std_logic;
+        UPDATE               : in  std_logic;
+        CAPTURE              : in  std_logic;
+        SHIFT                : in  std_logic;
+        TDI                  : in  std_logic;
+        TDO                  : out std_logic
     );
 end entity;
 
@@ -150,18 +150,18 @@ begin
 
         process (clk) begin
             if rising_edge (clk) then
-                Enable_LA <= '0';
-                Enable_IOVIEW <= '0';
-                Enable_GDB <= '0';
+                data_dwn_valid_la <= '0';
+                data_dwn_valid_ioview <= '0';
+                data_dwn_valid_gdb <= '0';
                 clear <= '0';
                 if data_out_register_enable = '1' and shift_register(10 downto 8) = "100" and shift_register (11) = '1' then
-                    Enable_LA <= '1';
+                    data_dwn_valid_la <= '1';
                 end if;
                 if data_out_register_enable = '1' and shift_register(10 downto 8) = "010" and shift_register (11) = '1' then
-                    Enable_IOVIEW <= '1';
+                    data_dwn_valid_ioview <= '1';
                 end if;
                 if data_out_register_enable = '1' and shift_register(10 downto 8) = "001"  and shift_register (11) = '1' then
-                    Enable_GDB <= '1';
+                    data_dwn_valid_gdb <= '1';
                 end if;
                 if data_out_register_enable = '1' and shift_register(10 downto 8) = "111"  and shift_register (11) = '1' then
                     clear <= '1';
@@ -172,7 +172,7 @@ begin
         process(clk) begin
             if rising_edge(clk) then
                 if data_out_register_enable = '1' then
-                    DATAOUT <= shift_register(7 downto 0);
+                    data_dwn <= shift_register(7 downto 0);
                 end if;
             end if;
         end process;
@@ -180,9 +180,9 @@ begin
 
 -------------------------------------------Ausgeben-------------------------------------------
 
-    DATAINREADY_LA <= data_in_ready_la_s;
-    DATAINREADY_GDB <= data_in_ready_gdb_s;
-    DATAINREADY_IOVIEW <= data_in_ready_ioview_s;
+    data_up_ready_la <= data_in_ready_la_s;
+    data_up_ready_gdb <= data_in_ready_gdb_s;
+    data_up_ready_ioview <= data_in_ready_ioview_s;
     process (clk) begin
         if rising_edge(clk) then
             if clear = '1' then
@@ -198,23 +198,23 @@ begin
                     pending <= '1';
                 end if;
                 if data_in_ready_la_s = '1' then
-                    if DATAINVALID_LA = '1' then
+                    if data_up_valid_la = '1' then
                         data_in_ready_la_s <= '0';
-                        register_la <= DATAIN_LA;
+                        register_la <= data_up_la;
                     end if;
                 end if;
 
                 if data_in_ready_ioview_s = '1' then
-                    if DATAINVALID_IOVIEW = '1' then
+                    if data_up_valid_ioview = '1' then
                         data_in_ready_ioview_s <= '0';
-                        register_ioview <= DATAIN_IOVIEW;
+                        register_ioview <= data_up_ioview;
                     end if;
                 end if;
 
                 if data_in_ready_gdb_s = '1' then
-                    if DATAINVALID_GDB = '1' then
+                    if data_up_valid_gdb = '1' then
                         data_in_ready_gdb_s <= '0';
-                        register_gdb <= DATAIN_GDB;
+                        register_gdb <= data_up_gdb;
                     end if;
                 end if;
                 if update_synced = '1' and update_synced_prev = '0' then

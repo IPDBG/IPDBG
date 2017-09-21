@@ -7,24 +7,24 @@ entity JtagHub is
         MFF_LENGTH        : natural := 3
     );
     port(
-        clk                : in  std_logic;
-        ce                 : in  std_logic;
+        clk                  : in  std_logic;
+        ce                   : in  std_logic;
 
-        DATAOUT            : out std_logic_vector(7 downto 0);
+        data_dwn             : out std_logic_vector(7 downto 0);
 
-        Enable_LA          : out std_logic;
-        Enable_IOVIEW      : out std_logic;
-        Enable_GDB         : out std_logic;
+        data_dwn_valid_la    : out std_logic;
+        data_dwn_valid_ioview: out std_logic;
+        data_dwn_valid_gdb   : out std_logic;
 
-        DATAINREADY_LA     : out std_logic;
-        DATAINREADY_IOVIEW : out std_logic;
-        DATAINREADY_GDB    : out std_logic;
-        DATAINVALID_LA     : in  std_logic;
-        DATAINVALID_IOVIEW : in  std_logic;
-        DATAINVALID_GDB    : in  std_logic;
-        DATAIN_LA          : in  std_logic_vector(7 downto 0);
-        DATAIN_IOVIEW      : in  std_logic_vector(7 downto 0);
-        DATAIN_GDB         : in  std_logic_vector(7 downto 0)
+        data_up_ready_la     : out std_logic;
+        data_up_ready_ioview : out std_logic;
+        data_up_ready_gdb    : out std_logic;
+        data_up_valid_la     : in  std_logic;
+        data_up_valid_ioview : in  std_logic;
+        data_up_valid_gdb    : in  std_logic;
+        data_up_la           : in  std_logic_vector(7 downto 0);
+        data_up_ioview       : in  std_logic_vector(7 downto 0);
+        data_up_gdb          : in  std_logic_vector(7 downto 0)
     );
 end entity JtagHub;
 
@@ -34,31 +34,31 @@ architecture structure of JtagHub is
             MFF_LENGTH : natural
         );
         port(
-            clk                : in  std_logic;
-            ce                 : in  std_logic;
+            clk                  : in  std_logic;
+            ce                   : in  std_logic;
 
-            DATAOUT            : out std_logic_vector(7 downto 0);
-            Enable_LA          : out std_logic;
-            Enable_IOVIEW      : out std_logic;
-            Enable_GDB         : out std_logic;
+            data_dwn             : out std_logic_vector(7 downto 0);
+            data_dwn_valid_la    : out std_logic;
+            data_dwn_valid_ioview: out std_logic;
+            data_dwn_valid_gdb   : out std_logic;
 
-            DATAINREADY_LA     : out std_logic;
-            DATAINREADY_IOVIEW : out std_logic;
-            DATAINREADY_GDB    : out std_logic;
-            DATAINVALID_LA     : in  std_logic;
-            DATAINVALID_IOVIEW : in  std_logic;
-            DATAINVALID_GDB    : in  std_logic;
-            DATAIN_LA          : in  std_logic_vector (7 downto 0);
-            DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
-            DATAIN_GDB         : in  std_logic_vector (7 downto 0);
+            data_up_ready_la     : out std_logic;
+            data_up_ready_ioview : out std_logic;
+            data_up_ready_gdb    : out std_logic;
+            data_up_valid_la     : in  std_logic;
+            data_up_valid_ioview : in  std_logic;
+            data_up_valid_gdb    : in  std_logic;
+            data_up_la           : in  std_logic_vector (7 downto 0);
+            data_up_ioview       : in  std_logic_vector (7 downto 0);
+            data_up_gdb          : in  std_logic_vector (7 downto 0);
 
-            DRCLK              : in  std_logic;
-            USER               : in  std_logic;
-            UPDATE             : in  std_logic;
-            CAPTURE            : in  std_logic;
-            SHIFT              : in  std_logic;
-            TDI                : in  std_logic;
-            TDO                : out std_logic
+            DRCLK                : in  std_logic;
+            USER                 : in  std_logic;
+            UPDATE               : in  std_logic;
+            CAPTURE              : in  std_logic;
+            SHIFT                : in  std_logic;
+            TDI                  : in  std_logic;
+            TDO                  : out std_logic
         );
     end component JtagCdc;
     component IpdbgTap is
@@ -99,31 +99,31 @@ begin
             MFF_LENGTH => MFF_LENGTH
         )
         port map(
-            clk                => clk,
-            ce                 => ce,
+            clk                   => clk,
+            ce                    => ce,
 
-            DATAOUT            => DATAOUT,
-            Enable_LA          => Enable_LA,
-            Enable_IOVIEW      => Enable_IOVIEW,
-            Enable_GDB         => Enable_GDB,
+            data_dwn              => data_dwn,
+            data_dwn_valid_la     => data_dwn_valid_la,
+            data_dwn_valid_ioview => data_dwn_valid_ioview,
+            data_dwn_valid_gdb    => data_dwn_valid_gdb,
 
-            DATAINREADY_LA     => DATAINREADY_LA,
-            DATAINREADY_IOVIEW => DATAINREADY_IOVIEW,
-            DATAINREADY_GDB    => DATAINREADY_GDB,
-            DATAINVALID_LA     => DATAINVALID_LA,
-            DATAINVALID_IOVIEW => DATAINVALID_IOVIEW,
-            DATAINVALID_GDB    => DATAINVALID_GDB,
-            DATAIN_LA          => DATAIN_LA,
-            DATAIN_IOVIEW      => DATAIN_IOVIEW,
-            DATAIN_GDB         => DATAIN_GDB,
+            data_up_ready_la      => data_up_ready_la,
+            data_up_ready_ioview  => data_up_ready_ioview,
+            data_up_ready_gdb     => data_up_ready_gdb,
+            data_up_valid_la      => data_up_valid_la,
+            data_up_valid_ioview  => data_up_valid_ioview,
+            data_up_valid_gdb     => data_up_valid_gdb,
+            data_up_la            => data_up_la,
+            data_up_ioview        => data_up_ioview,
+            data_up_gdb           => data_up_gdb,
 
-            DRCLK              => DRCLK,
-            USER               => USER,
-            UPDATE             => UPDATE,
-            CAPTURE            => CAPTURE,
-            SHIFT              => SHIFT,
-            TDI                => TDI,
-            TDO                => TDO
+            DRCLK                 => DRCLK,
+            USER                  => USER,
+            UPDATE                => UPDATE,
+            CAPTURE               => CAPTURE,
+            SHIFT                 => SHIFT,
+            TDI                   => TDI,
+            TDO                   => TDO
         );
 
 end architecture structure;
