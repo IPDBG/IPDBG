@@ -30,21 +30,21 @@ architecture structure of XC7Top is
             MFF_LENGTH : natural
         );
         port(
-            clk                : in  std_logic;
-            ce                 : in  std_logic;
-            DATAOUT            : out std_logic_vector(7 downto 0);
-            Enable_LA          : out std_logic;
-            Enable_IOVIEW      : out std_logic;
-            Enable_GDB         : out std_logic;
-            DATAINREADY_LA     : out std_logic;
-            DATAINREADY_IOVIEW : out std_logic;
-            DATAINREADY_GDB    : out std_logic;
-            DATAINVALID_LA     : in  std_logic;
-            DATAINVALID_IOVIEW : in  std_logic;
-            DATAINVALID_GDB    : in  std_logic;
-            DATAIN_LA          : in  std_logic_vector (7 downto 0);
-            DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
-            DATAIN_GDB         : in  std_logic_vector (7 downto 0)
+            clk                     : in  std_logic;
+            ce                      : in  std_logic;
+            data_dwn                : out std_logic_vector(7 downto 0);
+            data_dwn_valid_la       : out std_logic;
+            data_dwn_valid_ioview   : out std_logic;
+            data_dwn_valid_gdb      : out std_logic;
+            data_up_ready_la        : out std_logic;
+            data_up_ready_ioview    : out std_logic;
+            data_up_ready_gdb       : out std_logic;
+            data_up_valid_la        : in  std_logic;
+            data_up_valid_ioview    : in  std_logic;
+            data_up_valid_gdb       : in  std_logic;
+            data_up_la              : in  std_logic_vector (7 downto 0);
+            data_up_ioview          : in  std_logic_vector (7 downto 0);
+            data_up_gdb             : in  std_logic_vector (7 downto 0)
         );
     end component JtagHub;
 
@@ -93,24 +93,24 @@ architecture structure of XC7Top is
     constant DataIn_LogicAnalyser_max       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
     --signal stateDebug          : std_logic_vector(7 downto 0);
 
-    signal DATAOUT            : std_logic_vector(7 downto 0);
-    signal Enable_LA          : std_logic;
-    signal Enable_IOVIEW      : std_logic;
-    signal Enable_GDB         : std_logic;
-    signal DATAINREADY_LA     : std_logic;
-    signal DATAINREADY_IOVIEW : std_logic;
-    signal DATAINREADY_GDB    : std_logic;
-    signal DATAINVALID_LA     : std_logic;
-    signal DATAINVALID_IOVIEW : std_logic;
-    signal DATAINVALID_GDB    : std_logic;
-    signal DATAIN_LA          : std_logic_vector (7 downto 0);
-    signal DATAIN_IOVIEW      : std_logic_vector (7 downto 0);
-    signal DATAIN_GDB         : std_logic_vector (7 downto 0);
-    signal count              : std_logic_vector (28 downto 0);
-    signal output             : std_logic_vector (7 downto 0);
-    signal temp               : std_logic_vector (7 downto 0);
+    signal data_dwn                 : std_logic_vector(7 downto 0);
+    signal data_dwn_valid_la        : std_logic;
+    signal data_dwn_valid_ioview    : std_logic;
+    signal data_dwn_valid_gdb       : std_logic;
+    signal data_up_ready_la         : std_logic;
+    signal data_up_ready_ioview     : std_logic;
+    signal data_up_ready_gdb        : std_logic;
+    signal data_up_valid_la         : std_logic;
+    signal data_up_valid_ioview     : std_logic;
+    signal data_up_valid_gdb        : std_logic;
+    signal data_up_la               : std_logic_vector (7 downto 0);
+    signal data_up_ioview           : std_logic_vector (7 downto 0);
+    signal data_up_gdb              : std_logic_vector (7 downto 0);
+    signal count                    : std_logic_vector (28 downto 0);
+    signal output                   : std_logic_vector (7 downto 0);
+    signal temp                     : std_logic_vector (7 downto 0);
 
-    signal IoViewOutputs      : std_logic_vector(3 downto 0);
+    signal IoViewOutputs            : std_logic_vector(3 downto 0);
 
 begin
 
@@ -147,12 +147,12 @@ begin
             rst            => rst,
             ce             => '1',
 
-            data_dwn_valid => Enable_LA,
-            data_dwn       => DATAOUT,
+            data_dwn_valid => data_dwn_valid_la,
+            data_dwn       => data_dwn,
 
-            data_up_ready  => DATAINREADY_LA,
-            data_up_valid  => DATAINVALID_LA,
-            data_up        => DATAIN_LA,
+            data_up_ready  => data_up_ready_la,
+            data_up_valid  => data_up_valid_la,
+            data_up        => data_up_la,
 
             sample_enable  => '1',
             probe          => DataIn_LogicAnalyser
@@ -169,12 +169,12 @@ begin
             rst            => rst,
             ce             => '1',
 
-            data_dwn_valid => Enable_GDB,
-            data_dwn       => DATAOUT,
+            data_dwn_valid => data_dwn_valid_gdb,
+            data_dwn       => data_dwn,
 
-            data_up_ready  => DATAINREADY_GDB,
-            data_up_valid  => DATAINVALID_GDB,
-            data_up        => DATAIN_GDB,
+            data_up_ready  => data_up_ready_gdb,
+            data_up_valid  => data_up_valid_gdb,
+            data_up        => data_up_gdb,
 
             sample_enable  => '1',
             probe          => DataIn_LogicAnalyser
@@ -190,12 +190,12 @@ begin
             rst            => rst,
             ce             => '1',
 
-            data_dwn_valid => Enable_IOVIEW,
-            data_dwn       => DATAOUT,
+            data_dwn_valid => data_dwn_valid_ioview,
+            data_dwn       => data_dwn,
 
-            data_up_ready  => DATAINREADY_IOVIEW,
-            data_up_valid  => DATAINVALID_IOVIEW,
-            data_up        => DATAIN_IOVIEW,
+            data_up_ready  => data_up_ready_ioview,
+            data_up_valid  => data_up_valid_ioview,
+            data_up        => data_up_ioview,
 
             probe_inputs   => Input_DeviceunderTest_IOVIEW,
             probe_outputs  => IoViewOutputs
@@ -209,24 +209,25 @@ begin
             MFF_LENGTH => MFF_LENGTH
         )
         port map(
-            clk                => Clk,
-            ce                 => '1',
-            DATAOUT            => DATAOUT,
-            Enable_LA          => Enable_LA,
-            Enable_IOVIEW      => Enable_IOVIEW,
-            Enable_GDB         => Enable_GDB,
+            clk                     => Clk,
+            ce                      => '1',
+            data_dwn                => data_dwn,
+            data_dwn_valid_la       => data_dwn_valid_la,
+            data_dwn_valid_ioview   => data_dwn_valid_ioview,
+            data_dwn_valid_gdb      => data_dwn_valid_gdb,
 
-            DATAINREADY_LA     => DATAINREADY_LA,
-            DATAINREADY_IOVIEW => DATAINREADY_IOVIEW,
-            DATAINREADY_GDB    => DATAINREADY_GDB,
-            DATAINVALID_LA     => DATAINVALID_LA,
-            DATAINVALID_IOVIEW => DATAINVALID_IOVIEW,
-            DATAINVALID_GDB    => DATAINVALID_GDB,
+            data_up_ready_la        => data_up_ready_la,
+            data_up_ready_ioview    => data_up_ready_ioview,
+            data_up_ready_gdb       => data_up_ready_gdb,
 
-            DATAIN_LA          => DATAIN_LA,
-            DATAIN_IOVIEW      => DATAIN_IOVIEW,
+            data_up_valid_la        => data_up_valid_la,
+            data_up_valid_ioview    => data_up_valid_ioview,
+            data_up_valid_gdb       => data_up_valid_gdb,
 
-            DATAIN_GDB         => DATAIN_GDB
+            data_up_la              => data_up_la,
+            data_up_ioview          => data_up_ioview,
+
+            data_up_gdb             => data_up_gdb
         );
 
     Clk_fpga_gen: block
