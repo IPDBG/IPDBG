@@ -22,7 +22,7 @@ architecture behavioral of IpdbgEscaping is
     constant reset_symbol  : std_logic_vector (7 downto 0) := x"EE"; --EE
 
     type escaping_states_t is(normal_s, escaping_s);
-    signal state          : escaping_states_t :=  normal_s;
+    signal state          : escaping_states_t;
 begin
 
     process (clk, rst) begin

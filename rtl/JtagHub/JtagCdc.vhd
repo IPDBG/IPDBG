@@ -72,7 +72,7 @@ architecture behavioral of JtagCdc is
     signal register_ioview        : std_logic_vector(7 downto 0);
 
     type mux_t                    is(GDB_s, LA_s, IOVIEW_s);
-    signal ent_mux                : mux_t :=  GDB_s;
+    signal ent_mux                : mux_t;
     type transfer_t               is (is_active, is_idle);
     signal transfer               : transfer_t;
 
@@ -136,7 +136,7 @@ begin
     end block;
 
     outputControl : block
-        signal data_out_register_enable : std_logic := '0';
+        signal data_out_register_enable : std_logic;
     begin
          process (clk) begin
             if rising_edge(clk) then

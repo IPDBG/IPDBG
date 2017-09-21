@@ -6,22 +6,19 @@ library ecp2;
 use ecp2.components.all;
 -- synopsys translate_on
 
-entity Tap_Technologie is
-    port
-    (
-        capture : out std_logic;
-        drclk   : out std_logic;
-        user    : out std_logic;
-        shift   : out std_logic;
-        update  : out std_logic;
-        tdi     : out std_logic;
-        tdo     : in  std_logic
+entity IpdbgTap is
+    port(
+        capture         : out std_logic;
+        drclk           : out std_logic;
+        user            : out std_logic;
+        shift           : out std_logic;
+        update          : out std_logic;
+        tdi             : out std_logic;
+        tdo             : in  std_logic
     );
---    attribute dont_touch : boolean;
---    attribute dont_touch of JtagcWrapper : entity is true;
-end Tap_Technologie;
+end entity IpdbgTap;
 
-architecture Structure of Tap_Technologie is
+architecture Structure of IpdbgTap is
     component jtagc
         generic(
             ER1             : String  := "ENABLED";
@@ -51,7 +48,6 @@ architecture Structure of Tap_Technologie is
         );
     end component;
 
-begin
     signal UPDATE1        : std_logic;
     signal CAPTURE1       : std_logic;
     signal SHIFT_s        : std_logic;
@@ -61,6 +57,9 @@ begin
     signal UPDATE_lfe     : std_logic;
     signal JCE1           : std_logic;
     signal JCE1_lfe       : std_logic;
+    
+    signal drclk_s        : std_logic;
+begin
 
     JtagcInst: JTAGC
         port map (
@@ -76,7 +75,7 @@ begin
             TDO     => open,
             ITDO    => open,
             JTDI    => tdi,
-            JTCK    => drclk,
+            JTCK    => drclk_s,
             JRTI1   => open,
             JRTI2   => open,
             JSHIFT  => SHIFT_lfe,
@@ -85,8 +84,9 @@ begin
             JCE1    => JCE1_lfe,
             JCE2    => open
     );
-   process(drclk)begin
-        if falling_edge(drclk) then
+    drclk <= drclk_s;
+    process(drclk_s)begin
+        if falling_edge(drclk_s) then
             update  <= UPDATE_lfe;
             SHIFT_s <= SHIFT_lfe;
             JCE1    <= JCE1_lfe;
@@ -100,8 +100,8 @@ begin
 
     USER <= UPDATE1 or CAPTURE1 or SHIFT1;
 
-    process(drclk)begin
-        if falling_edge(drclk) then
+    process(drclk_s)begin
+        if falling_edge(drclk_s) then
             if SHIFT1 = '1' then
                 wasInShiftDr1 <= '1';
             elsif UPDATE_lfe = '1' then

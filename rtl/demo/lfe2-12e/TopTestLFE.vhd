@@ -21,61 +21,53 @@ entity TopTestLFE is
 end TopTestLFE;
 
 architecture structure of TopTestLFE is
-
     component JtagHub is
         generic(
-            MFF_LENGTH        : natural;
-            TARGET_TECHNOLOGY : natural
+            MFF_LENGTH : natural
         );
         port(
-            clk                : in  std_logic;
-            ce                 : in  std_logic;
-            DATAOUT            : out std_logic_vector(7 downto 0);
-            Enable_LA          : out std_logic;
-            Enable_IOVIEW      : out std_logic;
-            Enable_GDB         : out std_logic;
-            DATAINREADY_LA     : out std_logic;
-            DATAINREADY_IOVIEW : out std_logic;
-            DATAINREADY_GDB    : out std_logic;
-            DATAINVALID_LA     : in  std_logic;
-            DATAINVALID_IOVIEW : in  std_logic;
-            DATAINVALID_GDB    : in  std_logic;
-            DATAIN_LA          : in  std_logic_vector (7 downto 0);
-            DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
-            DATAIN_GDB         : in  std_logic_vector (7 downto 0)
-		);
+            clk                   : in  std_logic;
+            ce                    : in  std_logic;
+            data_dwn              : out std_logic_vector(7 downto 0);
+            data_dwn_valid_la     : out std_logic;
+            data_dwn_valid_ioview : out std_logic;
+            data_dwn_valid_gdb    : out std_logic;
+            data_up_ready_la      : out std_logic;
+            data_up_ready_ioview  : out std_logic;
+            data_up_ready_gdb     : out std_logic;
+            data_up_valid_la      : in  std_logic;
+            data_up_valid_ioview  : in  std_logic;
+            data_up_valid_gdb     : in  std_logic;
+            data_up_la            : in  std_logic_vector(7 downto 0);
+            data_up_ioview        : in  std_logic_vector(7 downto 0);
+            data_up_gdb           : in  std_logic_vector(7 downto 0)
+        );
     end component JtagHub;
-
     component IoViewTop is
         port(
-            clk           : in  std_logic;
-			rst           : in  std_logic;
-			ce            : in  std_logic;
-
-			-- host interface (JtagHub or UART or ....)
-			data_in_valid  : in  std_logic;
-			data_in        : in  std_logic_vector(7 downto 0);
-
-			data_out_ready : in  std_logic;
-			data_out_valid : out std_logic;
-			data_out       : out std_logic_vector(7 downto 0);
-
-			--- input & Ouput--------
-			probe_inputs   : in  std_logic_vector;
-			probe_outputs  : out std_logic_vector
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_dwn_valid : in  std_logic;
+            data_dwn       : in  std_logic_vector(7 downto 0);
+            data_up_ready  : in  std_logic;
+            data_up_valid  : out std_logic;
+            data_up        : out std_logic_vector(7 downto 0);
+            probe_inputs   : in  std_logic_vector;
+            probe_outputs  : out std_logic_vector
         );
     end component IoViewTop;
+
 
 	component pll0
 		port (CLK: in std_logic; CLKOP: out std_logic; LOCK: out std_logic);
 	end component;
 
-
-    signal DataOut                       : std_logic_vector(7 downto 0);
-    signal Enable_IOVIEW                 : std_logic;
-    signal DATAINREADY_IOVIEW            : std_logic;
-    signal DATAINVALID_IOVIEW            : std_logic;
-    signal DATAIN_IOVIEW                 : std_logic_vector(7 downto 0);
+    signal data_dwn              : std_logic_vector(7 downto 0);
+    signal data_dwn_valid_ioview : std_logic;
+    signal data_up_ready_ioview  : std_logic;
+    signal data_up_valid_ioview  : std_logic;
+    signal data_up_ioview        : std_logic_vector(7 downto 0);
 
     signal clk                           : std_logic;
 	signal rst, rst_n                    : std_logic;
@@ -108,41 +100,43 @@ begin
     leds <= OUTPUT_DeviceUnderTest_Ioview_s;
 
 
-
-    jtag : component JtagHub
+    jh : component JtagHub
         generic map(
-            MFF_LENGTH        => MFF_LENGTH,
-            TARGET_TECHNOLOGY => 2 -- Lattice LFE2
+            MFF_LENGTH => MFF_LENGTH
         )
         port map(
-            clk                => clk,
-            ce                 => '1',
-            DATAOUT            => DATAOUT,
-            Enable_LA          => open,
-            Enable_IOVIEW      => Enable_IOVIEW,
-            Enable_GDB         => open,
-            DATAINREADY_LA     => open,
-            DATAINREADY_IOVIEW => DATAINREADY_IOVIEW,
-            DATAINREADY_GDB    => open,
-            DATAINVALID_LA     => '0',
-            DATAINVALID_IOVIEW => DATAINVALID_IOVIEW,
-            DATAINVALID_GDB    => '0',
-            DATAIN_LA          => (others => '0'),
-            DATAIN_IOVIEW      => DATAIN_IOVIEW,
-            DATAIN_GDB         => (others => '0')
+            clk                   => clk,
+            ce                    => '1',
+            data_dwn              => data_dwn,
+            data_dwn_valid_la     => open,
+            data_dwn_valid_ioview => data_dwn_valid_ioview,
+            data_dwn_valid_gdb    => open,
+            data_up_ready_la      => open,
+            data_up_ready_ioview  => data_up_ready_ioview,
+            data_up_ready_gdb     => open,
+            data_up_valid_la      => '0',
+            data_up_valid_ioview  => data_up_valid_ioview,
+            data_up_valid_gdb     => '0',
+            data_up_la            => (others => '-'),
+            data_up_ioview        => data_up_ioview,
+            data_up_gdb           => (others => '-')
         );
-    IoView : component IoViewTop
+
+    iov : component IoViewTop
         port map(
             clk            => clk,
             rst            => rst,
             ce             => '1',
-            data_in_valid  => Enable_IOVIEW,
-            data_in        => DATAOUT,
-            data_out_ready => DATAINREADY_IOVIEW,
-            data_out_valid => DATAINVALID_IOVIEW,
-            data_out       => DATAIN_IOVIEW,
+            data_dwn_valid => data_dwn_valid_ioview,
+            data_dwn       => data_dwn,
+            data_up_ready  => data_up_ready_ioview,
+            data_up_valid  => data_up_valid_ioview,
+            data_up        => data_up_ioview,
             probe_inputs   => INPUT_DeviceUnderTest_Ioview,
             probe_outputs  => OUTPUT_DeviceUnderTest_Ioview_s
         );
+
+
+
     OUTPUT_DeviceUnderTest_Ioview <= OUTPUT_DeviceUnderTest_Ioview_s;
 end;
