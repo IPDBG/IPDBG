@@ -32,32 +32,43 @@ architecture structure of IPDBG is
         );
     end component Zaehler;
 
-
-
     component JtagHub is
         generic(
-            MFF_LENGTH        : natural;
-            TARGET_TECHNOLOGY : natural
+            MFF_LENGTH : natural
         );
         port(
-            clk                : in  std_logic;
-            ce                 : in  std_logic;
-            DATAOUT            : out std_logic_vector(7 downto 0);
-            Enable_LA          : out std_logic;
-            Enable_IOVIEW      : out std_logic;
-            Enable_GDB         : out std_logic;
-            DATAINREADY_LA     : out std_logic;
-            DATAINREADY_IOVIEW : out std_logic;
-            DATAINREADY_GDB    : out std_logic;
-            DATAINVALID_LA     : in  std_logic;
-            DATAINVALID_IOVIEW : in  std_logic;
-            DATAINVALID_GDB    : in  std_logic;
-            DATAIN_LA          : in  std_logic_vector (7 downto 0);
-            DATAIN_IOVIEW      : in  std_logic_vector (7 downto 0);
-            DATAIN_GDB         : in  std_logic_vector (7 downto 0)
+            clk                   : in  std_logic;
+            ce                    : in  std_logic;
+            data_dwn              : out std_logic_vector(7 downto 0);
+            data_dwn_valid_la     : out std_logic;
+            data_dwn_valid_ioview : out std_logic;
+            data_dwn_valid_gdb    : out std_logic;
+            data_up_ready_la      : out std_logic;
+            data_up_ready_ioview  : out std_logic;
+            data_up_ready_gdb     : out std_logic;
+            data_up_valid_la      : in  std_logic;
+            data_up_valid_ioview  : in  std_logic;
+            data_up_valid_gdb     : in  std_logic;
+            data_up_la            : in  std_logic_vector(7 downto 0);
+            data_up_ioview        : in  std_logic_vector(7 downto 0);
+            data_up_gdb           : in  std_logic_vector(7 downto 0)
         );
     end component JtagHub;
 
+    component IoViewTop is
+        port(
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_dwn_valid : in  std_logic;
+            data_dwn       : in  std_logic_vector(7 downto 0);
+            data_up_ready  : in  std_logic;
+            data_up_valid  : out std_logic;
+            data_up        : out std_logic_vector(7 downto 0);
+            probe_inputs   : in  std_logic_vector;
+            probe_outputs  : out std_logic_vector
+        );
+    end component IoViewTop;
 
     component LogicAnalyserTop is
         generic(
@@ -68,64 +79,27 @@ architecture structure of IPDBG is
             clk            : in  std_logic;
             rst            : in  std_logic;
             ce             : in  std_logic;
-            data_in_valid  : in  std_logic;
-            data_in        : in  std_logic_vector(7 downto 0);
-            data_out_ready : in  std_logic;
-            data_out_valid : out std_logic;
-            data_out       : out std_logic_vector(7 downto 0);
-            sample_en      : in  std_logic;
+            data_dwn_valid : in  std_logic;
+            data_dwn       : in  std_logic_vector(7 downto 0);
+            data_up_ready  : in  std_logic;
+            data_up_valid  : out std_logic;
+            data_up        : out std_logic_vector(7 downto 0);
+            sample_enable  : in  std_logic;
             probe          : in  std_logic_vector(DATA_WIDTH-1 downto 0)
         );
     end component LogicAnalyserTop;
 
-    component IoViewTop is
-        port(
-            clk            : in  std_logic;
-            rst            : in  std_logic;
-            ce             : in  std_logic;
-            data_in_valid  : in  std_logic;
-            data_in        : in  std_logic_vector(7 downto 0);
-            data_out_ready : in  std_logic;
-            data_out_valid : out std_logic;
-            data_out       : out std_logic_vector(7 downto 0);
-            probe_inputs   : in  std_logic_vector;
-            probe_outputs  : out std_logic_vector
-        );
-    end component IoViewTop;
+    signal data_dwn              : std_logic_vector(7 downto 0);
+    signal data_dwn_valid_la     : std_logic;
+    signal data_dwn_valid_ioview : std_logic;
+    signal data_up_ready_la      : std_logic;
+    signal data_up_ready_ioview  : std_logic;
+    signal data_up_valid_la      : std_logic;
+    signal data_up_valid_ioview  : std_logic;
+    signal data_up_la            : std_logic_vector(7 downto 0);
+    signal data_up_ioview        : std_logic_vector(7 downto 0);
 
-
-    signal DRCLK1       : std_logic;
-    signal DRCLK2       : std_logic;
-    signal RESET        : std_logic;
-    signal USER1        : std_logic;
-    signal USER2        : std_logic;
-    signal UPDATE       : std_logic;
-    signal CAPTURE      : std_logic;
-    signal SHIFT        : std_logic;
-    signal TDI          : std_logic;
-    signal TDO1         : std_logic;
-    signal TDO2         : std_logic;
-    signal rst          : std_logic;
-    signal ce           : std_logic;
-
-    --signal Input_DeviceunderTest_IOVIEW     : std_logic_vector(7 downto 0);
-    --signal Output_DeviceunderTest_IOVIEW    : std_logic_vector(7 downto 0);
-    signal DataIn_LogicAnalyser             : std_logic_vector(DATA_WIDTH-1 downto 0);
-    --signal stateDebug          : std_logic_vector(7 downto 0);
-
-    signal DATAOUT            : std_logic_vector(7 downto 0);
-    signal Enable_LA          : std_logic;
-    signal Enable_IOVIEW      : std_logic;
-    signal Enable_GDB         : std_logic;
-    signal DATAINREADY_LA     : std_logic;
-    signal DATAINREADY_IOVIEW : std_logic;
-    signal DATAINREADY_GDB    : std_logic;
-    signal DATAINVALID_LA     : std_logic;
-    signal DATAINVALID_IOVIEW : std_logic;
-    signal DATAINVALID_GDB    : std_logic;
-    signal DATAIN_LA          : std_logic_vector (7 downto 0);
-    signal DATAIN_IOVIEW      : std_logic_vector (7 downto 0);
-    signal DATAIN_GDB         : std_logic_vector (7 downto 0);
+    signal DataIn_LogicAnalyser        : std_logic_vector(DATA_WIDTH-1 downto 0);
 
 begin
 
@@ -141,9 +115,6 @@ begin
             Debug    => open
         );
 
-
-
-
     la : component LogicAnalyserTop
         generic map(
             DATA_WIDTH => DATA_WIDTH,
@@ -153,58 +124,50 @@ begin
             clk            => clk,
             rst            => '0',
             ce             => '1',
-            data_in_valid  => Enable_LA,
-            data_in        => DATAOUT,
-            data_out_ready => DATAINREADY_LA,
-            data_out_valid => DATAINVALID_LA,
-            data_out       => DATAIN_LA,
-            sample_en      => '1',
+            data_dwn_valid => data_dwn_valid_la,
+            data_dwn       => data_dwn,
+            data_up_ready  => data_up_ready_la,
+            data_up_valid  => data_up_valid_la,
+            data_up        => data_up_la,
+            sample_enable  => '1',
             probe          => DataIn_LogicAnalyser
         );
-    --DATAINVALID_LA <= '0';
-    --LEDs <= Statedebug;
 
-    IO : component IoViewTop
+    iov : component IoViewTop
         port map(
             clk            => clk,
             rst            => '0',
             ce             => '1',
-            data_in_valid  => Enable_IOVIEW,
-            data_in        => DATAOUT,
-            data_out_ready => DATAINREADY_IOVIEW,
-            data_out_valid => DATAINVALID_IOVIEW,
-            data_out       => DATAIN_IOVIEW,
+            data_dwn_valid => data_dwn_valid_ioview,
+            data_dwn       => data_dwn,
+            data_up_ready  => data_up_ready_ioview,
+            data_up_valid  => data_up_valid_ioview,
+            data_up        => data_up_ioview,
             probe_inputs   => Input_DeviceunderTest_IOVIEW,
             probe_outputs  => Output_DeviceunderTest_IOVIEW
-
         );
-    --LEDs <= Output_DeviceunderTest_IOVIEW;
 
 
-    JTAG : component JtagHub
+    jh : component JtagHub
         generic map(
-            MFF_LENGTH        => MFF_LENGTH,
-            TARGET_TECHNOLOGY => 1
+            MFF_LENGTH => MFF_LENGTH
         )
         port map(
-            clk                => clk,
-            ce                 => '1',
-            DATAOUT            => DATAOUT,
-            Enable_LA          => Enable_LA,
-            Enable_IOVIEW      => Enable_IOVIEW,
-            Enable_GDB         => open,
-
-            DATAINREADY_LA     => DATAINREADY_LA,
-            DATAINREADY_IOVIEW => DATAINREADY_IOVIEW,
-            DATAINREADY_GDB    => DATAINREADY_GDB,
-            DATAINVALID_LA     => DATAINVALID_LA,
-            DATAINVALID_IOVIEW => DATAINVALID_IOVIEW,
-            DATAINVALID_GDB    => '0',
-            DATAIN_LA          => DATAIN_LA,
-            DATAIN_IOVIEW      => DATAIN_IOVIEW,
-            DATAIN_GDB         => (others => '0')
+            clk                   => clk,
+            ce                    => '1',
+            data_dwn              => data_dwn,
+            data_dwn_valid_la     => data_dwn_valid_la,
+            data_dwn_valid_ioview => data_dwn_valid_ioview,
+            data_dwn_valid_gdb    => open,
+            data_up_ready_la      => data_up_ready_la,
+            data_up_ready_ioview  => data_up_ready_ioview,
+            data_up_ready_gdb     => open,
+            data_up_valid_la      => data_up_valid_la,
+            data_up_valid_ioview  => data_up_valid_ioview,
+            data_up_valid_gdb     => '0',
+            data_up_la            => data_up_la,
+            data_up_ioview        => data_up_ioview,
+            data_up_gdb           => (others => '0')
         );
-
-
 
 end architecture structure;

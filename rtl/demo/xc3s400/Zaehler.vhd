@@ -14,9 +14,6 @@ entity Zaehler is
 
         DatenOut        : out  std_logic_vector(DATA_WIDTH-1 downto 0);
         Debug           : out std_logic_vector(DATA_WIDTH-1 downto 0)
-
-
-
     );
 end entity;
 
