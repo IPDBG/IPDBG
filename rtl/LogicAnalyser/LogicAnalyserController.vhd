@@ -14,11 +14,11 @@ entity LogicAnalyserController is
         ce                : in  std_logic;
 
         --      host interface (UART or ....)
-        data_dwn_valid     : in  std_logic;
-        data_dwn           : in  std_logic_vector(7 downto 0);
-        data_up_ready    : in  std_logic;
-        data_up_valid    : out std_logic;
-        data_up          : out std_logic_vector(7 downto 0);
+        data_dwn_valid    : in  std_logic;
+        data_dwn          : in  std_logic_vector(7 downto 0);
+        data_up_ready     : in  std_logic;
+        data_up_valid     : out std_logic;
+        data_up           : out std_logic_vector(7 downto 0);
 
         --      Trigger
         mask_curr         : out std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -113,18 +113,18 @@ begin
             value_last_s       <= (others => '0');
             delay_s            <= (others => '0');
 
-            data_up_valid    <= '0';
-            data_up          <= (others => '0');
-            trigger_active    <= '0';
-            fire_trigger      <= '0';
-            data_request_next <= '0';
+            data_up_valid      <= '0';
+            data_up            <= (others => '0');
+            trigger_active     <= '0';
+            fire_trigger       <= '0';
+            data_request_next  <= '0';
 
-            counter           <= (others => '0');
-            import_ADDR       <= '0';
-            la_data_temporary <= (others => '0');
-            sizes_temporary   <= (others => '-');
-            ende_ausgabe      <= '0';
-            theend            <= '0';
+            counter            <= (others => '0');
+            import_ADDR        <= '0';
+            la_data_temporary  <= (others => '0');
+            sizes_temporary    <= (others => '-');
+            ende_ausgabe       <= '0';
+            theend             <= '0';
 
         elsif rising_edge(clk) then
 
