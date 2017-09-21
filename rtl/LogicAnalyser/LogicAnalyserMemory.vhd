@@ -5,8 +5,9 @@ use ieee.numeric_std.all;
 
 entity LogicAnalyserMemory is
     generic(
-         DATA_WIDTH     : natural := 8;
-         ADDR_WIDTH     : natural := 8
+         DATA_WIDTH  : natural := 8;
+         ADDR_WIDTH  : natural := 8;
+         ASYNC_RESET : boolean := true
     );
     port(
         clk               : in  std_logic;
@@ -70,102 +71,117 @@ architecture tab of LogicAnalyserMemory is
 
     signal delay_s           : signed(ADDR_WIDTH-1 downto 0);
 
+    signal arst, srst        : std_logic;
 begin
+    async_init: if ASYNC_RESET generate begin
+        arst <= rst;
+        srst <= '0';
+    end generate async_init;
+    sync_init: if not ASYNC_RESET generate begin
+        arst <= '0';
+        srst <= rst;
+    end generate sync_init;
 
-    process (clk, rst) begin
-        if rst = '1' then
-            write_enable <= '0';
-            counter <= (others => '0');
-            data_ready <= (others => '-');
+    process (clk, arst)
+        procedure assign_reset is begin
             buffering_state <= idle;
+            write_enable <= '0';
+            counter <= (others => '-');
+            data_ready <= (others => '-');
             write_data <= (others => '-');
             write_address <= (others => '-');
             read_address <= (others => '-');
             full <= '0';
             data_valid <= '0';
-
             finish <= '0';
-            delay_s <= signed(delay);
-
+            delay_s <= (others => '-');
+        end procedure assign_reset;
+    begin
+        if arst = '1' then
+            assign_reset;
         elsif rising_edge(clk) then
-            if ce = '1' then
-                write_enable <= '0';
-                write_data <= probe;
+            if srst = '1' then
+                assign_reset;
+            else
+                if ce = '1' then
+                    write_enable <= '0';
+                    write_data <= probe;
 
-                case buffering_state is
-                when idle =>
-                    finish <= '0';
-                    read_address <= (others => '0');
-                    counter <= (others => '0');
-                    full <= '0';
-                    write_address <= (others => '1');
-                    finish <= '0';
-                    delay_s <= signed(delay);
-                    if trigger_active = '1' then -- wait until trigger is active
-                        buffering_state <= armed;
-                    end if;
-
-                when armed =>
-                    if sample_enable = '1' then
-                        write_enable <= '1';
-                        write_address <= write_address + 1;
-                        counter <= counter + 1;
-                        if std_logic_vector(counter) = std_logic_vector(delay_s +1 ) then -- ignoring trigger to fill buffer to requested minimum
-                            buffering_state <= wait_trigger ;
+                    case buffering_state is
+                    when idle =>
+                        finish <= '0';
+                        read_address <= (others => '0');
+                        counter <= (others => '0');
+                        full <= '0';
+                        write_address <= (others => '1');
+                        finish <= '0';
+                        delay_s <= signed(delay);
+                        if trigger_active = '1' then -- wait until trigger is active
+                            buffering_state <= armed;
                         end if;
-                    end if;
 
-                when wait_trigger =>
-                    if sample_enable = '1' then
-                        write_enable <= '1';
-                        write_address <= write_address + 1;
-                        if trigger = '1' then
-                            buffering_state <= fill_up;
+                    when armed =>
+                        if sample_enable = '1' then
+                            write_enable <= '1';
+                            write_address <= write_address + 1;
                             counter <= counter + 1;
+                            if std_logic_vector(counter) = std_logic_vector(delay_s +1 ) then -- ignoring trigger to fill buffer to requested minimum
+                                buffering_state <= wait_trigger ;
+                            end if;
                         end if;
-                    end if;
 
-                when fill_up =>
-                    if sample_enable = '1' then
-                        write_enable <= '1';
-                        write_address <= write_address + 1;
-                        counter <= counter + 1;
-                        if counter = counter_maximum  then
-                            read_address <= write_address + 2;
-                            buffering_state <= drain;
-                            full <= '1';
+                    when wait_trigger =>
+                        if sample_enable = '1' then
+                            write_enable <= '1';
+                            write_address <= write_address + 1;
+                            if trigger = '1' then
+                                buffering_state <= fill_up;
+                                counter <= counter + 1;
+                            end if;
                         end if;
-                    end if;
-                    data_ready <= (others => '0');
 
-                when drain =>
-                    if data_request_next = '1' then
-                        if data_ready = to_unsigned(2, data_ready'length) then
-                            data_valid <= '1';
-                            counter <= counter - 1;
-                            data <= read_data;
-                            buffering_state <= drain_handshake;
+                    when fill_up =>
+                        if sample_enable = '1' then
+                            write_enable <= '1';
+                            write_address <= write_address + 1;
+                            counter <= counter + 1;
+                            if counter = counter_maximum  then
+                                read_address <= write_address + 2;
+                                buffering_state <= drain;
+                                full <= '1';
+                            end if;
                         end if;
-                        data_ready <= data_ready + 1;
-                    end if;
+                        data_ready <= (others => '0');
 
-                when drain_handshake =>
-                    if data_request_next = '0' then
-                        data_valid <= '0';
-                        read_address <= read_address + 1;
-                        if counter = counter_minimum then
-                            buffering_state <= idle;
-                            finish <= '1';
-                        else
-                            buffering_state <= drain;
+                    when drain =>
+                        if data_request_next = '1' then
+                            if data_ready = to_unsigned(2, data_ready'length) then
+                                data_valid <= '1';
+                                counter <= counter - 1;
+                                data <= read_data;
+                                buffering_state <= drain_handshake;
+                            end if;
+                            data_ready <= data_ready + 1;
                         end if;
+
+                    when drain_handshake =>
+                        if data_request_next = '0' then
+                            data_valid <= '0';
+                            read_address <= read_address + 1;
+                            if counter = counter_minimum then
+                                buffering_state <= idle;
+                                finish <= '1';
+                            else
+                                buffering_state <= drain;
+                            end if;
+                        end if;
+                        data_ready <= (others => '0');
+                    end case;
+                    if trigger_active = '0' then
+                        buffering_state <= idle;
                     end if;
-                    data_ready <= (others => '0');
-                end case;
-                if trigger_active = '0' then
-                    buffering_state <= idle;
-                end if;
-            end if; -- ce
+                end if; -- ce
+            end if;
         end if;
     end process;
 

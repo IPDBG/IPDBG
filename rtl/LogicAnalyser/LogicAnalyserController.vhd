@@ -5,8 +5,9 @@ use ieee.numeric_std.all;
 
 entity LogicAnalyserController is
     generic(
-         DATA_WIDTH         : natural := 8;                                    --! width of a sample
-         ADDR_WIDTH         : natural := 4                                     --! 2**ADDR_WIDTH = size if sample memory
+         DATA_WIDTH  : natural := 8; --! width of a sample
+         ADDR_WIDTH  : natural := 4; --! 2**ADDR_WIDTH = size if sample memory
+         ASYNC_RESET : boolean := true
     );
     port(
         clk               : in  std_logic;
@@ -81,338 +82,352 @@ architecture tab of LogicAnalyserController is
 
     --Zähler
     signal data_size_s       : natural range 0 to data_size;
-    signal addr_size_s       : natural;
+    signal addr_size_s       : natural range 0 to addr_size;
 
-    signal mask_curr_s       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal value_curr_s      : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal mask_last_s       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal value_last_s      : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal delay_s           : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
+    signal mask_curr_s       : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal value_curr_s      : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal mask_last_s       : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal value_last_s      : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal delay_s           : std_logic_vector(ADDR_WIDTH-1 downto 0);
 
-    signal counter           : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0');
-    signal import_ADDR       : std_logic := '0';
-    signal ende_ausgabe      : std_logic := '0';
-    signal theend            : std_logic := '0';
+    signal counter           : unsigned(ADDR_WIDTH-1 downto 0);
+    signal import_ADDR       : std_logic;
+    signal ende_ausgabe      : std_logic;
+    signal theend            : std_logic;
     signal la_data_temporary : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal sizes_temporary   : std_logic_vector(31 downto 0) := (others => '0');
-    signal send              : std_logic_vector(7 downto 0)  := (others => '0');
+    signal sizes_temporary   : std_logic_vector(31 downto 0);
+    signal send              : std_logic_vector(7 downto 0);
+    signal arst, srst        : std_logic;
 begin
+    async_init: if ASYNC_RESET generate begin
+        arst <= rst;
+        srst <= '0';
+    end generate async_init;
+    sync_init: if not ASYNC_RESET generate begin
+        arst <= '0';
+        srst <= rst;
+    end generate sync_init;
 
     assert(DATA_WIDTH >= 8) report "DATA_WIDTH has to be at least 8 bits" severity error;
 
-    process (clk, rst) begin
-        if rst = '1' then
+    process (clk, arst)
+        procedure reset_assignments is begin
             data_size_s        <= 0;
             addr_size_s        <= 0;
             state              <= init;
             init_Output        <= init;
 
-            mask_curr_s        <= (others => '0');
-            value_curr_s       <= (others => '0');
-            mask_last_s        <= (others => '0');
-            value_last_s       <= (others => '0');
-            delay_s            <= (others => '0');
+            mask_curr_s        <= (others => '-');
+            value_curr_s       <= (others => '-');
+            mask_last_s        <= (others => '-');
+            value_last_s       <= (others => '-');
+            delay_s            <= (others => '-');
 
             data_up_valid      <= '0';
-            data_up            <= (others => '0');
+            data_up            <= (others => '-');
             trigger_active     <= '0';
             fire_trigger       <= '0';
             data_request_next  <= '0';
 
-            counter            <= (others => '0');
-            import_ADDR        <= '0';
-            la_data_temporary  <= (others => '0');
+            counter            <= (others => '-');
+            import_ADDR        <= '-';
+            la_data_temporary  <= (others => '-');
             sizes_temporary    <= (others => '-');
             ende_ausgabe       <= '0';
             theend             <= '0';
-
+        end procedure reset_assignments;
+    begin
+        if arst = '1' then
+            reset_assignments;
         elsif rising_edge(clk) then
-
-            if ce = '1' then
-                data_up_valid <= '0';
-                case state is
-                when init =>
-                    if full = '1' then
-                        data_request_next <= '1';
-                        state <= data_output;
+            if srst = '1' then
+                reset_assignments;
+            else
+                if ce = '1' then
+                    data_up_valid <= '0';
+                    case state is
+                    when init =>
                         counter <= (others => '0');
-                        la_data_temporary <= (others => '-');
-                        ende_ausgabe <= '0';
-                        theend <= '0';
-                    end if;
-
-                    if data_dwn_valid = '1' then
-                        if data_dwn = get_id_command then
-                            state <= return_id;
+                        if full = '1' then
+                            data_request_next <= '1';
+                            state <= data_output;
+                            la_data_temporary <= (others => '-');
+                            ende_ausgabe <= '0';
+                            theend <= '0';
                         end if;
 
+                        if data_dwn_valid = '1' then
+                            if data_dwn = get_id_command then
+                                state <= return_id;
+                            end if;
 
-                        if data_dwn = get_sizes_command then
-                            counter <= (others => '0');
-                            --x <= '0';
-                            sizes_temporary <= (others => '0');
-                            state <= return_sizes;
-                            import_ADDR <= '0';
+
+                            if data_dwn = get_sizes_command then
+                                --x <= '0';
+                                sizes_temporary <= (others => '0');
+                                state <= return_sizes;
+                                import_ADDR <= '0';
+                            end if;
+
+                            if data_dwn = activate_trigger_command then
+                                trigger_active <= '1';
+                            end if;
+
+                            if data_dwn = fire_trigger_command then
+                                fire_trigger <= '1';
+                            end if;
+
+                            if data_dwn = config_trigger_command then
+                                state <= config_trigger;
+                            end if;
+
+                            if data_dwn = logic_analyser_c then
+                                state <= logic_analyser;
+                            end if;
+
                         end if;
 
-                        if data_dwn = activate_trigger_command then
-                            trigger_active <= '1';
+                    when return_id =>
+
+                        case init_Output is
+                        when init =>
+                            if data_up_ready = '1' then
+                                init_Output <= Zwischenspeicher;
+                                send <= I;
+                                counter <= (others => '0');
+                            end if;
+
+                        when Zwischenspeicher =>
+                            if data_up_ready = '1' then
+                                data_up <= send;
+                                data_up_valid <= '1';
+                                counter <= counter + 1;
+                                init_Output <= shift;
+                            end if;
+                         when shift =>
+                            data_up_valid <= '0';
+                            init_Output <= get_next_data;
+
+                        when get_next_data =>
+
+                           if counter = to_unsigned(1, counter'length) then
+                                send <= D;
+                                 init_Output <= Zwischenspeicher;
+                           end if;
+                           if counter = to_unsigned(2, counter'length) then
+                                send <= B;
+                                init_Output <= Zwischenspeicher;
+                           end if;
+                           if counter = to_unsigned(3, counter'length) then
+                                send <= G;
+                                init_Output <= Zwischenspeicher;
+                           end if;
+                           if counter = to_unsigned(4, counter'length) then
+                                init_Output <= init;
+                                state <= init;
+                           end if;
+
+                        end case;
+
+
+                    when return_sizes =>
+
+                        case init_Output is
+                        when init =>
+                            if data_up_ready = '1' then
+                                sizes_temporary <= DATA_WIDTH_slv;
+                                init_Output <= Zwischenspeicher;
+                            end if;
+
+                        when Zwischenspeicher =>
+                            if data_up_ready = '1' then
+                                data_up <= sizes_temporary(data_up'range);
+                                data_up_valid <= '1';
+                                sizes_temporary <= x"00" & sizes_temporary( sizes_temporary'left downto data_up'length);
+                                counter <= counter + 1;
+                                init_Output <= shift;
+                            end if;
+
+                        when shift =>
+                            data_up_valid <= '0';
+
+                            if data_up_ready = '0' then
+                                init_Output <= Zwischenspeicher;
+                            end if;
+
+                            if counter = to_unsigned(4, counter'length) then
+                                if import_ADDR = '0' then
+                                    init_Output <= get_next_data;
+                                end if;
+                            end if;
+
+                            if counter = to_unsigned(4, counter'length) then
+                                if import_ADDR = '1' then
+                                    init_Output <= init;
+                                    state <= init;
+                                end if;
+                            end if;
+
+                        when get_next_data =>
+                            if data_up_ready = '1' then
+                                counter <= (others => '0');
+                                import_ADDR <= '1';
+                                sizes_temporary <= ADDR_WIDTH_slv;
+                                init_Output <= Zwischenspeicher;
+                            end if;
+                        end case;
+
+                    when logic_analyser =>
+                        addr_size_s <= 0;
+                        if data_dwn_valid = '1' then
+                            if data_dwn = set_delay_command then
+                                state <= set_delay;
+                            end if;
+
                         end if;
 
-                        if data_dwn = fire_trigger_command then
-                            fire_trigger <= '1';
+                    when set_delay =>
+                        if data_dwn_valid = '1' then
+                            if addr_size_s + 1 = addr_size  then
+                                state <= init;
+                            end if;
+
+                            addr_size_s <= addr_size_s + 1;
+                            delay_s <= delay_s(delay_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
                         end if;
 
-                        if data_dwn = config_trigger_command then
-                            state <= config_trigger;
-                        end if;
+                    when config_trigger =>
+                        if data_dwn_valid = '1' then
+                            if data_dwn = select_curr_command then
+                                state <= select_config_trigger_curr;
+                            end if;
 
-                        if data_dwn = logic_analyser_c then
-                            state <= logic_analyser;
-                        end if;
-
-                    end if;
-
-                when return_id =>
-
-                    case init_Output is
-                    when init =>
-                        if data_up_ready = '1' then
-                            init_Output <= Zwischenspeicher;
-                            send <= I;
-                            counter <= (others => '0');
-                        end if;
-
-                    when Zwischenspeicher =>
-                        if data_up_ready = '1' then
-                            data_up <= send;
-                            data_up_valid <= '1';
-                            counter <= counter + 1;
-                            init_Output <= shift;
-                        end if;
-                     when shift =>
-                        data_up_valid <= '0';
-                        init_Output <= get_next_data;
-
-                    when get_next_data =>
-
-                       if counter = to_unsigned(1, counter'length) then
-                            send <= D;
-                             init_Output <= Zwischenspeicher;
-                       end if;
-                       if counter = to_unsigned(2, counter'length) then
-                            send <= B;
-                            init_Output <= Zwischenspeicher;
-                       end if;
-                       if counter = to_unsigned(3, counter'length) then
-                            send <= G;
-                            init_Output <= Zwischenspeicher;
-                       end if;
-                       if counter = to_unsigned(4, counter'length) then
-                            init_Output <= init;
-                            state <= init;
-                       end if;
-
-                    end case;
-
-
-                when return_sizes =>
-
-                    case init_Output is
-                    when init =>
-                        if data_up_ready = '1' then
-                            sizes_temporary <= DATA_WIDTH_slv;
-                            init_Output <= Zwischenspeicher;
-                        end if;
-
-                    when Zwischenspeicher =>
-                        if data_up_ready = '1' then
-                            data_up <= sizes_temporary(data_up'range);
-                            data_up_valid <= '1';
-                            sizes_temporary <= x"00" & sizes_temporary( sizes_temporary'left downto data_up'length);
-                            counter <= counter + 1;
-                            init_Output <= shift;
-                        end if;
-
-                    when shift =>
-                        data_up_valid <= '0';
-
-                        if data_up_ready = '0' then
-                            init_Output <= Zwischenspeicher;
-                        end if;
-
-                        if counter = to_unsigned(4, counter'length) then
-                            if import_ADDR = '0' then
-                                init_Output <= get_next_data;
+                            if data_dwn = select_last_command then
+                                state <= select_config_trigger_last;
                             end if;
                         end if;
 
-                        if counter = to_unsigned(4, counter'length) then
-                            if import_ADDR = '1' then
-                                init_Output <= init;
+                    when select_config_trigger_curr =>
+                        data_size_s <= 0;
+
+                        if data_dwn_valid = '1' then
+                            if data_dwn = set_mask_curr_command then
+                                state <= set_mask_curr;
+                            end if;
+
+                            if data_dwn = set_value_curr_command then
+                                state <= set_value_curr;
+                            end if;
+
+                        end if;
+
+                    when set_mask_curr =>
+                        if data_dwn_valid = '1' then
+                            data_size_s <= data_size_s + 1;
+                            mask_curr_s <= mask_curr_s(mask_curr_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+
+                            if data_size_s + 1 = data_size   then
                                 state <= init;
                             end if;
                         end if;
 
-                    when get_next_data =>
-                        if data_up_ready = '1' then
-                            counter <= (others => '0');
-                            import_ADDR <= '1';
-                            sizes_temporary <= ADDR_WIDTH_slv;
-                            init_Output <= Zwischenspeicher;
-                        end if;
-                    end case;
+                    when set_value_curr =>
+                        if data_dwn_valid = '1' then
+                            data_size_s <= data_size_s + 1;
+                            value_curr_s <= value_curr_s(value_curr_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
 
-                when logic_analyser =>
-                    addr_size_s <= 0;
-                    if data_dwn_valid = '1' then
-                        if data_dwn = set_delay_command then
-                            state <= set_delay;
+                            if data_size_s + 1 = data_size then
+                                state <= init;
+                            end if;
                         end if;
 
-                    end if;
+                    when select_config_trigger_last =>
+                        data_size_s <= 0;
+                        if data_dwn_valid = '1' then
+                            if data_dwn = set_mask_last_command then
+                                state <= set_mask_last;
+                            end if;
 
-                when set_delay =>
-                    if data_dwn_valid = '1' then
-                        if addr_size_s + 1 = addr_size  then
+                            if data_dwn = set_value_last_command then
+                                state <= set_value_last;
+                            end if;
+                        end if;
+
+                    when set_mask_last =>
+                        if data_dwn_valid = '1' then
+                            data_size_s <= data_size_s + 1;
+                            mask_last_s <= mask_last_s(mask_last_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+
+                            if data_size_s +1 = data_size then
+                                state <= init;
+                            end if;
+                        end if;
+
+                    when set_value_last =>
+                        if data_dwn_valid = '1' then
+                            data_size_s <= data_size_s + 1;
+                            value_last_s <= value_last_s(value_last_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+
+                            if data_size_s + 1 = data_size then
+                                state <= init;
+                            end if;
+                        end if;
+
+                    when data_output =>
+                        if finish = '1' then
+                            trigger_active <= '0';
+                            ende_ausgabe <= '1';
+                        end if;
+
+                        if theend = '1' then
                             state <= init;
+                            init_Output <= init;
                         end if;
 
-                        addr_size_s <= addr_size_s + 1;
-                        delay_s <= delay_s(delay_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
-                    end if;
+                        case init_Output is
+                        when init =>
+                            if data_valid = '1' then
+                                la_data_temporary <= data;
+                                init_Output <= Zwischenspeicher;
+                            end if;
 
-                when config_trigger =>
-                    if data_dwn_valid = '1' then
-                        if data_dwn = select_curr_command then
-                            state <= select_config_trigger_curr;
-                        end if;
+                        when Zwischenspeicher =>
+                            data_request_next <= '0';
+                            if data_up_ready = '1' then
+                                data_up <= la_data_temporary(data_up'range);
+                                data_up_valid <= '1';
+                                la_data_temporary <= x"00" & la_data_temporary( la_data_temporary'left downto data_up'length);
+                                counter <= counter + 1;
+                                init_Output <= shift;
+                            end if;
 
-                        if data_dwn = select_last_command then
-                            state <= select_config_trigger_last;
-                        end if;
-                    end if;
+                        when shift =>
+                            data_up_valid <= '0';
+                            if data_up_ready = '0' then
+                                init_Output <= Zwischenspeicher;
+                            end if;
 
-                when select_config_trigger_curr =>
-                    data_size_s <= 0;
+                            if counter = data_size then
+                                data_request_next <= '1';
+                                init_Output <= get_next_data;
+                            end if;
 
-                    if data_dwn_valid = '1' then
-                        if data_dwn = set_mask_curr_command then
-                            state <= set_mask_curr;
-                        end if;
+                        when get_next_data =>
+                            if ende_ausgabe = '1' then
+                                theend <= '1' ;
+                            end if;
 
-                        if data_dwn = set_value_curr_command then
-                            state <= set_value_curr;
-                        end if;
-
-                    end if;
-
-                when set_mask_curr =>
-                    if data_dwn_valid = '1' then
-                        data_size_s <= data_size_s + 1;
-                        mask_curr_s <= mask_curr_s(mask_curr_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
-
-                        if data_size_s + 1 = data_size   then
-                            state <= init;
-                        end if;
-                    end if;
-
-                when set_value_curr =>
-                    if data_dwn_valid = '1' then
-                        data_size_s <= data_size_s + 1;
-                        value_curr_s <= value_curr_s(value_curr_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
-
-                        if data_size_s + 1 = data_size then
-                            state <= init;
-                        end if;
-                    end if;
-
-                when select_config_trigger_last =>
-                    data_size_s <= 0;
-                    if data_dwn_valid = '1' then
-                        if data_dwn = set_mask_last_command then
-                            state <= set_mask_last;
-                        end if;
-
-                        if data_dwn = set_value_last_command then
-                            state <= set_value_last;
-                        end if;
-                    end if;
-
-                when set_mask_last =>
-                    if data_dwn_valid = '1' then
-                        data_size_s <= data_size_s + 1;
-                        mask_last_s <= mask_last_s(mask_last_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
-
-                        if data_size_s +1 = data_size then
-                            state <= init;
-                        end if;
-                    end if;
-
-                when set_value_last =>
-                    if data_dwn_valid = '1' then
-                        data_size_s <= data_size_s + 1;
-                        value_last_s <= value_last_s(value_last_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
-
-                        if data_size_s + 1 = data_size then
-                            state <= init;
-                        end if;
-                    end if;
-
-                when data_output =>
-                    if finish = '1' then
-                        trigger_active <= '0';
-                        ende_ausgabe <= '1';
-                    end if;
-
-                    if theend = '1' then
-                        state <= init;
-                        init_Output <= init;
-                    end if;
-
-                    case init_Output is
-                    when init =>
-                        if data_valid = '1' then
-                            la_data_temporary <= data;
-                            init_Output <= Zwischenspeicher;
-                        end if;
-
-                    when Zwischenspeicher =>
-                        data_request_next <= '0';
-                        if data_up_ready = '1' then
-                            data_up <= la_data_temporary(data_up'range);
-                            data_up_valid <= '1';
-                            la_data_temporary <= x"00" & la_data_temporary( la_data_temporary'left downto data_up'length);
-                            counter <= counter + 1;
-                            init_Output <= shift;
-                        end if;
-
-                    when shift =>
-                        data_up_valid <= '0';
-                        if data_up_ready = '0' then
-                            init_Output <= Zwischenspeicher;
-                        end if;
-
-                        if counter = data_size then
-                            data_request_next <= '1';
-                            init_Output <= get_next_data;
-                        end if;
-
-                    when get_next_data =>
-                        if ende_ausgabe = '1' then
-                            theend <= '1' ;
-                        end if;
-
-                        if data_valid = '1' then
-                            counter <= (others => '0');
-                            la_data_temporary <= data;
-                            init_Output <= Zwischenspeicher;
-                        end if;
-                    end case;
-                end case ;
+                            if data_valid = '1' then
+                                counter <= (others => '0');
+                                la_data_temporary <= data;
+                                init_Output <= Zwischenspeicher;
+                            end if;
+                        end case;
+                    end case ;
+                end if;
             end if;
         end if;
-    end process ;
+    end process;
 
     delay      <= delay_s;
     mask_curr  <= mask_curr_s;

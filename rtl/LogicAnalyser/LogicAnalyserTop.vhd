@@ -5,8 +5,9 @@ use ieee.numeric_std.all;
 
 entity LogicAnalyserTop is
     generic(
-         DATA_WIDTH : natural := 4;        --! width of a sample
-         ADDR_WIDTH : natural := 4          --! 2**ADDR_WIDTH = size if sample memory
+         DATA_WIDTH  : natural := 4;        --! width of a sample
+         ADDR_WIDTH  : natural := 4;         --! 2**ADDR_WIDTH = size if sample memory
+         ASYNC_RESET : boolean := true
     );
     port(
         clk            : in  std_logic;
@@ -30,8 +31,9 @@ architecture structure of LogicAnalyserTop is
 
     component LogicAnalyserMemory is
         generic(
-            DATA_WIDTH : natural;
-            ADDR_WIDTH : natural
+            DATA_WIDTH  : natural;
+            ADDR_WIDTH  : natural;
+            ASYNC_RESET : boolean
         );
         port(
             clk               : in  std_logic;
@@ -53,7 +55,8 @@ architecture structure of LogicAnalyserTop is
 
     component LogicAnalyserTrigger is
         generic(
-            DATA_WIDTH : natural
+            DATA_WIDTH  : natural;
+            ASYNC_RESET : boolean
         );
         port(
             clk           : in  std_logic;
@@ -72,8 +75,9 @@ architecture structure of LogicAnalyserTop is
 
     component LogicAnalyserController is
         generic(
-            DATA_WIDTH : natural;
-            ADDR_WIDTH : natural
+            DATA_WIDTH  : natural;
+            ADDR_WIDTH  : natural;
+            ASYNC_RESET : boolean
         );
         port(
             clk               : in  std_logic;
@@ -101,7 +105,7 @@ architecture structure of LogicAnalyserTop is
 
     component IpdbgEscaping is
         generic(
-            DATA_WIDTH : natural
+            ASYNC_RESET : boolean
         );
         port(
             clk            : in  std_logic;
@@ -135,10 +139,9 @@ architecture structure of LogicAnalyserTop is
     signal data_in_uesc       : std_logic_vector(7 downto 0);
     signal reset              : std_logic;
 begin
-    process (clk, rst) begin
-        if rst = '1' then
-            trigger <= '0';
-        elsif rising_edge(clk) then
+
+    process (clk) begin
+        if rising_edge(clk) then
             if ce = '1' then
                 trigger <= fire_trigger_cltrl or trigger_logic;
             end if;
@@ -147,8 +150,9 @@ begin
 
     memory : component LogicAnalyserMemory
         generic map(
-            DATA_WIDTH => DATA_WIDTH,
-            ADDR_WIDTH => ADDR_WIDTH
+            DATA_WIDTH  => DATA_WIDTH,
+            ADDR_WIDTH  => ADDR_WIDTH,
+            ASYNC_RESET => ASYNC_RESET
         )
         port map(
             clk               => clk,
@@ -168,7 +172,8 @@ begin
 
     triggerLogic : component LogicAnalyserTrigger
         generic map(
-            DATA_WIDTH => DATA_WIDTH
+            DATA_WIDTH  => DATA_WIDTH,
+            ASYNC_RESET => ASYNC_RESET
         )
         port map(
             clk           => clk,
@@ -186,8 +191,9 @@ begin
 
     controller : component LogicAnalyserController
         generic map(
-            DATA_WIDTH => DATA_WIDTH,
-            ADDR_WIDTH => ADDR_WIDTH
+            DATA_WIDTH  => DATA_WIDTH,
+            ADDR_WIDTH  => ADDR_WIDTH,
+            ASYNC_RESET => ASYNC_RESET
         )
         port map(
             clk               => clk,
@@ -214,7 +220,7 @@ begin
 
     Escaping : component IpdbgEscaping
         generic map(
-            DATA_WIDTH => DATA_WIDTH
+            ASYNC_RESET => ASYNC_RESET
         )
         port map(
             clk            => clk,

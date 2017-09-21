@@ -3,6 +3,9 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity IoViewTop is
+    generic(
+        ASYNC_RESET : boolean := true
+    );
     port(
         clk            : in  std_logic;
         rst            : in  std_logic;
@@ -24,6 +27,9 @@ end entity IoViewTop;
 architecture struct of IoViewTop is
 
     component IoViewController is
+        generic(
+            ASYNC_RESET : boolean
+        );
         port(
             clk            : in  std_logic;
             rst            : in  std_logic;
@@ -39,6 +45,9 @@ architecture struct of IoViewTop is
     end component IoViewController;
 
     component IpdbgEscaping is
+        generic(
+            ASYNC_RESET : boolean
+        );
         port(
             clk            : in  std_logic;
             rst            : in  std_logic;
@@ -57,6 +66,9 @@ architecture struct of IoViewTop is
 begin
 
     controller : component IoViewController
+        generic map(
+            ASYNC_RESET => ASYNC_RESET
+        )
         port map(
             clk            => clk,
             rst            => reset,
@@ -71,6 +83,9 @@ begin
         );
 
     escaping : component IpdbgEscaping
+        generic map(
+            ASYNC_RESET => ASYNC_RESET
+        )
         port map(
             clk            => clk,
             rst            => rst,
