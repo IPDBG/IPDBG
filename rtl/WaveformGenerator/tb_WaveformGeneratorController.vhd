@@ -12,38 +12,38 @@ architecture test of tb_WaveformGeneratorController is
             ADDR_WIDTH : natural
         );
         port(
-            clk              : in  std_logic;
-            rst              : in  std_logic;
-            ce               : in  std_logic;
-            data_dwn_valid   : in  std_logic;
-            data_dwn         : in  std_logic_vector(7 downto 0);
-            data_up_ready    : in  std_logic;
-            data_up_valid    : out std_logic;
-            data_up          : out std_logic_vector(7 downto 0);
-            Data             : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            DataValid        : out std_logic;
-            DataIfReset      : out std_logic;
-            enable           : out std_logic;
-            AddrOfLastSample : out std_logic_vector(ADDR_WIDTH-1 downto 0)
+            clk                   : in  std_logic;
+            rst                   : in  std_logic;
+            ce                    : in  std_logic;
+            data_dwn_valid        : in  std_logic;
+            data_dwn              : in  std_logic_vector(7 downto 0);
+            data_up_ready         : in  std_logic;
+            data_up_valid         : out std_logic;
+            data_up               : out std_logic_vector(7 downto 0);
+            data_samples          : out std_logic_vector(DATA_WIDTH-1 downto 0);
+            data_samples_valid    : out std_logic;
+            data_samples_if_reset : out std_logic;
+            enable                : out std_logic;
+            addr_of_last_sample   : out std_logic_vector(ADDR_WIDTH-1 downto 0)
         );
     end component WaveformGeneratorController;
-    constant DATA_WIDTH     : natural := 9;
-    constant ADDR_WIDTH     : natural := 9;
-    signal clk              : std_logic;
-    signal rst              : std_logic;
-    signal ce               : std_logic;
-    signal data_dwn_valid   : std_logic;
-    signal data_dwn         : std_logic_vector(7 downto 0);
-    signal data_up_ready    : std_logic;
-    signal data_up_valid    : std_logic;
-    signal data_up          : std_logic_vector(7 downto 0);
-    signal Data             : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal DataValid        : std_logic;
-    signal DataIfReset      : std_logic;
-    signal enable           : std_logic;
-    signal AddrOfLastSample : std_logic_vector(ADDR_WIDTH-1 downto 0);
+    constant DATA_WIDTH          : natural := 9;
+    constant ADDR_WIDTH          : natural := 9;
+    signal clk                   : std_logic;
+    signal rst                   : std_logic;
+    signal ce                    : std_logic;
+    signal data_dwn_valid        : std_logic;
+    signal data_dwn              : std_logic_vector(7 downto 0);
+    signal data_up_ready         : std_logic;
+    signal data_up_valid         : std_logic;
+    signal data_up               : std_logic_vector(7 downto 0);
+    signal data_samples          : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal data_samples_valid    : std_logic;
+    signal data_samples_if_reset : std_logic;
+    signal enable                : std_logic;
+    signal addr_of_last_sample   : std_logic_vector(ADDR_WIDTH-1 downto 0);
 
-    constant T              : time := 10 ns;
+    constant T                   : time := 10 ns;
 begin
     process begin
         clk <= '0';
@@ -145,18 +145,18 @@ begin
             ADDR_WIDTH => ADDR_WIDTH
         )
         port map(
-            clk              => clk,
-            rst              => rst,
-            ce               => ce,
-            data_dwn_valid   => data_dwn_valid,
-            data_dwn         => data_dwn,
-            data_up_ready    => data_up_ready,
-            data_up_valid    => data_up_valid,
-            data_up          => data_up,
-            Data             => Data,
-            DataValid        => DataValid,
-            DataIfReset      => DataIfReset,
-            enable           => enable,
-            AddrOfLastSample => AddrOfLastSample
+            clk                   => clk,
+            rst                   => rst,
+            ce                    => ce,
+            data_dwn_valid        => data_dwn_valid,
+            data_dwn              => data_dwn,
+            data_up_ready         => data_up_ready,
+            data_up_valid         => data_up_valid,
+            data_up               => data_up,
+            data_samples          => data_samples,
+            data_samples_valid    => data_samples_valid,
+            data_samples_if_reset => data_samples_if_reset,
+            enable                => enable,
+            addr_of_last_sample   => addr_of_last_sample
         );
 end architecture test;

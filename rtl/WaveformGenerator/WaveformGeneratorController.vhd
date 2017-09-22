@@ -5,27 +5,27 @@ use ieee.numeric_std.all;
 
 entity WaveformGeneratorController is
     generic(
-        DATA_WIDTH       : natural := 8;
-        ADDR_WIDTH       : natural := 8
+        DATA_WIDTH           : natural := 8;
+        ADDR_WIDTH           : natural := 8
     );
     port(
-        clk              : in  std_logic;
-        rst              : in  std_logic;
-        ce               : in  std_logic;
+        clk                  : in  std_logic;
+        rst                  : in  std_logic;
+        ce                   : in  std_logic;
 
         ----------------HOST INTERFACE-----------------------
-        data_dwn_valid    : in  std_logic;
-        data_dwn          : in  std_logic_vector(7 downto 0);
-        data_up_ready     : in  std_logic;
-        data_up_valid     : out std_logic;
-        data_up           : out std_logic_vector(7 downto 0);
+        data_dwn_valid        : in  std_logic;
+        data_dwn              : in  std_logic_vector(7 downto 0);
+        data_up_ready         : in  std_logic;
+        data_up_valid         : out std_logic;
+        data_up               : out std_logic_vector(7 downto 0);
 
         ---------------Signals from the memory --------------
-        Data              : out std_logic_vector(DATA_WIDTH-1 downto 0);
-        DataValid         : out std_logic;
-        DataIfReset       : out std_logic;
-        enable            : out std_logic;
-        AddrOfLastSample  : out std_logic_vector(ADDR_WIDTH-1 downto 0)
+        data_samples          : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        data_samples_valid    : out std_logic;
+        data_samples_if_reset : out std_logic;
+        enable                : out std_logic;
+        addr_of_last_sample   : out std_logic_vector(ADDR_WIDTH-1 downto 0)
     );
 end entity WaveformGeneratorController;
 
@@ -33,10 +33,10 @@ end entity WaveformGeneratorController;
 architecture tab of WaveformGeneratorController is
     constant HOST_WORD_SIZE : natural := 8;
 
-    constant data_size      : natural := (DATA_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;                   -- Berechnung wie oft dass Mask, Value, Mask_last und Value_last eingelesen werden müssen.
-    constant addr_size      : natural := (ADDR_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;                   -- Berechnung wie oft, dass das Delay für das Memory eingelesen werden muss.
-    constant DATA_WIDTH_slv : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(DATA_WIDTH, 32)); -- DATA_WIDTH_slv = Wert der Übertragung des DATA_WIDTH
-    constant ADDR_WIDTH_slv : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(ADDR_WIDTH, 32)); -- DATA_WIDTH_slv = Wert der Übertragung des DATA_WIDTH
+    constant data_size      : natural := (DATA_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;                   -- Berechnung wie oft dass Mask, Value, Mask_last und Value_last eingelesen werden muessen.
+    constant addr_size      : natural := (ADDR_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;                   -- Berechnung wie oft, dass das Delay fuer das Memory eingelesen werden muss.
+    constant DATA_WIDTH_slv : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(DATA_WIDTH, 32)); -- DATA_WIDTH_slv = Wert der uebertragung des DATA_WIDTH
+    constant ADDR_WIDTH_slv : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(ADDR_WIDTH, 32)); -- DATA_WIDTH_slv = Wert der uebertragung des DATA_WIDTH
 
 
     -----------------------Befehle WaveformGenerator -----------------------
@@ -59,9 +59,9 @@ architecture tab of WaveformGeneratorController is
     signal counter                   : unsigned(ADDR_WIDTH-1 downto 0);
     signal import_ADDR               : std_logic := '0';
     signal sizes_temporary           : std_logic_vector(31 downto 0);
-    signal dataout_s                 : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal sample_counter  : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0');
-    signal AddrOfLastSample_s        : std_logic_vector(ADDR_WIDTH-1 downto 0);
+    signal data_out_s                : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal sample_counter            : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0');
+    signal addr_of_last_sample_s     : std_logic_vector(ADDR_WIDTH-1 downto 0);
     signal setted_numberofsamples    : std_logic;
 
 begin
@@ -78,17 +78,18 @@ begin
             import_ADDR              <= '0';
             data_up                  <= (others => '-');
             data_up_valid            <= '0';
-            AddrOfLastSample_s       <= (others =>'0');
+            addr_of_last_sample_s    <= (others => '-');
             sample_counter           <= (others => '-');
-            dataout_s                <= (others => '-');
-            DataValid                <= '0';
+            data_out_s               <= (others => '-');
+            data_samples_valid       <= '0';
             enable_s                 <= '0';
             enable                   <= '0';
             setted_numberofsamples   <= '0';
+            data_samples_if_reset    <= '-';
         elsif rising_edge(clk) then
             if ce = '1' then
-                DataValid <= '0';
-                DataIfReset <= '0';
+                data_samples_valid <= '0';
+                data_samples_if_reset <= '0';
                 case state is
                 when init =>
                     if data_dwn_valid = '1' then
@@ -105,7 +106,7 @@ begin
                             state <= return_sizes;
                         end if ;
                         if data_dwn = write_samples_command then
-                            DataIfReset <= '1';
+                            data_samples_if_reset <= '1';
                             sample_counter <= (others => '0');
                             data_size_s <= 0;
                             state <= write_samples;
@@ -170,15 +171,15 @@ begin
                         end case;
 
                 when write_samples =>
-                    if enable_s = '0' then   --- Nötig ???!
+                    if enable_s = '0' then   --- NÃ¶tig ???!
                         if setted_numberofsamples = '1' then
                             if data_dwn_valid = '1' then
-                                dataout_s <= dataout_s(dataout_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+                                data_out_s <= data_out_s(data_out_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
                                 if (data_size_s + 1 = data_size) then
-                                    DataValid <= '1';
+                                    data_samples_valid <= '1';
                                     sample_counter <= sample_counter + 1;
                                     data_size_s <= 0;
-                                    if sample_counter  = unsigned(AddrOfLastSample_s) then
+                                    if sample_counter  = unsigned(addr_of_last_sample_s) then
                                         state <= init;
                                     end if;
                                 else
@@ -195,12 +196,12 @@ begin
                             setted_numberofsamples <= '1';
                         end if;
                         addr_size_s <= addr_size_s + 1;
-                        AddrOfLastSample_s <= AddrOfLastSample_s(AddrOfLastSample_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+                        addr_of_last_sample_s <= addr_of_last_sample_s(addr_of_last_sample_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
                     end if;
                 end case;
             end if;
         end if;
     end process;
-    Data <= dataout_s;
-    AddrOfLastSample <= AddrOfLastSample_s;
+    data_samples <= data_out_s;
+    addr_of_last_sample <= addr_of_last_sample_s;
 end architecture tab;
