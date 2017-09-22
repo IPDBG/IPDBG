@@ -16,20 +16,24 @@ entity JtagCdc is
         data_dwn_valid_la     : out std_logic;
         data_dwn_valid_ioview : out std_logic;
         data_dwn_valid_gdb    : out std_logic;
+        data_dwn_valid_wfg    : out std_logic;
 
 -------------------------- from Device under Test ------------------------
         data_up_ready_la      : out std_logic;
         data_up_ready_ioview  : out std_logic;
         data_up_ready_gdb     : out std_logic;
+        data_up_ready_wfg     : out std_logic;
 
         --DATAINVALID     : in std_logic;
         data_up_valid_la      : in std_logic;
         data_up_valid_ioview  : in std_logic;
         data_up_valid_gdb     : in std_logic;
+        data_up_valid_wfg     : in std_logic;
 
         data_up_la            : in std_logic_vector(7 downto 0);
         data_up_ioview        : in std_logic_vector(7 downto 0);
         data_up_gdb           : in std_logic_vector(7 downto 0);
+        data_up_wfg           : in std_logic_vector(7 downto 0);
 
 -------------------------- BSCAN-Componente (Debugging) ------------------
         DRCLK                : in  std_logic;
@@ -65,13 +69,15 @@ architecture behavioral of JtagCdc is
     signal data_in_ready_ioview_s : std_logic;
     signal data_in_ready_la_s     : std_logic;
     signal data_in_ready_gdb_s    : std_logic;
+    signal data_in_ready_wfg_s    : std_logic;
     signal clear                  : std_logic;
 
     signal register_la            : std_logic_vector(7 downto 0);
     signal register_gdb           : std_logic_vector(7 downto 0);
+    signal register_wfg           : std_logic_vector(7 downto 0);
     signal register_ioview        : std_logic_vector(7 downto 0);
 
-    type mux_t                    is(GDB_s, LA_s, IOVIEW_s);
+    type mux_t                    is(GDB_s, LA_s, IOVIEW_s, WFG_s);
     signal ent_mux                : mux_t;
     type transfer_t               is (is_active, is_idle);
     signal transfer               : transfer_t;
@@ -163,6 +169,9 @@ begin
                 if data_out_register_enable = '1' and shift_register(10 downto 8) = "001"  and shift_register (11) = '1' then
                     data_dwn_valid_gdb <= '1';
                 end if;
+                if data_out_register_enable = '1' and shift_register(10 downto 8) = "011"  and shift_register (11) = '1' then
+                    data_dwn_valid_wfg <= '1';
+                end if;
                 if data_out_register_enable = '1' and shift_register(10 downto 8) = "111"  and shift_register (11) = '1' then
                     clear <= '1';
                 end if;
@@ -183,6 +192,7 @@ begin
     data_up_ready_la <= data_in_ready_la_s;
     data_up_ready_gdb <= data_in_ready_gdb_s;
     data_up_ready_ioview <= data_in_ready_ioview_s;
+    data_up_ready_wfg <= data_in_ready_wfg_s;
     process (clk) begin
         if rising_edge(clk) then
             if clear = '1' then
@@ -190,9 +200,11 @@ begin
                 data_in_ready_gdb_s <= '1';
                 data_in_ready_la_s <= '1';
                 data_in_ready_ioview_s <= '1';
+                data_in_ready_wfg_s <= '1';
                 register_la <= (others => '-');
                 register_ioview <= (others => '-');
                 register_gdb <= (others => '-');
+                register_wfg <= (others => '-');
             else
                 if set_pending = '1' then
                     pending <= '1';
@@ -217,6 +229,12 @@ begin
                         register_gdb <= data_up_gdb;
                     end if;
                 end if;
+                if data_in_ready_wfg_s = '1' then
+                    if data_up_valid_wfg = '1' then
+                        data_in_ready_wfg_s <= '0';
+                        register_wfg <= data_up_wfg;
+                    end if;
+                end if;
                 if update_synced = '1' and update_synced_prev = '0' then
                     if acknowledge = '1' then
                         pending <= '0';
@@ -226,6 +244,9 @@ begin
 
                         if channel_register = "100" then
                             data_in_ready_la_s <= '1';
+                        end if;
+                        if channel_register = "011" then
+                            data_in_ready_wfg_s <= '1';
                         end if;
                         if channel_register = "010" then
                             data_in_ready_ioview_s <= '1';
@@ -274,7 +295,7 @@ begin
 
                     when IOVIEW_s =>
                         if data_in_ready_ioview_s = '1' then
-                            ent_mux <= GDB_s;
+                            ent_mux <= WFG_s;
                             transfer <= is_idle;
                         else
                             la_transfer_register <= register_ioview;
@@ -283,6 +304,18 @@ begin
                                 transfer <= is_active;
                             end if;
                             channel_register <= "010";
+                        end if;
+                    when WFG_s =>
+                        if data_in_ready_wfg_s = '1' then
+                            ent_mux <= GDB_s;
+                            transfer <= is_idle;
+                        else
+                            la_transfer_register <= register_wfg;
+                            if transfer = is_idle then
+                                set_pending <= '1';
+                                transfer <= is_active;
+                            end if;
+                            channel_register <= "011";
                         end if;
                 end case;
             end if;

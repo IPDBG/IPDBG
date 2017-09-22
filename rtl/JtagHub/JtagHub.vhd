@@ -15,15 +15,21 @@ entity JtagHub is
         data_dwn_valid_la    : out std_logic;
         data_dwn_valid_ioview: out std_logic;
         data_dwn_valid_gdb   : out std_logic;
+        data_dwn_valid_wfg   : out std_logic;
 
         data_up_ready_la     : out std_logic;
         data_up_ready_ioview : out std_logic;
         data_up_ready_gdb    : out std_logic;
+        data_up_ready_wfg    : out std_logic;
+
         data_up_valid_la     : in  std_logic;
         data_up_valid_ioview : in  std_logic;
         data_up_valid_gdb    : in  std_logic;
+        data_up_valid_wfg    : in  std_logic;
+
         data_up_la           : in  std_logic_vector(7 downto 0);
         data_up_ioview       : in  std_logic_vector(7 downto 0);
+        data_up_wfg          : in  std_logic_vector(7 downto 0);
         data_up_gdb          : in  std_logic_vector(7 downto 0)
     );
 end entity JtagHub;
@@ -41,16 +47,22 @@ architecture structure of JtagHub is
             data_dwn_valid_la    : out std_logic;
             data_dwn_valid_ioview: out std_logic;
             data_dwn_valid_gdb   : out std_logic;
+            data_dwn_valid_wfg   : out std_logic;
 
             data_up_ready_la     : out std_logic;
             data_up_ready_ioview : out std_logic;
             data_up_ready_gdb    : out std_logic;
+            data_up_ready_wfg    : out std_logic;
+
             data_up_valid_la     : in  std_logic;
             data_up_valid_ioview : in  std_logic;
             data_up_valid_gdb    : in  std_logic;
+            data_up_valid_wfg    : in  std_logic;
+
             data_up_la           : in  std_logic_vector (7 downto 0);
             data_up_ioview       : in  std_logic_vector (7 downto 0);
             data_up_gdb          : in  std_logic_vector (7 downto 0);
+            data_up_wfg          : in  std_logic_vector (7 downto 0);
 
             DRCLK                : in  std_logic;
             USER                 : in  std_logic;
@@ -106,16 +118,22 @@ begin
             data_dwn_valid_la     => data_dwn_valid_la,
             data_dwn_valid_ioview => data_dwn_valid_ioview,
             data_dwn_valid_gdb    => data_dwn_valid_gdb,
+            data_dwn_valid_wfg    => data_dwn_valid_wfg,
 
             data_up_ready_la      => data_up_ready_la,
             data_up_ready_ioview  => data_up_ready_ioview,
             data_up_ready_gdb     => data_up_ready_gdb,
+            data_up_ready_wfg     => data_up_ready_wfg,
+
             data_up_valid_la      => data_up_valid_la,
             data_up_valid_ioview  => data_up_valid_ioview,
             data_up_valid_gdb     => data_up_valid_gdb,
+            data_up_valid_wfg     => data_up_valid_wfg,
+
             data_up_la            => data_up_la,
             data_up_ioview        => data_up_ioview,
             data_up_gdb           => data_up_gdb,
+            data_up_wfg           => data_up_wfg,
 
             DRCLK                 => DRCLK,
             USER                  => USER,
