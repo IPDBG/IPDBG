@@ -8,8 +8,8 @@ use unisim.vcomponents.all;
 entity XC7Top is
     generic(
         MFF_LENGTH : natural := 3;
-        DATA_WIDTH : natural := 11;        --! width of a sample
-        ADDR_WIDTH : natural := 14
+        DATA_WIDTH : natural := 8;        --! width of a sample
+        ADDR_WIDTH : natural := 8
     );
     port(
         --clk                              : in  std_logic;
@@ -24,7 +24,6 @@ entity XC7Top is
 end XC7Top;
 
 architecture structure of XC7Top is
-
     component JtagHub is
         generic(
             MFF_LENGTH : natural
@@ -35,15 +34,19 @@ architecture structure of XC7Top is
             data_dwn                : out std_logic_vector(7 downto 0);
             data_dwn_valid_la       : out std_logic;
             data_dwn_valid_ioview   : out std_logic;
+            data_dwn_valid_wfg      : out std_logic;
             data_dwn_valid_gdb      : out std_logic;
             data_up_ready_la        : out std_logic;
             data_up_ready_ioview    : out std_logic;
+            data_up_ready_wfg       : out std_logic;
             data_up_ready_gdb       : out std_logic;
             data_up_valid_la        : in  std_logic;
             data_up_valid_ioview    : in  std_logic;
+            data_up_valid_wfg       : in  std_logic;
             data_up_valid_gdb       : in  std_logic;
             data_up_la              : in  std_logic_vector (7 downto 0);
             data_up_ioview          : in  std_logic_vector (7 downto 0);
+            data_up_wfg             : in  std_logic_vector (7 downto 0);
             data_up_gdb             : in  std_logic_vector (7 downto 0)
         );
     end component JtagHub;
@@ -84,6 +87,27 @@ architecture structure of XC7Top is
         );
     end component IOViewTop;
 
+    component WaveformGeneratorTop is
+         generic(
+         DATA_WIDTH : natural := 4;
+         ADDR_WIDTH : natural := 4
+        );
+        port(
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_dwn_valid : in  std_logic;
+            data_dwn       : in  std_logic_vector(7 downto 0);
+            data_up_ready  : in  std_logic;
+            data_up_valid  : out std_logic;
+            data_up        : out std_logic_vector(7 downto 0);
+            dataOut        : out std_logic_vector(DATA_WIDTH-1 downto 0);
+            firstsample    : out std_logic;
+            sample_enable  : in  std_logic
+
+        );
+    end component WaveformGeneratorTop;
+
     signal Clk                : std_logic;
     signal rst                : std_logic := '1';
 
@@ -92,26 +116,33 @@ architecture structure of XC7Top is
     signal DataIn_LogicAnalyser             : std_logic_vector(DATA_WIDTH-1 downto 0);
     constant DataIn_LogicAnalyser_max       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
     --signal stateDebug          : std_logic_vector(7 downto 0);
-
+    signal sample_enable_wfg        : std_logic := '1';
     signal data_dwn                 : std_logic_vector(7 downto 0);
     signal data_dwn_valid_la        : std_logic;
     signal data_dwn_valid_ioview    : std_logic;
     signal data_dwn_valid_gdb       : std_logic;
+    signal data_dwn_valid_wfg       : std_logic;
+
     signal data_up_ready_la         : std_logic;
     signal data_up_ready_ioview     : std_logic;
     signal data_up_ready_gdb        : std_logic;
+    signal data_up_ready_wfg        : std_logic;
+
     signal data_up_valid_la         : std_logic;
     signal data_up_valid_ioview     : std_logic;
     signal data_up_valid_gdb        : std_logic;
+    signal data_up_valid_wfg        : std_logic;
+
     signal data_up_la               : std_logic_vector (7 downto 0);
     signal data_up_ioview           : std_logic_vector (7 downto 0);
     signal data_up_gdb              : std_logic_vector (7 downto 0);
+    signal data_up_wfg              : std_logic_vector (7 downto 0);
+
     signal count                    : std_logic_vector (28 downto 0);
     signal output                   : std_logic_vector (7 downto 0);
     signal temp                     : std_logic_vector (7 downto 0);
 
     signal IoViewOutputs            : std_logic_vector(3 downto 0);
-
 begin
 
     Counter : process (Clk) begin
@@ -214,20 +245,42 @@ begin
             data_dwn                => data_dwn,
             data_dwn_valid_la       => data_dwn_valid_la,
             data_dwn_valid_ioview   => data_dwn_valid_ioview,
+            data_dwn_valid_wfg      => data_dwn_valid_wfg,
             data_dwn_valid_gdb      => data_dwn_valid_gdb,
 
             data_up_ready_la        => data_up_ready_la,
             data_up_ready_ioview    => data_up_ready_ioview,
+            data_up_ready_wfg       => data_up_ready_wfg,
             data_up_ready_gdb       => data_up_ready_gdb,
 
             data_up_valid_la        => data_up_valid_la,
             data_up_valid_ioview    => data_up_valid_ioview,
+            data_up_valid_wfg       => data_up_valid_wfg,
             data_up_valid_gdb       => data_up_valid_gdb,
 
             data_up_la              => data_up_la,
             data_up_ioview          => data_up_ioview,
-
+            data_up_wfg             => data_up_wfg,
             data_up_gdb             => data_up_gdb
+        );
+
+    WFG: component WaveformGeneratorTop
+        generic map(
+             DATA_WIDTH => DATA_WIDTH,
+             ADDR_WIDTH => ADDR_WIDTH
+        )
+        port map(
+            clk            => clk,
+            rst            => rst,
+            ce             => '1',
+            data_dwn_valid => data_dwn_valid_wfg,
+            data_dwn       => data_dwn,
+            data_up_ready  => data_up_ready_wfg,
+            data_up_valid  => data_up_valid_wfg,
+            data_up        => data_up_wfg,
+            dataOut        => open,
+            firstsample    => open,
+            sample_enable  => sample_enable_wfg
         );
 
     Clk_fpga_gen: block
