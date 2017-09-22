@@ -11,41 +11,43 @@ entity WaveformGeneratorMemory is
     port(
         clk              : in  std_logic;
         rst              : in  std_logic;
-        ce               : in  std_logic := '1';
+        ce               : in  std_logic;
 
-        Enable           : in  std_logic;
-        SampleEnable     : in  std_logic := '1';
-        AddrOfLastSample : in  std_logic_vector(ADDR_WIDTH-1 downto 0); -- Length Of Waveform - 1
-        DataOut          : out std_logic_vector(DATA_WIDTH-1 downto 0);
-        FirstSample      : out std_logic;
 
         -- write
-        DataIn           : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        DataValid        : in  std_logic;
-        DataIfReset      : in  std_logic
+        DataIn           : in  std_logic_vector(DATA_WIDTH-1 downto 0);      -- from controller
+        DataValid        : in  std_logic;                                    -- from controller
+        DataIfReset      : in  std_logic;                                    -- from controller
+
+        Enable           : in  std_logic;                               -- not pause      -- from controller
+        AddrOfLastSample : in  std_logic_vector(ADDR_WIDTH-1 downto 0); -- Length Of Waveform - 1  -- from controller
+
+        DataOut          : out std_logic_vector(DATA_WIDTH-1 downto 0); -- THE output
+        FirstSample      : out std_logic;                               -- THE output
+        SampleEnable     : in  std_logic := '1'                         -- timing for output
+
     );
 end entity WaveformGeneratorMemory;
 
 
 architecture behavioral of WaveformGeneratorMemory is
 
-    component pdpRam is
+    component PdpRam is
         generic(
             DATA_WIDTH     : natural;
             ADDR_WIDTH     : natural;
-            INIT_FILE_NAME : string;
             OUTPUT_REG     : boolean
         );
         port(
-            clk          : in  std_logic;
-            ce           : in  std_logic;
-            writeEnable  : in  std_logic;
-            writeAddress : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-            writeData    : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            readAddress  : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-            readData     : out std_logic_vector(DATA_WIDTH-1 downto 0)
+            clk           : in  std_logic;
+            ce            : in  std_logic;
+            write_Enable  : in  std_logic;
+            write_Address : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+            write_Data    : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+            read_Address  : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+            read_Data     : out std_logic_vector(DATA_WIDTH-1 downto 0)
         );
-    end component pdpRam;
+    end component PdpRam;
 
     constant RAM_OUTPUT_REG  : boolean := true;
 
@@ -57,6 +59,7 @@ architecture behavioral of WaveformGeneratorMemory is
     signal we                : std_logic;
     signal writeData         : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal adr_w             : unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
+    --signal AddrOfLastSample  : std_logic_vector(ADDR_WIDTH-1 downto 0);
 
 begin
 
@@ -69,6 +72,9 @@ begin
             else
                 if ce = '1' then
                     we <= '0';
+--                    if we = '1' then
+--                        AddrOfLastSample <= std_logic_vector(adr_w);
+--                    end if;
                     if DataIfReset = '1' then
                         adr_w <= (others => '0');
                     elsif we = '1' then
@@ -84,6 +90,8 @@ begin
         end if;
     end process;
 
+
+
     mem: block
         signal Adrw_slv     : std_logic_vector(ADDR_WIDTH-1 downto 0);
         signal Adrr_slv     : std_logic_vector(ADDR_WIDTH-1 downto 0);
@@ -92,21 +100,20 @@ begin
         Adrw_slv <= std_logic_vector(adr_w);
         Adrr_slv <= std_logic_vector(adr_r);
 
-        samples : component pdpRam
+        samples : component PdpRam
             generic map(
                 DATA_WIDTH     => DATA_WIDTH,
                 ADDR_WIDTH     => ADDR_WIDTH,
-                INIT_FILE_NAME => "",
                 OUTPUT_REG     => RAM_OUTPUT_REG
             )
             port map(
-                clk          => clk,
-                ce           => ce,
-                writeEnable  => we,
-                writeAddress => Adrw_slv,
-                writeData    => writeData,
-                readAddress  => Adrr_slv,
-                readData     => readData
+                clk           => clk,
+                ce            => ce,
+                write_enable  => we,
+                write_address => Adrw_slv,
+                write_data    => writeData,
+                read_address  => Adrr_slv,
+                read_data     => readData
             );
     end block mem;
 
