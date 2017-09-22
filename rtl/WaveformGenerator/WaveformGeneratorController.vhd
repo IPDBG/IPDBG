@@ -60,7 +60,7 @@ architecture tab of WaveformGeneratorController is
     signal import_ADDR               : std_logic := '0';
     signal sizes_temporary           : std_logic_vector(31 downto 0);
     signal dataout_s                 : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal AddrOfLastSample_counter  : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0');
+    signal sample_counter  : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0');
     signal AddrOfLastSample_s        : std_logic_vector(ADDR_WIDTH-1 downto 0);
     signal setted_numberofsamples    : std_logic;
 
@@ -73,18 +73,22 @@ begin
             data_size_s              <= 0;
             state                    <= init;
             init_Output              <= init;
-            sizes_temporary          <= (others => '0');
-            counter                  <= (others => '0');
+            sizes_temporary          <= (others => '-');
+            counter                  <= (others => '-');
             import_ADDR              <= '0';
-            data_up                  <= (others =>'0');
+            data_up                  <= (others => '-');
+            data_up_valid            <= '0';
             AddrOfLastSample_s       <= (others =>'0');
-            AddrOfLastSample_counter <= (others => '0');
-            dataout_s                <= (others => '0');
+            sample_counter           <= (others => '-');
+            dataout_s                <= (others => '-');
+            DataValid                <= '0';
             enable_s                 <= '0';
             enable                   <= '0';
             setted_numberofsamples   <= '0';
         elsif rising_edge(clk) then
             if ce = '1' then
+                DataValid <= '0';
+                DataIfReset <= '0';
                 case state is
                 when init =>
                     if data_dwn_valid = '1' then
@@ -102,7 +106,7 @@ begin
                         end if ;
                         if data_dwn = write_samples_command then
                             DataIfReset <= '1';
-                            AddrOfLastSample_counter <= (others => '0');
+                            sample_counter <= (others => '0');
                             data_size_s <= 0;
                             state <= write_samples;
                         end if ;
@@ -166,20 +170,21 @@ begin
                         end case;
 
                 when write_samples =>
-                    DataIfReset <= '0';
                     if enable_s = '0' then   --- Nötig ???!
                         if setted_numberofsamples = '1' then
                             if data_dwn_valid = '1' then
-                                DataValid <= '0';
-                                data_size_s <= data_size_s + 1;
-                                dataout_s <= dataout_s(dataout_s'left-HOST_WORD_SIZE downto 0)& data_dwn;
+                                dataout_s <= dataout_s(dataout_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
                                 if (data_size_s + 1 = data_size) then
                                     DataValid <= '1';
-                                    AddrOfLastSample_counter <= AddrOfLastSample_counter + 1;
+                                    sample_counter <= sample_counter + 1;
+                                    data_size_s <= 0;
+                                    if sample_counter  = unsigned(AddrOfLastSample_s) then
+                                        state <= init;
+                                    end if;
+                                else
+                                    data_size_s <= data_size_s + 1;
                                 end if;
-                                if (AddrOfLastSample_counter  = unsigned(AddrOfLastSample_s) ) then
-                                    state <= init;
-                                end if;
+
                             end if;
                         end if;
                     end if;

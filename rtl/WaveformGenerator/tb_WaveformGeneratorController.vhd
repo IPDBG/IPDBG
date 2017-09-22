@@ -81,27 +81,56 @@ begin
         wait for T/5;
         wait for 5*T;
 
+        -- set address of last sample
         data_dwn_valid <= '1';
         data_dwn <= x"f4";
         wait for T;
 
-        data_dwn <= x"01";
+        data_dwn <= x"00";
         wait for T;
 
-        data_dwn <= x"F4";
+        data_dwn <= x"07";
         wait for T;
 
         data_dwn_valid <= '0';
+        wait for 5*T;
+
+        -- request for data width
+        data_dwn_valid <= '1';
+        data_dwn <= x"f2";
+        wait for T;
+
+        data_dwn_valid <= '0';
+        wait for 5*T;
+
+        wait for 20*T;
 
 
+        -- write samples:
+        data_dwn_valid <= '1';
+        data_dwn <= x"f3";
+        wait for T;
 
-
-
-
-        while true loop
-            data_up_ready <= not data_up_valid;
+        for k in 0 to 7 loop
+            data_dwn_valid <= '1';
+            data_dwn <= x"00";
+            wait for T;
+            data_dwn <= std_logic_vector(to_unsigned(k, data_dwn'length));
             wait for T;
         end loop;
+
+        data_dwn_valid <= '0';
+        wait for 5*T;
+
+
+
+
+        -- set start
+        data_dwn_valid <= '1';
+        data_dwn <= x"f0";
+        wait for T;
+        data_dwn_valid <= '0';
+
 
         wait;
     end process;
