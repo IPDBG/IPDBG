@@ -81,23 +81,30 @@ architecture tab of LogicAnalyserController is
     signal init_Output    : Output := init;
 
     --Zähler
-    signal data_size_s       : natural range 0 to data_size;
-    signal addr_size_s       : natural range 0 to addr_size;
+    signal data_size_s              : natural range 0 to data_size;
+    signal addr_size_s              : natural range 0 to addr_size;
 
-    signal mask_curr_s       : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal value_curr_s      : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal mask_last_s       : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal value_last_s      : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal delay_s           : std_logic_vector(ADDR_WIDTH-1 downto 0);
+    signal mask_curr_s              : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal value_curr_s             : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal mask_last_s              : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal value_last_s             : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal delay_s                  : std_logic_vector(ADDR_WIDTH-1 downto 0);
 
-    signal counter           : unsigned(ADDR_WIDTH-1 downto 0);
-    signal import_ADDR       : std_logic;
-    signal ende_ausgabe      : std_logic;
-    signal theend            : std_logic;
-    signal la_data_temporary : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal sizes_temporary   : std_logic_vector(31 downto 0);
-    signal send              : std_logic_vector(7 downto 0);
-    signal arst, srst        : std_logic;
+    signal counter                  : unsigned(ADDR_WIDTH-1 downto 0);
+    signal import_ADDR              : std_logic;
+    signal ende_ausgabe             : std_logic;
+    signal theend                   : std_logic;
+    signal la_data_temporary        : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal sizes_temporary          : std_logic_vector(31 downto 0);
+    signal send                     : std_logic_vector(7 downto 0);
+    signal arst, srst               : std_logic;
+
+    signal data_dwn_delayed         : std_logic_vector(7 downto 0);
+    signal set_delay_next_byte      : std_logic;
+    signal set_mask_curr_next_byte  : std_logic;
+    signal set_value_curr_next_byte : std_logic;
+    signal set_mask_last_next_byte  : std_logic;
+    signal set_value_last_next_byte : std_logic;
 begin
     async_init: if ASYNC_RESET generate begin
         arst <= rst;
@@ -112,29 +119,30 @@ begin
 
     process (clk, arst)
         procedure reset_assignments is begin
-            data_size_s        <= 0;
-            addr_size_s        <= 0;
-            state              <= init;
-            init_Output        <= init;
+            data_size_s              <= 0;
+            addr_size_s              <= 0;
+            state                    <= init;
+            init_Output              <= init;
 
-            mask_curr_s        <= (others => '-');
-            value_curr_s       <= (others => '-');
-            mask_last_s        <= (others => '-');
-            value_last_s       <= (others => '-');
-            delay_s            <= (others => '-');
+            data_dwn_delayed         <= (others => '-');
 
-            data_up_valid      <= '0';
-            data_up            <= (others => '-');
-            trigger_active     <= '0';
-            fire_trigger       <= '0';
-            data_request_next  <= '0';
+            data_up_valid            <= '0';
+            data_up                  <= (others => '-');
+            trigger_active           <= '0';
+            fire_trigger             <= '0';
+            data_request_next        <= '0';
 
-            counter            <= (others => '-');
-            import_ADDR        <= '-';
-            la_data_temporary  <= (others => '-');
-            sizes_temporary    <= (others => '-');
-            ende_ausgabe       <= '0';
-            theend             <= '0';
+            counter                  <= (others => '-');
+            import_ADDR              <= '-';
+            la_data_temporary        <= (others => '-');
+            sizes_temporary          <= (others => '-');
+            ende_ausgabe             <= '0';
+            theend                   <= '0';
+            set_delay_next_byte      <= '0';
+            set_mask_curr_next_byte  <= '0';
+            set_value_curr_next_byte <= '0';
+            set_mask_last_next_byte  <= '0';
+            set_value_last_next_byte <= '0';
         end procedure reset_assignments;
     begin
         if arst = '1' then
@@ -144,6 +152,12 @@ begin
                 reset_assignments;
             else
                 if ce = '1' then
+                    set_delay_next_byte <= '0';
+                    set_mask_curr_next_byte <= '0';
+                    set_value_curr_next_byte <= '0';
+                    set_mask_last_next_byte <= '0';
+                    set_value_last_next_byte <= '0';
+                    data_dwn_delayed <= data_dwn;
                     data_up_valid <= '0';
                     case state is
                     when init =>
@@ -293,7 +307,7 @@ begin
                             end if;
 
                             addr_size_s <= addr_size_s + 1;
-                            delay_s <= delay_s(delay_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+                            set_delay_next_byte <= '1';
                         end if;
 
                     when config_trigger =>
@@ -324,7 +338,7 @@ begin
                     when set_mask_curr =>
                         if data_dwn_valid = '1' then
                             data_size_s <= data_size_s + 1;
-                            mask_curr_s <= mask_curr_s(mask_curr_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+                            set_mask_curr_next_byte <= '1';
 
                             if data_size_s + 1 = data_size   then
                                 state <= init;
@@ -334,7 +348,7 @@ begin
                     when set_value_curr =>
                         if data_dwn_valid = '1' then
                             data_size_s <= data_size_s + 1;
-                            value_curr_s <= value_curr_s(value_curr_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+                            set_value_curr_next_byte <= '1';
 
                             if data_size_s + 1 = data_size then
                                 state <= init;
@@ -356,7 +370,7 @@ begin
                     when set_mask_last =>
                         if data_dwn_valid = '1' then
                             data_size_s <= data_size_s + 1;
-                            mask_last_s <= mask_last_s(mask_last_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+                            set_mask_last_next_byte  <= '1';
 
                             if data_size_s +1 = data_size then
                                 state <= init;
@@ -366,7 +380,7 @@ begin
                     when set_value_last =>
                         if data_dwn_valid = '1' then
                             data_size_s <= data_size_s + 1;
-                            value_last_s <= value_last_s(value_last_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+                            set_value_last_next_byte <= '1';
 
                             if data_size_s + 1 = data_size then
                                 state <= init;
@@ -428,6 +442,70 @@ begin
             end if;
         end if;
     end process;
+
+    set_delay_narrow: if ADDR_WIDTH <= HOST_WORD_SIZE generate begin
+        process (clk) begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if set_delay_next_byte = '1' then
+                        delay_s <= data_dwn_delayed(delay_s'range);
+                    end if;
+                end if;
+            end if;
+        end process;
+    end generate set_delay_narrow;
+    set_delay_wide: if ADDR_WIDTH > HOST_WORD_SIZE generate begin
+        process (clk) begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if set_delay_next_byte = '1' then
+                        delay_s <= delay_s(delay_s'left-HOST_WORD_SIZE downto 0) & data_dwn_delayed;
+                    end if;
+                end if;
+            end if;
+        end process;
+    end generate set_delay_wide;
+
+    set_trigger_narrow: if DATA_WIDTH <= HOST_WORD_SIZE generate begin
+        process (clk) begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if set_mask_curr_next_byte = '1' then
+                        mask_curr_s <= data_dwn_delayed(mask_curr_s'range);
+                    end if;
+                    if set_value_curr_next_byte = '1' then
+                        value_curr_s <= data_dwn_delayed(value_curr_s'range);
+                    end if;
+                    if set_mask_last_next_byte = '1' then
+                        mask_last_s <= data_dwn_delayed(mask_last_s'range);
+                    end if;
+                    if set_value_last_next_byte = '1' then
+                        value_last_s <= data_dwn_delayed(value_last_s'range);
+                    end if;
+                end if;
+            end if;
+        end process;
+    end generate set_trigger_narrow;
+    set_trigger_wide: if DATA_WIDTH > HOST_WORD_SIZE generate begin
+        process (clk) begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if set_mask_curr_next_byte = '1' then
+                        mask_curr_s <= mask_curr_s(mask_curr_s'left-HOST_WORD_SIZE downto 0) & data_dwn_delayed;
+                    end if;
+                    if set_value_curr_next_byte = '1' then
+                        value_curr_s <= value_curr_s(value_curr_s'left-HOST_WORD_SIZE downto 0) & data_dwn_delayed;
+                    end if;
+                    if set_mask_last_next_byte = '1' then
+                        mask_last_s <= mask_last_s(mask_last_s'left-HOST_WORD_SIZE downto 0) & data_dwn_delayed;
+                    end if;
+                    if set_value_last_next_byte = '1' then
+                        value_last_s <= value_last_s(value_last_s'left-HOST_WORD_SIZE downto 0) & data_dwn_delayed;
+                    end if;
+                end if;
+            end if;
+        end process;
+    end generate set_trigger_wide;
 
     delay      <= delay_s;
     mask_curr  <= mask_curr_s;
