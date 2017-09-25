@@ -81,7 +81,7 @@ begin
             width_temporary_reg    <= (others => '-');
         end procedure fsm_reset_assignment;
     begin
-        if srst = '1' then
+        if arst = '1' then
             fsm_reset_assignment;
         elsif rising_edge(clk) then
             if srst = '1' then
