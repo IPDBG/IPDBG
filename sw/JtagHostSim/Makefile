@@ -31,11 +31,11 @@ JtagHostSim: $(OBJDIR)/jtaghost.o $(OBJDIR)/main.o $(OBJDIR)/server.o e~tb_top.o
 	$(CXX) $(LDFLAGS) -o JtagHostSim $(OBJDIR)/jtaghost.o $(OBJDIR)/main.o $(OBJDIR)/server.o `$(GHDL) --list-link $(GHDLFLAGS) tb_top` -pthread -lboost_system -lapr-1 $(LDLIBS)
 
 # Targets to analyze/compile files
-$(OBJDIR)/jtaghost.o:
+$(OBJDIR)/jtaghost.o: jtaghost.c
 	$(CC) $(CFLAGS) -c jtaghost.c -o $(OBJDIR)/jtaghost.o
-$(OBJDIR)/main.o:
+$(OBJDIR)/main.o: main.cpp
 	$(CXX) $(CXXFLAGS) -I/usr/include/apr-1 -c main.cpp -o $(OBJDIR)/main.o
-$(OBJDIR)/server.o:
+$(OBJDIR)/server.o: server.c
 	$(CC) $(CFLAGS) -I/usr/include/apr-1 -c server.c -o $(OBJDIR)/server.o
 
 e~tb_top.o: $(OBJDIR)/tb_top.o $(OBJDIR)/tb_top.o $(OBJDIR)/JtagHub_sim.o $(OBJDIR)/LogicAnalyserTop.o $(OBJDIR)/LogicAnalyserMemory.o $(OBJDIR)/LogicAnalyserTrigger.o $(OBJDIR)/LogicAnalyserController.o $(OBJDIR)/IpdbgEscaping.o $(OBJDIR)/pdpRam.o
