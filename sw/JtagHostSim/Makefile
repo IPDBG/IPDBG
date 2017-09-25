@@ -18,7 +18,7 @@ LFLAGS = -Wall -O3 $(DEBUG)
 # Default target
 all: directories JtagHostSim
 
-clean:
+cleanall:
 	@$(RM) -rf $(OBJDIR)
 	@$(RM) JtagHostSim
 	@$(RM) e~tb_top.o

@@ -71,13 +71,9 @@ begin
                 when x"C" => enable_o(0) <= '1';
                 when x"A" => enable_o(1) <= '1';
                 when x"9" => enable_o(2) <= '1';
+                when x"B" => enable_o(3) <= '1';
                 when others => null;
                 end case;
-
-                -- #define IPDBG_LA_VALID_MASK     0xC00
-                -- #define IPDBG_IOVIEW_VALID_MASK 0xA00
-                -- #define IPDBG_GDB_VALID_MASK    0x900
-
 
                 data_in_ready_o <= (others => '1');
                 if data_in_valid(0) = '1' and data_in_ready_o(0) = '1' then
@@ -93,6 +89,11 @@ begin
                 if data_in_valid(2) = '1' and data_in_ready_o(2) = '1' then
                     data_in_ready_o(2) <= '0';
                     data_temp_up := x"09" & data_in(2);
+                    set_data_to_jtag_host(to_integer(unsigned(data_temp_up)));
+                end if;
+                if data_in_valid(3) = '1' and data_in_ready_o(3) = '1' then
+                    data_in_ready_o(3) <= '0';
+                    data_temp_up := x"0B" & data_in(3);
                     set_data_to_jtag_host(to_integer(unsigned(data_temp_up)));
                 end if;
             end if;
