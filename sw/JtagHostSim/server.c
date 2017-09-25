@@ -33,6 +33,8 @@
 #define IPDBG_IOVIEW_VALID_MASK 0xA00
 #define IPDBG_LA_VALID_MASK     0xC00
 #define IPDBG_GDB_VALID_MASK    0x900
+#define IPDBG_WFG_VALID_MASK    0xB00
+#define IPDBG_CHANNELS          4
 
 #define MIN_TRANSFERS            1
 
@@ -86,11 +88,11 @@ int jtagHostLoop()
     apr_initialize();
     apr_pool_create(&mp, NULL);
 
-    serv_ctx_t *channel_contexts[3];
+    serv_ctx_t *channel_contexts[IPDBG_CHANNELS];
 
 
     apr_pollset_create(&pollset, DEF_POLLSET_NUM, mp, 0);
-    for(uint8_t ch = 0; ch < 3; ++ch)
+    for(uint8_t ch = 0; ch < IPDBG_CHANNELS; ++ch)
     {
         serv_ctx_t *serv_ctx = apr_palloc(mp, sizeof(serv_ctx_t));
         channel_contexts[ch] = serv_ctx;
@@ -99,9 +101,10 @@ int jtagHostLoop()
         serv_ctx->up_buf_level = 0;
         serv_ctx->down_buf_level = 0;
 
-        if(ch == 0) serv_ctx->valid_mask = 0xc00; ///IPDBG_LA_VALID_MASK
-        if(ch == 1) serv_ctx->valid_mask = 0xa00; ///IPDBG_IOVIEW_VALID_MASK
-        if(ch == 2) serv_ctx->valid_mask = 0x900; ///IPDBG_GDB_VALID_MASK
+        if(ch == 0) serv_ctx->valid_mask = IPDBG_LA_VALID_MASK;
+        if(ch == 1) serv_ctx->valid_mask = IPDBG_IOVIEW_VALID_MASK;
+        if(ch == 2) serv_ctx->valid_mask = IPDBG_GDB_VALID_MASK;
+        if(ch == 3) serv_ctx->valid_mask = IPDBG_WFG_VALID_MASK;
 
         apr_socket_t *listening_sock = create_listen_sock(mp, ch);
         assert(listening_sock);
@@ -118,7 +121,7 @@ int jtagHostLoop()
     while (1)
     {
         size_t transfers = 0;
-        for(size_t ch = 0 ; ch < 3 ; ++ch)
+        for(size_t ch = 0 ; ch < IPDBG_CHANNELS ; ++ch)
         {
             for(size_t idx = 0 ; idx < channel_contexts[ch]->down_buf_level; ++idx)
             {
