@@ -5,7 +5,8 @@
 #include <wx/string.h>
 #include <string>
 #include <wx/textdlg.h>
-
+#include <wx/app.h>
+#include "ConnectionDialog.h"
 
 IOViewProtocol::IOViewProtocol(IOViewProtocolObserver *obs):
 client(nullptr),
@@ -17,25 +18,33 @@ config("IO-View")
 
 void IOViewProtocol::open()
 {
-    client = new wxSocketClient();
-
     config.Read("LastIp" , &lastIp);
-    wxString ipAdress = wxGetTextFromUser(_("IP Adresse"), _("IP Adress to Connect"), lastIp);
+    config.Read("LastPort", &lastPort);
+    wxString ipAdress = lastIp;
+    wxString tcpPort = lastPort;
+    if(tcpPort.IsEmpty())
+        tcpPort="4243";
+
+    ConnectionDialog dlg(wxTheApp->GetTopWindow(), &ipAdress, &tcpPort);
+    if(dlg.ShowModal() != wxID_OK)
+        return;
 
     if(ipAdress.IsEmpty())
-    {
-        wxMessageBox(_("Not able to connect to JtagHost"));
-        delete client;
-        client = nullptr;
         return;
-    }
     else
         config.Write("LastIp", ipAdress);
+
+    if(tcpPort.IsEmpty())
+        return;
+    else
+        config.Write("LastPort", tcpPort);
+
+    client = new wxSocketClient();
 
 
     wxIPV4address address;
     address.Hostname(ipAdress);
-    address.Service("4243");
+    address.Service(tcpPort);
 
     client->SetFlags(wxSOCKET_NOWAIT);
     //client->SetEventHandler(*this, SOCKET_ID);

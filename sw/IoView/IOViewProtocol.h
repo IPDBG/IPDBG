@@ -41,6 +41,7 @@ private:
 
     wxConfig config;
     wxString lastIp;
+    wxString lastPort;
 
 };
 
