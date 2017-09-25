@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="JtagHostSim_unx" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="all">
+				<Option output="bin/Release/JtagHost" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add directory="/usr/include/apr-1" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="urjtag" />
+					<Add library="apr-1" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-std=c++11" />
+		</Compiler>
+		<Linker>
+			<Add option="-pthread" />
+			<Add library="boost_system" />
+		</Linker>
+		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserController.vhd">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserMemory.vhd">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserTop.vhd">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserTrigger.vhd">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="JtagHub_sim.vhd">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="Makefile" />
+		<Unit filename="jtaghost.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="jtaghost.h" />
+		<Unit filename="main.cpp" />
+		<Unit filename="server.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tb_top.vhd" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

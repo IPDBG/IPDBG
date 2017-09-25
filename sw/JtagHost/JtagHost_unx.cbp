@@ -17,6 +17,7 @@
 				</Compiler>
 				<Linker>
 					<Add library="urjtag" />
+			               <Add library="apr-1" />
 				</Linker>
 			</Target>
 			<Target title="Server (Release)">
@@ -31,16 +32,10 @@
 				<Linker>
 					<Add option="-s" />
 					<Add library="urjtag" />
+			               <Add library="apr-1" />
 				</Linker>
 			</Target>
 		</Build>
-		<Compiler>
-			<Add option="-Wall" />
-			<Add directory="C:/msys64/mingw32/include/apr-1" />
-		</Compiler>
-		<Linker>
-			<Add library="apr-1" />
-		</Linker>
 		<Unit filename="jtaghost.c">
 			<Option compilerVar="CC" />
 		</Unit>
