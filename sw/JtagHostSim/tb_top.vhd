@@ -62,7 +62,7 @@ architecture structure of tb_top is
 
 
     constant DATA_WIDTH  : natural := 12;
-    constant ADDR_WIDTH  : natural := 4;
+    constant ADDR_WIDTH  : natural := 10;
     constant ASYNC_RESET : boolean := true;
 
     signal data_dwn              : std_logic_vector(7 downto 0);

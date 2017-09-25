@@ -4,7 +4,7 @@
 # ghdl --gen-makefile tb_top
 
 GHDL=ghdl
-GHDLFLAGS=
+GHDLFLAGS=-O3
 
 LDFLAGS=-O3
 LDLIBS=

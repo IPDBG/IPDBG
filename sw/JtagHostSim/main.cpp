@@ -58,23 +58,22 @@ public:
 concurrent_queue<uint16_t> dwn_queue, up_queue;
 
 
-extern "C" uint32_t get_data_from_jtag_host(uint32_t unused)
+extern "C" uint32_t get_data_from_jtag_host(uint32_t unused)// called by JtagHub_sim
 {
     uint32_t retVal = 0;
-    if(!dwn_queue.empty())
+    // by design the JtagHost has to poll for new data JtagHost is master on The JTAG interface, so here it puts a lot of zeros which we remove here to speed up the simulation
+    while(!dwn_queue.empty())
     {
         retVal = static_cast<uint32_t>(dwn_queue.front());
-        if(retVal != 0)
-        std::cout << "get_data_from_jtag_host: 0x" << std::hex << retVal << std::endl;
         dwn_queue.pop();
+        if (retVal != 0)
+            return retVal;
     }
-    return retVal;
+    return 0;
 }
 
 extern "C" void set_data_to_jtag_host(uint32_t data) // called by JtagHub_sim
 {
-    if(data != 0)
-    std::cout << "set_data_to_jtag_host(0x" << std::hex << data << ")"  << std::endl;
     up_queue.push(static_cast<uint16_t>(data));
 }
 
@@ -84,8 +83,6 @@ extern "C" int16_t get_data_from_jtag_hub()
     if(!up_queue.empty())
     {
         retVal = up_queue.front();
-        if(retVal != 0)
-            std::cout << "get_data_from_jtag_hub: 0x" << std::hex << retVal << std::endl;
         up_queue.pop();
     }
 
@@ -94,8 +91,6 @@ extern "C" int16_t get_data_from_jtag_hub()
 
 extern "C" void set_data_to_jtag_hub(uint16_t dat)
 {
-    if(dat != 0)
-    std::cout << "set_data_to_jtag_hub(0x" << std::hex << dat << ")" << std::endl;
     dwn_queue.push(dat);
 }
 
@@ -105,7 +100,7 @@ int main(int argc, const char *argv[])
     std::thread ghdl(ghdl_run);
     std::thread jtagHost(jtagHostLoop);
 
-    std::cout << "main, ghdl and bar now execute concurrently...\n";
+    std::cout << "main, ghdl and main now execute concurrently...\n";
 
     ghdl.join();
     jtagHost.join();
