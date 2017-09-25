@@ -131,6 +131,16 @@ begin
         wait for T;
         data_dwn_valid <= '0';
 
+        wait for 5*T;
+
+
+
+        --set stop
+        data_dwn_valid <= '1';
+        data_dwn <= x"f1";
+        wait for T;
+        data_dwn_valid <= '0';
+
 
         wait;
     end process;
