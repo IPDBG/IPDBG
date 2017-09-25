@@ -18,9 +18,9 @@ entity LogicAnalyserTrigger is
 
         mask_curr       : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- mask_curr gibt an welche Bits von den Ausgangsdaten relevant sind.
         mask_last       : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- mask_last gibt an, welche Daten von den letzten Zyklus des probe relevant sind.
-        --mask_edge       : in  std_logic_vector(DATA_WIDTH-1 downto 0);
         value_curr      : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- Varmask gibt an, welche Daten am probe anliegen sollten
         value_last      : in  std_logic_vector(DATA_WIDTH-1 downto 0);                -- Varmask gibt an, welche Daten beim letzten Zyklus hätten anliegen müssen.
+        mask_edge       : in  std_logic_vector(DATA_WIDTH-1 downto 0);
 
         trigger         : out std_logic                                               -- Trigger ist der Trigger, welcher dann auf den Logic Analyser geführt wird.
 
@@ -47,14 +47,14 @@ begin
 
     mask_last_n <= not mask_last;
     mask_curr_n <= not mask_curr;
-    --mask_edge_n <= not mask_edge;
+    mask_edge_n <= not mask_edge;
 
     process (clk, arst)
         variable current_probe_eq_value       : std_logic_vector(DATA_WIDTH-1 downto 0);
         variable last_probe_match             : std_logic_vector(DATA_WIDTH-1 downto 0);
         variable last_and_current_probe_match : std_logic_vector(DATA_WIDTH-1 downto 0);
         variable last_probe_eq_value          : std_logic_vector(DATA_WIDTH-1 downto 0);
-        --variable edge_match                   : std_logic_vector(DATA_WIDTH-1 downto 0);
+        variable edge_match                   : std_logic_vector(DATA_WIDTH-1 downto 0);
     begin
         if arst = '1' then
             trigger <= '0';
@@ -81,11 +81,11 @@ begin
                             last_probe_match(idx):= last_probe_eq_value(idx) or mask_last_n(idx);
                             last_and_current_probe_match(idx) := last_probe_match(idx) and current_probe_eq_value(idx);
 
-                            --edge_match(idx) := mask_edge_n(idx) or (probe_last(idx) xor probe(idx));
+                            edge_match(idx) := mask_edge_n(idx) or (probe_last(idx) xor probe(idx));
 
                         end loop;
 
-                        if (last_and_current_probe_match or mask_curr_n) = all_ones then
+                        if ((last_and_current_probe_match or mask_curr_n) and edge_match) = all_ones then
                             trigger <= '1';
                         else
                             trigger <= '0';

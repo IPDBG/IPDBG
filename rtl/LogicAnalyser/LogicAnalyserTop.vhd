@@ -66,9 +66,9 @@ architecture structure of LogicAnalyserTop is
             probe         : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             mask_curr     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             mask_last     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            --mask_edge     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             value_curr    : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             value_last    : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+            mask_edge     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             Trigger       : out std_logic
         );
     end component LogicAnalyserTrigger;
@@ -92,6 +92,7 @@ architecture structure of LogicAnalyserTop is
             value_curr        : out std_logic_vector(DATA_WIDTH-1 downto 0);
             mask_last         : out std_logic_vector(DATA_WIDTH-1 downto 0);
             value_last        : out std_logic_vector(DATA_WIDTH-1 downto 0);
+            mask_edge         : out std_logic_vector(DATA_WIDTH-1 downto 0);
             delay             : out std_logic_vector(ADDR_WIDTH-1 downto 0);
             trigger_active    : out std_logic;
             fire_trigger      : out std_logic;
@@ -123,6 +124,7 @@ architecture structure of LogicAnalyserTop is
     signal value_curr         : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal mask_last          : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal value_last         : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal mask_edge          : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal delay              : std_logic_vector(ADDR_WIDTH-1 downto 0);
     signal trigger_active     : std_logic;
     signal full               : std_logic;
@@ -183,9 +185,9 @@ begin
             probe         => probe,
             mask_curr     => mask_curr,
             mask_last     => mask_last,
-            --mask_edge     => mask_edge,
             value_curr    => value_curr,
             value_last    => value_last,
+            mask_edge     => mask_edge,
             trigger       => trigger_logic
         );
 
@@ -208,6 +210,7 @@ begin
             value_curr        => value_curr,
             mask_last         => mask_last,
             value_last        => value_last,
+            mask_edge         => mask_edge,
             delay             => delay,
             trigger_active    => trigger_active,
             fire_trigger      => fire_trigger_cltrl,

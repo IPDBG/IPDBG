@@ -26,6 +26,7 @@ entity LogicAnalyserController is
         value_curr        : out std_logic_vector(DATA_WIDTH-1 downto 0);
         mask_last         : out std_logic_vector(DATA_WIDTH-1 downto 0);
         value_last        : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        mask_edge         : out std_logic_vector(DATA_WIDTH-1 downto 0);
 
         --      Logic Analyser
         delay             : out std_logic_vector(ADDR_WIDTH-1 downto 0);
@@ -63,6 +64,8 @@ architecture tab of LogicAnalyserController is
     constant select_last_command      : std_logic_vector := "11111001";--F9
     constant set_mask_last_command    : std_logic_vector := "11111011";--fb
     constant set_value_last_command   : std_logic_vector := "11111111";--FF
+    constant select_edge_command      : std_logic_vector := "11110101";--F5
+    constant set_edge_mask_command    : std_logic_vector := "11110110";--F6
     constant set_delay_command        : std_logic_vector := "00011111";--1f
     constant get_sizes_command        : std_logic_vector := "10101010";--AA
     constant get_id_command           : std_logic_vector := "10111011";--BB
@@ -73,8 +76,8 @@ architecture tab of LogicAnalyserController is
     constant G                        : std_logic_vector := "01000111";
     --State machines
     type states_t              is(init, return_id, return_sizes, logic_analyser, set_delay,
-                                         config_trigger, select_config_trigger_curr, select_config_trigger_last,
-                                         set_mask_curr, set_value_curr, set_mask_last, set_value_last, data_output);
+                                         config_trigger, select_config_trigger_curr, select_config_trigger_last, select_config_trigger_edge,
+                                         set_mask_curr, set_value_curr, set_mask_last, set_value_last, set_edge_mask, data_output);
     signal state : states_t :=  init;
 
     type Output is(init, Zwischenspeicher, shift, get_next_data);
@@ -88,6 +91,7 @@ architecture tab of LogicAnalyserController is
     signal value_curr_s             : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal mask_last_s              : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal value_last_s             : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal mask_edge_s              : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal delay_s                  : std_logic_vector(ADDR_WIDTH-1 downto 0);
 
     signal counter                  : unsigned(ADDR_WIDTH-1 downto 0);
@@ -105,6 +109,7 @@ architecture tab of LogicAnalyserController is
     signal set_value_curr_next_byte : std_logic;
     signal set_mask_last_next_byte  : std_logic;
     signal set_value_last_next_byte : std_logic;
+    signal set_mask_edge_next_byte  : std_logic;
 begin
     async_init: if ASYNC_RESET generate begin
         arst <= rst;
@@ -143,6 +148,7 @@ begin
             set_value_curr_next_byte <= '0';
             set_mask_last_next_byte  <= '0';
             set_value_last_next_byte <= '0';
+            set_mask_edge_next_byte  <= '0';
         end procedure reset_assignments;
     begin
         if arst = '1' then
@@ -157,6 +163,7 @@ begin
                     set_value_curr_next_byte <= '0';
                     set_mask_last_next_byte <= '0';
                     set_value_last_next_byte <= '0';
+                    set_mask_edge_next_byte <= '0';
                     data_dwn_delayed <= data_dwn;
                     data_up_valid <= '0';
                     case state is
@@ -319,6 +326,10 @@ begin
                             if data_dwn = select_last_command then
                                 state <= select_config_trigger_last;
                             end if;
+
+                            if data_dwn = select_edge_command then
+                                state <= select_config_trigger_edge;
+                            end if;
                         end if;
 
                     when select_config_trigger_curr =>
@@ -386,6 +397,24 @@ begin
                                 state <= init;
                             end if;
                         end if;
+
+                    when select_config_trigger_edge =>
+                        data_size_s <= 0;
+                        if data_dwn_valid = '1' then
+                            if data_dwn = set_edge_mask_command then
+                                state <= set_edge_mask;
+                            end if;
+                        end if;
+                    when set_edge_mask =>
+                        if data_dwn_valid = '1' then
+                            data_size_s <= data_size_s + 1;
+                            set_mask_edge_next_byte <= '1';
+
+                            if data_size_s + 1 = data_size then
+                                state <= init;
+                            end if;
+                        end if;
+
 
                     when data_output =>
                         if finish = '1' then
@@ -482,6 +511,9 @@ begin
                     if set_value_last_next_byte = '1' then
                         value_last_s <= data_dwn_delayed(value_last_s'range);
                     end if;
+                    if set_mask_edge_next_byte = '1' then
+                        mask_edge_s <= data_dwn_delayed(value_last_s'range);
+                    end if;
                 end if;
             end if;
         end process;
@@ -502,6 +534,9 @@ begin
                     if set_value_last_next_byte = '1' then
                         value_last_s <= value_last_s(value_last_s'left-HOST_WORD_SIZE downto 0) & data_dwn_delayed;
                     end if;
+                    if set_mask_edge_next_byte = '1' then
+                        mask_edge_s <= mask_edge_s(mask_edge_s'left-HOST_WORD_SIZE downto 0) & data_dwn_delayed;
+                    end if;
                 end if;
             end if;
         end process;
@@ -512,6 +547,7 @@ begin
     value_curr <= value_curr_s;
     mask_last  <= mask_last_s;
     value_last <= value_last_s;
+    mask_edge  <= mask_edge_s;
 
 
 end architecture tab;
