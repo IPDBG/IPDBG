@@ -327,4 +327,10 @@ void distribute_to_up_buffer(uint16_t val, serv_ctx_t *channel_contexts[])
         channel_contexts[2]->up_buf[index] = val & 0x00FF;
         channel_contexts[2]->up_buf_level++;
     }
+    if ((val & 0xf00) == IPDBG_WFG_VALID_MASK)
+    {
+        size_t index = channel_contexts[3]->up_buf_level;
+        channel_contexts[3]->up_buf[index] = val & 0x00FF;
+        channel_contexts[3]->up_buf_level++;
+    }
 }
