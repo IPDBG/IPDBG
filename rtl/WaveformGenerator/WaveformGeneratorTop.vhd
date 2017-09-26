@@ -6,7 +6,7 @@ use ieee.numeric_std.all;
 entity WaveformGeneratorTop is
     generic(
          DATA_WIDTH : natural := 8;         --! width of a sample
-         ADDR_WIDTH : natural := 8          --! 2**ADDR_WIDTH = size if sample memory
+         ADDR_WIDTH : natural := 13          --! 2**ADDR_WIDTH = size if sample memory
     );
     port(
         clk            : in  std_logic;
@@ -48,19 +48,19 @@ architecture structure of WaveformGeneratorTop is
         ADDR_WIDTH       : natural := 8
         );
         port(
-            clk               : in  std_logic;
-            rst               : in  std_logic;
-            ce                : in  std_logic;
-            data_dwn_valid    : in  std_logic;
-            data_dwn          : in  std_logic_vector(7 downto 0);
-            data_up_ready     : in  std_logic;
-            data_up_valid     : out std_logic;
-            data_up           : out std_logic_vector(7 downto 0);
-            Data              : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            DataValid         : out std_logic;
-            DataIfReset       : out std_logic;
-            enable            : out std_logic;
-            AddrOfLastSample  : out std_logic_vector(ADDR_WIDTH-1 downto 0)
+            clk                     : in  std_logic;
+            rst                     : in  std_logic;
+            ce                      : in  std_logic;
+            data_dwn_valid          : in  std_logic;
+            data_dwn                : in  std_logic_vector(7 downto 0);
+            data_up_ready           : in  std_logic;
+            data_up_valid           : out std_logic;
+            data_up                 : out std_logic_vector(7 downto 0);
+            data_samples            : out std_logic_vector(DATA_WIDTH-1 downto 0);
+            data_samples_valid      : out std_logic;
+            data_samples_if_reset   : out std_logic;
+            enable                  : out std_logic;
+            addr_of_last_sample     : out std_logic_vector(ADDR_WIDTH-1 downto 0)
         );
     end component WaveformGeneratorController;
 
