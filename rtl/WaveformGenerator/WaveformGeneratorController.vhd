@@ -53,16 +53,21 @@ architecture tab of WaveformGeneratorController is
     type Output is(init, Zwischenspeicher, shift, get_next_data);
     signal init_Output    : Output := init;
 
-    signal data_size_s               : natural range 0 to data_size;
-    signal addr_size_s               : natural range 0 to data_size;
-    signal enable_s                  : std_logic;
-    signal counter                   : unsigned(ADDR_WIDTH-1 downto 0);
-    signal import_ADDR               : std_logic := '0';
-    signal sizes_temporary           : std_logic_vector(31 downto 0);
-    signal data_out_s                : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal sample_counter            : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0');
-    signal addr_of_last_sample_s     : std_logic_vector(ADDR_WIDTH-1 downto 0);
-    signal setted_numberofsamples    : std_logic;
+    signal data_size_s                      : natural range 0 to data_size;
+    signal addr_size_s                      : natural range 0 to data_size;
+    signal enable_s                         : std_logic;
+    signal data_samples_valid_early         : std_logic;
+    signal setted_numberofsamples_early     : std_logic;
+    signal counter                          : unsigned(ADDR_WIDTH-1 downto 0);
+    signal import_ADDR                      : std_logic := '0';
+    signal sizes_temporary                  : std_logic_vector(31 downto 0);
+    signal data_out_s                       : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal sample_counter                   : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0');
+    signal addr_of_last_sample_s            : std_logic_vector(ADDR_WIDTH-1 downto 0);
+    signal setted_numberofsamples           : std_logic;
+    signal set_addroflastsample_next_byte   : std_logic;
+    signal set_dataouts_next_byte    		: std_logic;
+    signal data_dwn_delayed          		: std_logic_vector(7 downto 0);
 
 begin
 
@@ -70,26 +75,35 @@ begin
     process (clk, rst) begin
 
         if rst = '1' then
-            data_size_s              <= 0;
-            state                    <= init;
-            init_Output              <= init;
-            sizes_temporary          <= (others => '-');
-            counter                  <= (others => '-');
-            import_ADDR              <= '0';
-            data_up                  <= (others => '-');
-            data_up_valid            <= '0';
-            addr_of_last_sample_s    <= (others => '-');
-            sample_counter           <= (others => '-');
-            data_out_s               <= (others => '-');
-            data_samples_valid       <= '0';
-            enable_s                 <= '0';
-            enable                   <= '0';
-            setted_numberofsamples   <= '0';
-            data_samples_if_reset    <= '-';
+            data_size_s                     <= 0;
+            state                           <= init;
+            init_Output                     <= init;
+            sizes_temporary                 <= (others => '-');
+            counter                         <= (others => '-');
+            import_ADDR                     <= '0';
+            data_up                         <= (others => '-');
+            data_up_valid                   <= '0';
+            addr_of_last_sample_s           <= (others => '-');
+            sample_counter                  <= (others => '-');
+            data_out_s                      <= (others => '-');
+            data_samples_valid              <= '0';
+            enable_s                        <= '0';
+            enable                          <= '0';
+            setted_numberofsamples          <= '0';
+            data_samples_if_reset           <= '-';
+            data_dwn_delayed                <= (others => '-');
+            set_addroflastsample_next_byte  <= '0';
+            set_dataouts_next_byte          <= '0';
+            setted_numberofsamples_early    <= '0';
+            data_samples_valid_early        <= '0';
         elsif rising_edge(clk) then
             if ce = '1' then
+                data_dwn_delayed <= data_dwn;
                 data_samples_valid <= '0';
+                data_samples_valid_early <= '0';
                 data_samples_if_reset <= '0';
+                set_addroflastsample_next_byte <= '0';
+                set_dataouts_next_byte <= '0';
                 case state is
                 when init =>
                     if data_dwn_valid = '1' then
@@ -104,6 +118,7 @@ begin
                             sizes_temporary <= (others => '0');
                             import_ADDR <= '0';
                             state <= return_sizes;
+                            init_Output <= init;
                         end if ;
                         if data_dwn = write_samples_command then
                             data_samples_if_reset <= '1';
@@ -151,11 +166,7 @@ begin
                             if counter = to_unsigned(4, counter'length) then
                                 if import_ADDR = '0' then
                                     init_Output <= get_next_data;
-                                end if;
-                            end if;
-
-                            if counter = to_unsigned(4, counter'length) then
-                                if import_ADDR = '1' then
+                                else
                                     init_Output <= init;
                                     state <= init;
                                 end if;
@@ -171,12 +182,12 @@ begin
                         end case;
 
                 when write_samples =>
-                    if enable_s = '0' then   --- NÃ¶tig ???!
+                    if enable_s = '0' then   --- Nötig ???!
                         if setted_numberofsamples = '1' then
                             if data_dwn_valid = '1' then
-                                data_out_s <= data_out_s(data_out_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+                                set_dataouts_next_byte <= '1';
                                 if (data_size_s + 1 = data_size) then
-                                    data_samples_valid <= '1';
+                                    data_samples_valid_early <= '1';
                                     sample_counter <= sample_counter + 1;
                                     data_size_s <= 0;
                                     if sample_counter  = unsigned(addr_of_last_sample_s) then
@@ -193,15 +204,68 @@ begin
                     if data_dwn_valid = '1' then
                         if (addr_size_s + 1 = addr_size) then
                             state <= init;
-                            setted_numberofsamples <= '1';
+                            setted_numberofsamples_early <= '1';
                         end if;
                         addr_size_s <= addr_size_s + 1;
-                        addr_of_last_sample_s <= addr_of_last_sample_s(addr_of_last_sample_s'left-HOST_WORD_SIZE downto 0) & data_dwn;
+                        set_addroflastsample_next_byte <= '1';
                     end if;
                 end case;
             end if;
+            setted_numberofsamples <= setted_numberofsamples_early;
+            data_samples_valid <= data_samples_valid_early;
         end if;
     end process;
     data_samples <= data_out_s;
     addr_of_last_sample <= addr_of_last_sample_s;
+
+    set_addr_of_last_sample_narrow: if ADDR_WIDTH <= HOST_WORD_SIZE generate begin
+        process (clk) begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if set_addroflastsample_next_byte = '1' then
+                        addr_of_last_sample_s <= data_dwn_delayed(addr_of_last_sample_s'range);
+                        --setted_numberofsamples <= setted_numberofsamples_early;
+                    end if;
+                end if;
+            end if;
+        end process;
+    end generate set_addr_of_last_sample_narrow;
+    set_addr_of_last_sample_wide: if ADDR_WIDTH > HOST_WORD_SIZE generate begin
+        process (clk) begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if set_addroflastsample_next_byte = '1' then
+                        --setted_numberofsamples <= setted_numberofsamples_early;
+                        addr_of_last_sample_s <= addr_of_last_sample_s(addr_of_last_sample_s'left-HOST_WORD_SIZE downto 0) & data_dwn_delayed;
+                    end if;
+                end if;
+            end if;
+        end process;
+    end generate set_addr_of_last_sample_wide;
+
+
+    set_dataouts_narrow: if DATA_WIDTH <= HOST_WORD_SIZE generate begin
+        process (clk) begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if set_dataouts_next_byte = '1' then
+                        data_out_s <= data_dwn_delayed(data_out_s'range);
+                    end if;
+                end if;
+            end if;
+        end process;
+    end generate set_dataouts_narrow;
+    set_dataouts_wide: if DATA_WIDTH > HOST_WORD_SIZE generate begin
+        process (clk) begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if set_dataouts_next_byte = '1' then
+                        data_out_s <= data_out_s(data_out_s'left-HOST_WORD_SIZE downto 0) & data_dwn_delayed;
+                    end if;
+                end if;
+            end if;
+        end process;
+    end generate set_dataouts_wide;
+
+
 end architecture tab;

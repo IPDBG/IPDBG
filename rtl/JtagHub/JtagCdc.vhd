@@ -159,6 +159,7 @@ begin
                 data_dwn_valid_la <= '0';
                 data_dwn_valid_ioview <= '0';
                 data_dwn_valid_gdb <= '0';
+                data_dwn_valid_wfg <= '0';
                 clear <= '0';
                 if data_out_register_enable = '1' and shift_register(10 downto 8) = "100" and shift_register (11) = '1' then
                     data_dwn_valid_la <= '1';
@@ -241,7 +242,6 @@ begin
                         if channel_register = "001" then
                             data_in_ready_gdb_s <= '1';
                         end if;
-
                         if channel_register = "100" then
                             data_in_ready_la_s <= '1';
                         end if;

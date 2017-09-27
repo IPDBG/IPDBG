@@ -5,8 +5,7 @@ use ieee.numeric_std.all;
 
 entity WaveformGeneratorTop is
     generic(
-         DATA_WIDTH : natural := 8;         --! width of a sample
-         ADDR_WIDTH : natural := 13          --! 2**ADDR_WIDTH = size if sample memory
+        ADDR_WIDTH : natural := 13          --! 2**ADDR_WIDTH = size if sample memory
     );
     port(
         clk            : in  std_logic;
@@ -21,7 +20,7 @@ entity WaveformGeneratorTop is
         data_up        : out std_logic_vector(7 downto 0);
 
         -- WaveformGenerator interface
-        dataOut        : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        dataOut        : out std_logic_vector;
         firstsample    : out std_logic;
         sample_enable  : in  std_logic
 
@@ -29,7 +28,13 @@ entity WaveformGeneratorTop is
 end entity WaveformGeneratorTop;
 
 architecture structure of WaveformGeneratorTop is
+    constant DATA_WIDTH : natural := dataOut'length;
+
+
     component ipdbgEscaping is
+--        generic(
+--            ASYNC_RESET  : boolean
+--        )
          port(
             clk            : in  std_logic;
             rst            : in  std_logic;
@@ -44,8 +49,8 @@ architecture structure of WaveformGeneratorTop is
 
     component WaveformGeneratorController is
         generic(
-        DATA_WIDTH       : natural := 8;
-        ADDR_WIDTH       : natural := 8
+            DATA_WIDTH       : natural := 8;
+            ADDR_WIDTH       : natural := 8
         );
         port(
             clk                     : in  std_logic;
@@ -66,8 +71,8 @@ architecture structure of WaveformGeneratorTop is
 
     component WaveformGeneratorMemory is
         generic(
-        DATA_WIDTH       : natural := 8;
-        ADDR_WIDTH       : natural := 8
+            DATA_WIDTH       : natural := 8;
+            ADDR_WIDTH       : natural := 8
         );
         port(
             clk              : in  std_logic;
