@@ -53,8 +53,8 @@ architecture structure of tb_top is
             data_up_valid_wfg    : in  std_logic;
             data_up_la           : in  std_logic_vector(7 downto 0);
             data_up_ioview       : in  std_logic_vector(7 downto 0);
-            data_up_wfg          : in  std_logic_vector(7 downto 0);
-            data_up_gdb          : in  std_logic_vector(7 downto 0)
+            data_up_gdb          : in  std_logic_vector(7 downto 0);
+            data_up_wfg          : in  std_logic_vector(7 downto 0)
         );
     end component JtagHub;
 
@@ -125,8 +125,8 @@ begin
             data_up_valid_wfg     => '0',
             data_up_la            => data_up_la,
             data_up_ioview        => (others => '-'),
-            data_up_wfg           => (others => '-'),
-            data_up_gdb           => (others => '-')
+            data_up_gdb           => (others => '-'),
+            data_up_wfg           => (others => '-')
         );
 
     la: component LogicAnalyserTop

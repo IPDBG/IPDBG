@@ -8,8 +8,8 @@ use unisim.vcomponents.all;
 entity XC7Top is
     generic(
         MFF_LENGTH : natural := 3;
-        DATA_WIDTH : natural := 8;        --! width of a sample
-        ADDR_WIDTH : natural := 8
+        DATA_WIDTH : natural := 10;        --! width of a sample
+        ADDR_WIDTH : natural := 10
     );
     port(
         --clk                              : in  std_logic;
@@ -54,8 +54,9 @@ architecture structure of XC7Top is
 
     component LogicAnalyserTop is
         generic(
-            DATA_WIDTH : natural;
-            ADDR_WIDTH : natural
+            DATA_WIDTH  : natural;
+            ADDR_WIDTH  : natural;
+            ASYNC_RESET : boolean
         );
         port(
             clk            : in  std_logic;
@@ -72,6 +73,9 @@ architecture structure of XC7Top is
     end component LogicAnalyserTop;
 
     component IOViewTop is
+        generic(
+            ASYNC_RESET : boolean
+        );
         port(
             clk            : in  std_logic;
             rst            : in  std_logic;
@@ -88,9 +92,9 @@ architecture structure of XC7Top is
     end component IOViewTop;
 
     component WaveformGeneratorTop is
-         generic(
-         DATA_WIDTH : natural := 4;
-         ADDR_WIDTH : natural := 4
+        generic(
+            ADDR_WIDTH  : natural;
+            ASYNC_RESET : boolean
         );
         port(
             clk            : in  std_logic;
@@ -108,49 +112,54 @@ architecture structure of XC7Top is
         );
     end component WaveformGeneratorTop;
 
+    constant ASYNC_RESET : boolean := false;
+
     signal Clk                : std_logic;
     signal rst                : std_logic := '1';
 
-    signal Input_DeviceunderTest_IOVIEW     : std_logic_vector(7 downto 0);
+    signal Input_DeviceunderTest_IOVIEW : std_logic_vector(7 downto 0);
+    signal DataIn_LogicAnalyser         : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal DataIn_LogicAnalyser_gdb     : std_logic_vector(DATA_WIDTH-1 downto 0);
+    constant DataIn_LogicAnalyser_max   : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
+
+    signal sample_enable_wfg            : std_logic := '1';
+    signal data_dwn                     : std_logic_vector(7 downto 0);
+    signal data_dwn_valid_la            : std_logic;
+    signal data_dwn_valid_ioview        : std_logic;
+    signal data_dwn_valid_gdb           : std_logic;
+    signal data_dwn_valid_wfg           : std_logic;
+
+    signal data_up_ready_la             : std_logic;
+    signal data_up_ready_ioview         : std_logic;
+    signal data_up_ready_gdb            : std_logic;
+    signal data_up_ready_wfg            : std_logic;
+
+    signal data_up_valid_la             : std_logic;
+    signal data_up_valid_ioview         : std_logic;
+    signal data_up_valid_gdb            : std_logic;
+    signal data_up_valid_wfg            : std_logic;
+
+    signal data_up_la                   : std_logic_vector (7 downto 0);
+    signal data_up_ioview               : std_logic_vector (7 downto 0);
+    signal data_up_gdb                  : std_logic_vector (7 downto 0);
+    signal data_up_wfg                  : std_logic_vector (7 downto 0);
+
+    signal count                        : std_logic_vector (28 downto 0);
+    signal output                       : std_logic_vector (7 downto 0);
+    signal temp                         : std_logic_vector (7 downto 0);
+
+    signal IoViewOutputs                : std_logic_vector(3 downto 0);
+
     --signal Output_DeviceunderTest_IOVIEW    : std_logic_vector(7 downto 0);
-    signal DataIn_LogicAnalyser             : std_logic_vector(DATA_WIDTH-1 downto 0);
-    constant DataIn_LogicAnalyser_max       : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
     --signal stateDebug          : std_logic_vector(7 downto 0);
-    signal sample_enable_wfg        : std_logic := '1';
-    signal data_dwn                 : std_logic_vector(7 downto 0);
-    signal data_dwn_valid_la        : std_logic;
-    signal data_dwn_valid_ioview    : std_logic;
-    signal data_dwn_valid_gdb       : std_logic;
-    signal data_dwn_valid_wfg       : std_logic;
-
-    signal data_up_ready_la         : std_logic;
-    signal data_up_ready_ioview     : std_logic;
-    signal data_up_ready_gdb        : std_logic;
-    signal data_up_ready_wfg        : std_logic;
-
-    signal data_up_valid_la         : std_logic;
-    signal data_up_valid_ioview     : std_logic;
-    signal data_up_valid_gdb        : std_logic;
-    signal data_up_valid_wfg        : std_logic;
-
-    signal data_up_la               : std_logic_vector (7 downto 0);
-    signal data_up_ioview           : std_logic_vector (7 downto 0);
-    signal data_up_gdb              : std_logic_vector (7 downto 0);
-    signal data_up_wfg              : std_logic_vector (7 downto 0);
-
-    signal count                    : std_logic_vector (28 downto 0);
-    signal output                   : std_logic_vector (7 downto 0);
-    signal temp                     : std_logic_vector (7 downto 0);
-
-    signal IoViewOutputs            : std_logic_vector(3 downto 0);
 begin
 
     Counter : process (Clk) begin
         if rising_edge(Clk) then
-            if DataIn_LogicAnalyser = DataIn_LogicAnalyser_max then
-                DataIn_LogicAnalyser <= (others => '0');
+            if DataIn_LogicAnalyser_gdb = DataIn_LogicAnalyser_max then
+                DataIn_LogicAnalyser_gdb <= (others => '0');
             else
-                DataIn_LogicAnalyser <= std_logic_vector(unsigned(DataIn_LogicAnalyser)+1);
+                DataIn_LogicAnalyser_gdb <= std_logic_vector(unsigned(DataIn_LogicAnalyser_gdb)+1);
             end if;
 
             if count =   "10111110101111000010000000000" then
@@ -170,8 +179,9 @@ begin
 
     la : component LogicAnalyserTop
         generic map(
-            DATA_WIDTH => DATA_WIDTH,
-            ADDR_WIDTH => ADDR_WIDTH
+            DATA_WIDTH  => DATA_WIDTH,
+            ADDR_WIDTH  => ADDR_WIDTH,
+            ASYNC_RESET => ASYNC_RESET
         )
         port map(
             clk            => Clk,
@@ -192,8 +202,9 @@ begin
 
         la2 : component LogicAnalyserTop
         generic map(
-            DATA_WIDTH => DATA_WIDTH,
-            ADDR_WIDTH => ADDR_WIDTH
+            DATA_WIDTH  => DATA_WIDTH,
+            ADDR_WIDTH  => ADDR_WIDTH,
+            ASYNC_RESET => ASYNC_RESET
         )
         port map(
             clk            => Clk,
@@ -208,7 +219,7 @@ begin
             data_up        => data_up_gdb,
 
             sample_enable  => '1',
-            probe          => DataIn_LogicAnalyser
+            probe          => DataIn_LogicAnalyser_gdb
 
         );
 
@@ -216,6 +227,9 @@ begin
     --LEDs <= Statedebug;
 
     IO : component IOViewTop
+        generic map(
+            ASYNC_RESET => ASYNC_RESET
+        )
         port map(
             clk            => Clk,
             rst            => rst,
@@ -266,8 +280,8 @@ begin
 
     WFG: component WaveformGeneratorTop
         generic map(
-             DATA_WIDTH => DATA_WIDTH,
-             ADDR_WIDTH => ADDR_WIDTH
+            ADDR_WIDTH  => ADDR_WIDTH,
+            ASYNC_RESET => ASYNC_RESET
         )
         port map(
             clk            => clk,
@@ -278,10 +292,11 @@ begin
             data_up_ready  => data_up_ready_wfg,
             data_up_valid  => data_up_valid_wfg,
             data_up        => data_up_wfg,
-            dataOut        => open,
+            dataOut        => DataIn_LogicAnalyser,
             firstsample    => open,
             sample_enable  => sample_enable_wfg
         );
+    sample_enable_wfg <= '1';
 
     Clk_fpga_gen: block
         signal  buffOut: std_logic;

@@ -41,6 +41,8 @@
 		<Linker>
 			<Add option="`wx-config --libs`" />
 		</Linker>
+		<Unit filename="ConnectionDialog.cpp" />
+		<Unit filename="ConnectionDialog.h" />
 		<Unit filename="IOViewApp.cpp" />
 		<Unit filename="IOViewApp.h" />
 		<Unit filename="IOViewMain.cpp" />
@@ -59,6 +61,11 @@
 			<code_completion />
 			<debugger />
 			<lib_finder disable_auto="1" />
+			<wxsmith version="1">
+				<resources>
+					<wxDialog wxs="wxsmith/ConnectionDialog.wxs" src="ConnectionDialog.cpp" hdr="ConnectionDialog.h" fwddecl="0" i18n="1" name="ConnectionDialog" language="CPP" />
+				</resources>
+			</wxsmith>
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

@@ -120,8 +120,6 @@ begin
         srst <= rst;
     end generate sync_init;
 
-    assert(DATA_WIDTH >= 8) report "DATA_WIDTH has to be at least 8 bits" severity error;
-
     process (clk, arst)
         procedure reset_assignments is begin
             data_size_s              <= 0;
@@ -158,13 +156,13 @@ begin
                 reset_assignments;
             else
                 if ce = '1' then
-                    set_delay_next_byte <= '0';
-                    set_mask_curr_next_byte <= '0';
-                    set_value_curr_next_byte <= '0';
-                    set_mask_last_next_byte <= '0';
-                    set_value_last_next_byte <= '0';
-                    set_mask_edge_next_byte <= '0';
-                    data_dwn_delayed <= data_dwn;
+                    set_delay_next_byte         <= '0';
+                    set_mask_curr_next_byte     <= '0';
+                    set_value_curr_next_byte    <= '0';
+                    set_mask_last_next_byte     <= '0';
+                    set_value_last_next_byte    <= '0';
+                    set_mask_edge_next_byte     <= '0';
+                    data_dwn_delayed            <= data_dwn;
                     data_up_valid <= '0';
                     case state is
                     when init =>
@@ -437,9 +435,14 @@ begin
                         when Zwischenspeicher =>
                             data_request_next <= '0';
                             if data_up_ready = '1' then
-                                data_up <= la_data_temporary(data_up'range);
                                 data_up_valid <= '1';
-                                la_data_temporary <= x"00" & la_data_temporary( la_data_temporary'left downto data_up'length);
+                                if DATA_WIDTH <= HOST_WORD_SIZE then
+                                    data_up(DATA_WIDTH-1 downto 0) <= la_data_temporary;
+                                else
+                                    data_up <= la_data_temporary(data_up'range);
+                                    la_data_temporary <= "--------" & la_data_temporary( la_data_temporary'left downto data_up'length);
+                                end if;
+
                                 counter <= counter + 1;
                                 init_Output <= shift;
                             end if;
@@ -512,7 +515,7 @@ begin
                         value_last_s <= data_dwn_delayed(value_last_s'range);
                     end if;
                     if set_mask_edge_next_byte = '1' then
-                        mask_edge_s <= data_dwn_delayed(value_last_s'range);
+                        mask_edge_s <= data_dwn_delayed(mask_edge_s'range);
                     end if;
                 end if;
             end if;
