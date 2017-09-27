@@ -75,13 +75,13 @@ architecture tab of LogicAnalyserController is
     constant B                        : std_logic_vector := "01000010";
     constant G                        : std_logic_vector := "01000111";
     --State machines
-    type states_t              is(init, return_id, return_sizes, logic_analyser, set_delay,
+    type states_t      is(init, return_id, return_sizes, logic_analyser, set_delay,
                                          config_trigger, select_config_trigger_curr, select_config_trigger_last, select_config_trigger_edge,
                                          set_mask_curr, set_value_curr, set_mask_last, set_value_last, set_edge_mask, data_output);
-    signal state : states_t :=  init;
+    signal state       : states_t :=  init;
 
-    type Output is(init, Zwischenspeicher, shift, get_next_data);
-    signal init_Output    : Output := init;
+    type Output        is(init, Zwischenspeicher, shift, get_next_data);
+    signal init_Output : Output := init;
 
     --Zähler
     signal data_size_s              : natural range 0 to data_size;
@@ -99,6 +99,7 @@ architecture tab of LogicAnalyserController is
     signal ende_ausgabe             : std_logic;
     signal theend                   : std_logic;
     signal la_data_temporary        : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal la_data_temporary_next   : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal sizes_temporary          : std_logic_vector(31 downto 0);
     signal send                     : std_logic_vector(7 downto 0);
     signal arst, srst               : std_logic;
@@ -110,6 +111,8 @@ architecture tab of LogicAnalyserController is
     signal set_mask_last_next_byte  : std_logic;
     signal set_value_last_next_byte : std_logic;
     signal set_mask_edge_next_byte  : std_logic;
+
+    signal data_up_from_la_data     : std_logic_vector(data_up'range);
 begin
     async_init: if ASYNC_RESET generate begin
         arst <= rst;
@@ -436,12 +439,8 @@ begin
                             data_request_next <= '0';
                             if data_up_ready = '1' then
                                 data_up_valid <= '1';
-                                if DATA_WIDTH <= HOST_WORD_SIZE then
-                                    data_up(DATA_WIDTH-1 downto 0) <= la_data_temporary;
-                                else
-                                    data_up <= la_data_temporary(data_up'range);
-                                    la_data_temporary <= "--------" & la_data_temporary( la_data_temporary'left downto data_up'length);
-                                end if;
+                                data_up <= data_up_from_la_data;
+                                la_data_temporary <= la_data_temporary_next;
 
                                 counter <= counter + 1;
                                 init_Output <= shift;
@@ -497,6 +496,19 @@ begin
             end if;
         end process;
     end generate set_delay_wide;
+
+    prepare_from_narrow_data: if DATA_WIDTH <= HOST_WORD_SIZE generate begin
+        process (la_data_temporary) begin
+            data_up_from_la_data                        <= (others => '0');
+            data_up_from_la_data(DATA_WIDTH-1 downto 0) <= la_data_temporary;
+        end process;
+        la_data_temporary_next <= (others => '-');
+    end generate;
+
+    prepare_from_wide_data: if DATA_WIDTH > HOST_WORD_SIZE generate begin
+        data_up_from_la_data <= la_data_temporary(data_up'range);
+        la_data_temporary_next <= x"00" & la_data_temporary(la_data_temporary'left downto data_up'length);
+    end generate;
 
     set_trigger_narrow: if DATA_WIDTH <= HOST_WORD_SIZE generate begin
         process (clk) begin
