@@ -5,7 +5,8 @@ use ieee.numeric_std.all;
 
 entity WaveformGeneratorTop is
     generic(
-        ADDR_WIDTH : natural := 13          --! 2**ADDR_WIDTH = size if sample memory
+        ADDR_WIDTH : natural := 13;          --! 2**ADDR_WIDTH = size if sample memory
+        ASYNC_RESET : boolean := true
     );
     port(
         clk            : in  std_logic;
@@ -32,9 +33,9 @@ architecture structure of WaveformGeneratorTop is
 
 
     component ipdbgEscaping is
---        generic(
---            ASYNC_RESET  : boolean
---        )
+        generic(
+            ASYNC_RESET  : boolean
+        );
          port(
             clk            : in  std_logic;
             rst            : in  std_logic;
@@ -49,8 +50,9 @@ architecture structure of WaveformGeneratorTop is
 
     component WaveformGeneratorController is
         generic(
-            DATA_WIDTH       : natural := 8;
-            ADDR_WIDTH       : natural := 8
+            DATA_WIDTH  : natural := 8;
+            ADDR_WIDTH  : natural := 8;
+            ASYNC_RESET : boolean
         );
         port(
             clk                     : in  std_logic;
@@ -71,8 +73,9 @@ architecture structure of WaveformGeneratorTop is
 
     component WaveformGeneratorMemory is
         generic(
-            DATA_WIDTH       : natural := 8;
-            ADDR_WIDTH       : natural := 8
+            DATA_WIDTH  : natural := 8;
+            ADDR_WIDTH  : natural := 8;
+            ASYNC_RESET : boolean
         );
         port(
             clk              : in  std_logic;
@@ -102,8 +105,9 @@ begin
 
     Controller: component WaveformGeneratorController
         generic map(
-            DATA_WIDTH => DATA_WIDTH,
-            ADDR_WIDTH => ADDR_WIDTH
+            DATA_WIDTH  => DATA_WIDTH,
+            ADDR_WIDTH  => ADDR_WIDTH,
+            ASYNC_RESET => ASYNC_RESET
         )
         port map(
             clk                    => clk,
@@ -123,8 +127,9 @@ begin
 
     Memory: component WaveformGeneratorMemory
         generic map(
-            DATA_WIDTH => DATA_WIDTH,
-            ADDR_WIDTH => ADDR_WIDTH
+            DATA_WIDTH  => DATA_WIDTH,
+            ADDR_WIDTH  => ADDR_WIDTH,
+            ASYNC_RESET => ASYNC_RESET
         )
         port map(
             clk              => clk,
@@ -142,6 +147,9 @@ begin
         );
 
     Escaping: component IpdbgEscaping
+        generic map(
+            ASYNC_RESET => ASYNC_RESET
+        )
         port map(
             clk            => clk,
             rst            => rst,

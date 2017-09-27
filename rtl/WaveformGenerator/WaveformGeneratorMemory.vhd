@@ -6,7 +6,8 @@ use ieee.numeric_std.all;
 entity WaveformGeneratorMemory is
     generic(
         DATA_WIDTH       : natural := 8;
-        ADDR_WIDTH       : natural := 8
+        ADDR_WIDTH       : natural := 8;
+        ASYNC_RESET      : boolean := true
     );
     port(
         clk              : in  std_logic;
@@ -60,15 +61,30 @@ architecture behavioral of WaveformGeneratorMemory is
     signal writeData         : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal adr_w             : unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
     --signal AddrOfLastSample  : std_logic_vector(ADDR_WIDTH-1 downto 0);
+    signal arst, srst        : std_logic;
 
 begin
+    async_init: if ASYNC_RESET generate begin
+        arst <= rst;
+        srst <= '0';
+    end generate async_init;
+    sync_init: if not ASYNC_RESET generate begin
+        arst <= '0';
+        srst <= rst;
+    end generate sync_init;
 
-    writeFsm: process (clk) begin
-        if rising_edge(clk) then
-            if rst = '1' then
-                we <= '0';
-                adr_w <= (others => '-');
-                writeData <= (others => '-');
+    writeFsm: process (clk, arst)
+        procedure assign_reset is begin
+            we <= '0';
+            adr_w <= (others => '-');
+            writeData <= (others => '-');
+        end procedure assign_reset;
+    begin
+        if arst = '1' then
+            assign_reset;
+        elsif rising_edge(clk) then
+            if srst = '1' then
+                assign_reset;
             else
                 if ce = '1' then
                     we <= '0';
@@ -121,13 +137,19 @@ begin
         signal firstAddressSet   : std_logic;
         signal firstAddressSet_d : std_logic;
     begin
-        process (clk) begin
-            if rising_edge(clk) then
-                if rst = '1' then
-                    adr_r <= (others => '-');
-                    FirstSample_s <= '0';
-                    firstAddressSet <= '0';
-                    firstAddressSet_d <= '0';
+        process (clk, arst)
+            procedure assign_reset is begin
+                adr_r <= (others => '-');
+                FirstSample_s <= '0';
+                firstAddressSet <= '0';
+                firstAddressSet_d <= '0';
+            end procedure assign_reset;
+        begin
+            if arst = '1' then
+                assign_reset;
+            elsif rising_edge(clk) then
+                 if srst = '1' then
+                    assign_reset;
                 else
                     if ce = '1' then
                         if SampleEnable = '1' then
