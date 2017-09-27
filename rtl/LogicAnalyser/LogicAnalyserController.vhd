@@ -437,9 +437,7 @@ begin
                             if data_up_ready = '1' then
                                 data_up_valid <= '1';
                                 if DATA_WIDTH <= HOST_WORD_SIZE then
-                                    --data_up <=  std_logic_vector(resize(unsigned(la_data_temporary),data_up'length));
                                     data_up(DATA_WIDTH-1 downto 0) <= la_data_temporary;
-                                    --la_data_temporary <= x"00" & la_data_temporary( la_data_temporary'left downto data_up_s'length);
                                 else
                                     data_up <= la_data_temporary(data_up'range);
                                     la_data_temporary <= "--------" & la_data_temporary( la_data_temporary'left downto data_up'length);
@@ -546,7 +544,7 @@ begin
             end if;
         end process;
     end generate set_trigger_wide;
-    
+
     delay      <= delay_s;
     mask_curr  <= mask_curr_s;
     value_curr <= value_curr_s;
