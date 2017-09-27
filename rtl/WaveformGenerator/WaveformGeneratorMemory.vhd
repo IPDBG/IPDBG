@@ -16,16 +16,16 @@ entity WaveformGeneratorMemory is
 
 
         -- write
-        DataIn           : in  std_logic_vector(DATA_WIDTH-1 downto 0);      -- from controller
-        DataValid        : in  std_logic;                                    -- from controller
-        DataIfReset      : in  std_logic;                                    -- from controller
+        data_samples            : in  std_logic_vector(DATA_WIDTH-1 downto 0);      -- from controller
+        data_samples_valid      : in  std_logic;                                    -- from controller
+        data_samples_if_reset   : in  std_logic;                                    -- from controller
 
-        Enable           : in  std_logic;                                   -- not pause      -- from controller
-        AddrOfLastSample : in  std_logic_vector(ADDR_WIDTH-1 downto 0);     -- Length Of Waveform - 1  -- from controller
+        enable                  : in  std_logic;                                   -- not pause      -- from controller
+        addr_of_last_sample     : in  std_logic_vector(ADDR_WIDTH-1 downto 0);     -- Length Of Waveform - 1  -- from controller
 
-        DataOut          : out std_logic_vector(DATA_WIDTH-1 downto 0);     -- THE output
-        FirstSample      : out std_logic;                                   -- THE output
-        SampleEnable     : in  std_logic := '1'                             -- timing for output
+        data_out                : out std_logic_vector(DATA_WIDTH-1 downto 0);     -- THE output
+        first_sample            : out std_logic;                                   -- THE output
+        data_out_enable         : in  std_logic := '1'                             -- timing for output
 
     );
 end entity WaveformGeneratorMemory;
@@ -91,15 +91,15 @@ begin
 --                    if we = '1' then
 --                        AddrOfLastSample <= std_logic_vector(adr_w);
 --                    end if;
-                    if DataIfReset = '1' then
+                    if data_samples_if_reset = '1' then
                         adr_w <= (others => '0');
                     elsif we = '1' then
                         adr_w <= adr_w + 1;
                     end if;
 
-                    if DataValid = '1' then
+                    if data_samples_valid = '1' then
                         we <= '1';
-                        writeData <= DataIn;
+                        writeData <= data_samples;
                     end if;
                 end if;
             end if;
@@ -152,9 +152,9 @@ begin
                     assign_reset;
                 else
                     if ce = '1' then
-                        if SampleEnable = '1' then
+                        if data_out_enable = '1' then
                             firstAddressSet <= '0';
-                            if adr_r = unsigned(AddrOfLastSample) then
+                            if adr_r = unsigned(addr_of_last_sample) then
                                 adr_r <= (others => '0');
                                 firstAddressSet <= '1';
                             else
@@ -181,14 +181,14 @@ begin
     output: process (clk) begin
         if rising_edge(clk) then
             if ce = '1' then
-                if Enable = '1' then
-                    if SampleEnable = '1' then
-                        FirstSample <= FirstSample_s;
-                        DataOut <= readData;
+                if enable = '1' then
+                    if data_out_enable = '1' then
+                        first_sample <= FirstSample_s;
+                        data_out <= readData;
                     end if;
                 else
-                    FirstSample <= '0';
-                    DataOut <= (others => '0');
+                    first_sample <= '0';
+                    data_out <= (others => '0');
                 end if;
             end if;
         end if;

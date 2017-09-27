@@ -78,17 +78,17 @@ architecture structure of WaveformGeneratorTop is
             ASYNC_RESET : boolean
         );
         port(
-            clk              : in  std_logic;
-            rst              : in  std_logic;
-            ce               : in  std_logic;
-            DataIn           : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            DataValid        : in  std_logic;
-            DataIfReset      : in  std_logic;
-            Enable           : in  std_logic;
-            AddrOfLastSample : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-            DataOut          : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            FirstSample      : out std_logic;
-            SampleEnable     : in  std_logic
+            clk                     : in  std_logic;
+            rst                     : in  std_logic;
+            ce                      : in  std_logic;
+            data_samples            : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+            data_samples_valid      : in  std_logic;
+            data_samples_if_reset   : in  std_logic;
+            enable                  : in  std_logic;
+            addr_of_last_sample     : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+            data_out                : out std_logic_vector(DATA_WIDTH-1 downto 0);
+            first_sample            : out std_logic;
+            data_out_enable         : in  std_logic
         );
     end component WaveformGeneratorMemory;
 
@@ -132,17 +132,17 @@ begin
             ASYNC_RESET => ASYNC_RESET
         )
         port map(
-            clk              => clk,
-            rst              => reset,
-            ce               => ce,
-            DataIn           => data_me,
-            DataValid        => data_valid_me,
-            DataIfReset      => dataifreset_me,
-            Enable           => enable_me,
-            AddrOfLastSample => AddrOfLastSample,
-            DataOut          => dataOut,
-            FirstSample      => firstsample,
-            SampleEnable     => sample_enable
+            clk                     => clk,
+            rst                     => reset,
+            ce                      => ce,
+            data_samples            => data_me,
+            data_samples_valid      => data_valid_me,
+            data_samples_if_reset   => dataifreset_me,
+            enable                  => enable_me,
+            addr_of_last_sample     => AddrOfLastSample,
+            data_out                => dataOut,
+            first_sample            => firstsample,
+            data_out_enable         => sample_enable
 
         );
 
