@@ -128,6 +128,7 @@ begin
                         end if ;
                         if data_dwn = set_numberofsamples_command then
                             state <= set_numberofsamples;
+                            addr_size_s <= 0;
                         end if ;
                     end if;
 
@@ -192,6 +193,7 @@ begin
                                     data_size_s <= 0;
                                     if sample_counter  = unsigned(addr_of_last_sample_s) then
                                         state <= init;
+                                        setted_numberofsamples_early <= '0';
                                     end if;
                                 else
                                     data_size_s <= data_size_s + 1;
