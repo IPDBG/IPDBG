@@ -21,6 +21,16 @@
 #define RESET_SYMBOL  0xEE
 #define ESCAPE_SYMBOL 0x55
 
+
+#define START_COMMAND                   0xF0
+#define STOP_COMMAND                    0xF1
+#define RETURN_SIZES_COMMAND            0xF2
+#define WRITE_SAMPLES_COMMAND           0xF3
+#define SET_NUMBEROFSAMPLES_COMMAND     0xF4
+
+
+
+
 int ipdbg_org_wfg_open(int *socket_handle);
 int ipdbg_org_wfg_send(int *socket_handle, const uint8_t *buf, size_t len);
 int ipdbg_org_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize);
@@ -43,7 +53,7 @@ int main()
     ipdbg_org_wfg_send(&socket, buf, 2);
 
     /// get sizes
-    buf[0] = 0xf2; // get id command
+    buf[0] = RETURN_SIZES_COMMAND; // get id command
     ipdbg_org_wfg_send(&socket, buf, 1);
 
     uint8_t buf1[8];
@@ -62,8 +72,7 @@ int main()
     ADDR_WIDTH |= (buf1[5] <<  8) & 0x0000FF00;
     ADDR_WIDTH |= (buf1[6] << 16) & 0x00FF0000;
     ADDR_WIDTH |= (buf1[7] << 24) & 0xFF000000;
-//    for(size_t k= 0; k < 8 ; ++k)
-//        dataWidth = buf1[k] << 8*k;
+
 
     printf("dataWidth = %d\n", DATA_WIDTH);
     printf("addrWidth = %d\n", ADDR_WIDTH);
@@ -78,7 +87,7 @@ int main()
 
     ///set number of samples
     //int8_t buf[1];
-    buf[0] = 0xf4;
+    buf[0] = SET_NUMBEROFSAMPLES_COMMAND;
     ipdbg_org_wfg_send(&socket, buf, 1);
 
     printf("samples? ");
@@ -90,12 +99,13 @@ int main()
     }
     else
     {
-        printf("limit_samples: %d",limit_samples);
+        printf("limit_samples: %d\n",limit_samples);
         //uint8_t buffer[2];
-        uint8_t buffer[2] = { (limit_samples-1)        & 0x000000ff,
-                            ( (limit_samples-1) >>  8) & 0x000000ff};
+        uint8_t buffer[4] = { (limit_samples-1)         & 0x000000ff,
+                            ( (limit_samples-1) >>  8)  & 0x000000ff,
+                            ( (limit_samples-1) >>  16) & 0x000000ff,
+                            ( (limit_samples-1) >>  32) & 0x000000ff};
 
-        //ipdbg_org_wfg_send(&socket, &limit_samples, 2);
         for(size_t i = 0 ; i < ADDR_WIDTH_BYTES ; ++i)
         {
             send_escaping(&socket, &(buffer[ADDR_WIDTH_BYTES-1-i]), 1);
@@ -103,24 +113,36 @@ int main()
 
     }
 
-    /// write samples
-
-    buf[0] = 0xf3;
+    ///set stop
+    buf[0] = STOP_COMMAND;
     ipdbg_org_wfg_send(&socket, buf, 1);
 
-    //unsigned int zaehler = 0;
+    /// write samples
 
-    for(unsigned int zaehler=0; zaehler<limit_samples; zaehler++)
+    buf[0] = WRITE_SAMPLES_COMMAND;
+    ipdbg_org_wfg_send(&socket, buf, 1);
+
+    //unsigned int counter = 0;
+
+    for(unsigned int counter=0; counter<limit_samples; counter++)
     {
-        //printf("send zaehler %d ", zaehler);
-//        uint8_t sample_buffer[2] = {zaehler & 0xff, (zaehler >> 8) &0xff }
-        uint8_t buf = zaehler & 0xff;
-        send_escaping(&socket, &buf, 1);
+        printf("send counter %d\n ", counter);
+
+        uint8_t buffer [4] = { (counter)         & 0x000000ff,
+                             ( (counter) >>  8)  & 0x000000ff,
+                             ( (counter) >>  16) & 0x000000ff,
+                             ( (counter) >>  32) & 0x000000ff};
+        for(size_t i = 0 ; i < DATA_WIDTH_BYTES ; ++i)
+        {
+            printf("buffer: %d\n",buffer[DATA_WIDTH_BYTES-1-i]);
+            send_escaping(&socket, &(buffer[DATA_WIDTH_BYTES-1-i]), 1);
+        }
+
 
     }
 
     ///send start
-    buf[0] = 0xf0;
+    buf[0] = START_COMMAND;
     ipdbg_org_wfg_send(&socket, buf, 1);
 
 
