@@ -224,7 +224,6 @@ begin
                 if ce = '1' then
                     if set_addroflastsample_next_byte = '1' then
                         addr_of_last_sample_s <= data_dwn_delayed(addr_of_last_sample_s'range);
-                        --setted_numberofsamples <= setted_numberofsamples_early;
                     end if;
                 end if;
             end if;
@@ -235,7 +234,6 @@ begin
             if rising_edge(clk) then
                 if ce = '1' then
                     if set_addroflastsample_next_byte = '1' then
-                        --setted_numberofsamples <= setted_numberofsamples_early;
                         addr_of_last_sample_s <= addr_of_last_sample_s(addr_of_last_sample_s'left-HOST_WORD_SIZE downto 0) & data_dwn_delayed;
                     end if;
                 end if;
