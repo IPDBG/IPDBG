@@ -20,12 +20,12 @@ entity WaveformGeneratorMemory is
         DataValid        : in  std_logic;                                    -- from controller
         DataIfReset      : in  std_logic;                                    -- from controller
 
-        Enable           : in  std_logic;                               -- not pause      -- from controller
-        AddrOfLastSample : in  std_logic_vector(ADDR_WIDTH-1 downto 0); -- Length Of Waveform - 1  -- from controller
+        Enable           : in  std_logic;                                   -- not pause      -- from controller
+        AddrOfLastSample : in  std_logic_vector(ADDR_WIDTH-1 downto 0);     -- Length Of Waveform - 1  -- from controller
 
-        DataOut          : out std_logic_vector(DATA_WIDTH-1 downto 0); -- THE output
-        FirstSample      : out std_logic;                               -- THE output
-        SampleEnable     : in  std_logic := '1'                         -- timing for output
+        DataOut          : out std_logic_vector(DATA_WIDTH-1 downto 0);     -- THE output
+        FirstSample      : out std_logic;                                   -- THE output
+        SampleEnable     : in  std_logic := '1'                             -- timing for output
 
     );
 end entity WaveformGeneratorMemory;

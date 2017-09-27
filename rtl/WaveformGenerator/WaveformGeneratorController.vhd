@@ -56,7 +56,6 @@ architecture tab of WaveformGeneratorController is
 
     signal data_size_s                      : natural range 0 to data_size;
     signal addr_size_s                      : natural range 0 to data_size;
-    signal enable_s                         : std_logic;
     signal data_samples_valid_early         : std_logic;
     signal setted_numberofsamples_early     : std_logic;
     signal counter                          : unsigned(ADDR_WIDTH-1 downto 0);
@@ -95,7 +94,6 @@ begin
             sample_counter                  <= (others => '-');
             data_out_s                      <= (others => '-');
             data_samples_valid              <= '0';
-            enable_s                        <= '0';
             enable                          <= '0';
             setted_numberofsamples          <= '0';
             data_samples_if_reset           <= '-';
@@ -149,12 +147,10 @@ begin
 
                     when set_start =>
                         enable <= '1';
-                        enable_s <= '1';
                         state <= init;
 
                     when set_stop =>
                         enable <= '0';
-                        enable_s <= '0';
                         state <= init;
 
                     when return_sizes =>
@@ -198,23 +194,21 @@ begin
                             end case;
 
                     when write_samples =>
-                        if enable_s = '0' then   --- Nötig ???!
-                            if setted_numberofsamples = '1' then
-                                if data_dwn_valid = '1' then
-                                    set_dataouts_next_byte <= '1';
-                                    if (data_size_s + 1 = data_size) then
-                                        data_samples_valid_early <= '1';
-                                        sample_counter <= sample_counter + 1;
-                                        data_size_s <= 0;
-                                        if sample_counter  = unsigned(addr_of_last_sample_s) then
-                                            state <= init;
-                                            setted_numberofsamples_early <= '0';
-                                        end if;
-                                    else
-                                        data_size_s <= data_size_s + 1;
+                        if setted_numberofsamples = '1' then
+                            if data_dwn_valid = '1' then
+                                set_dataouts_next_byte <= '1';
+                                if (data_size_s + 1 = data_size) then
+                                    data_samples_valid_early <= '1';
+                                    sample_counter <= sample_counter + 1;
+                                    data_size_s <= 0;
+                                    if sample_counter  = unsigned(addr_of_last_sample_s) then
+                                        state <= init;
+                                        setted_numberofsamples_early <= '0';
                                     end if;
-
+                                else
+                                    data_size_s <= data_size_s + 1;
                                 end if;
+
                             end if;
                         end if;
                     when set_numberofsamples =>
