@@ -29,7 +29,7 @@ ConnectionDialog::ConnectionDialog(wxWindow* parent, wxString *addr, wxString *p
 	wxBoxSizer* BoxSizer4;
 	wxStdDialogButtonSizer* StdDialogButtonSizer1;
 
-	Create(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("id"));
+	Create(parent, id, _("Connect to JtagHost"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("id"));
 	SetClientSize(wxDefaultSize);
 	Move(wxDefaultPosition);
 	BoxSizer1 = new wxBoxSizer(wxVERTICAL);
