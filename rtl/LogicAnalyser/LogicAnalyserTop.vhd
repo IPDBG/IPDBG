@@ -5,7 +5,6 @@ use ieee.numeric_std.all;
 
 entity LogicAnalyserTop is
     generic(
-         DATA_WIDTH  : natural := 4;        --! width of a sample
          ADDR_WIDTH  : natural := 4;         --! 2**ADDR_WIDTH = size if sample memory
          ASYNC_RESET : boolean := true
     );
@@ -23,11 +22,12 @@ entity LogicAnalyserTop is
 
         -- LA interface
         sample_enable  : in  std_logic;
-        probe          : in  std_logic_vector(DATA_WIDTH-1 downto 0)
+        probe          : in  std_logic_vector
     );
 end entity LogicAnalyserTop;
 
 architecture structure of LogicAnalyserTop is
+    constant DATA_WIDTH : natural := probe'length;
 
     component LogicAnalyserMemory is
         generic(
