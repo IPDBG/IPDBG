@@ -42,6 +42,9 @@
 		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserTrigger.vhd">
 			<Option compile="1" />
 		</Unit>
+		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorController.vhd" />
+		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorMemory.vhd" />
+		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorTop.vhd" />
 		<Unit filename="JtagHub_sim.vhd">
 			<Option compile="1" />
 		</Unit>
