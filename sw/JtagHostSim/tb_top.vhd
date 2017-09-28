@@ -30,6 +30,25 @@ architecture structure of tb_top is
         );
     end component LogicAnalyserTop;
 
+    component WaveformGeneratorTop is
+        generic(
+            ADDR_WIDTH : natural;
+            ASYNC_RESET : boolean
+        );
+        port(
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_dwn_valid : in  std_logic;
+            data_dwn       : in  std_logic_vector(7 downto 0);
+            data_up_ready  : in  std_logic;
+            data_up_valid  : out std_logic;
+            data_up        : out std_logic_vector(7 downto 0);
+            dataOut        : out std_logic_vector;
+            firstsample    : out std_logic;
+            sample_enable  : in  std_logic
+        );
+    end component WaveformGeneratorTop;
 
     component JtagHub is
         generic(
@@ -61,20 +80,29 @@ architecture structure of tb_top is
     signal clk, rst, ce  : std_logic;
 
 
-    constant DATA_WIDTH  : natural := 12;
-    constant ADDR_WIDTH  : natural := 10;
-    constant ASYNC_RESET : boolean := true;
+    constant DATA_WIDTH       : natural := 12;
+    constant ADDR_WIDTH       : natural := 9;
+    constant ASYNC_RESET      : boolean := true;
 
-    signal data_dwn              : std_logic_vector(7 downto 0);
-    signal data_dwn_valid_la     : std_logic;
-    signal data_up_ready_la      : std_logic;
-    signal data_up_valid_la      : std_logic;
-    signal data_up_la            : std_logic_vector(7 downto 0);
+    signal data_dwn           : std_logic_vector(7 downto 0);
+    signal data_dwn_valid_la  : std_logic;
+    signal data_up_ready_la   : std_logic;
+    signal data_up_valid_la   : std_logic;
+    signal data_up_la         : std_logic_vector(7 downto 0);
+    signal data_dwn_valid_wfg : std_logic;
+    signal data_up_ready_wfg  : std_logic;
+    signal data_up_valid_wfg  : std_logic;
+    signal data_up_wfg        : std_logic_vector(7 downto 0);
 
     constant T           : time := 10 ns;
 
     signal count         : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal count_max     : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
+
+    signal firstsample   : std_logic;
+    signal dataOut_wfg   : std_logic_vector(DATA_WIDTH-2 downto 0);
+    signal data_in_la    : std_logic_vector(DATA_WIDTH-1 downto 0);
+
 begin
     process begin
         clk <= '0';
@@ -114,19 +142,19 @@ begin
             data_dwn_valid_la     => data_dwn_valid_la,
             data_dwn_valid_ioview => open,
             data_dwn_valid_gdb    => open,
-            data_dwn_valid_wfg    => open,
+            data_dwn_valid_wfg    => data_dwn_valid_wfg,
             data_up_ready_la      => data_up_ready_la,
             data_up_ready_ioview  => open,
             data_up_ready_gdb     => open,
-            data_up_ready_wfg     => open,
+            data_up_ready_wfg     => data_up_ready_wfg,
             data_up_valid_la      => data_up_valid_la,
             data_up_valid_ioview  => '0',
             data_up_valid_gdb     => '0',
-            data_up_valid_wfg     => '0',
+            data_up_valid_wfg     => data_up_valid_wfg,
             data_up_la            => data_up_la,
             data_up_ioview        => (others => '-'),
             data_up_gdb           => (others => '-'),
-            data_up_wfg           => (others => '-')
+            data_up_wfg           => data_up_wfg
         );
 
     la: component LogicAnalyserTop
@@ -145,9 +173,27 @@ begin
             data_up_valid  => data_up_valid_la,
             data_up        => data_up_la,
             sample_enable  => '1',
-            probe          => count
+            probe          => data_in_la
         );
-
+    data_in_la <= firstsample & dataOut_wfg;
+    wfg: component WaveformGeneratorTop
+        generic map(
+            ADDR_WIDTH  => 9,
+            ASYNC_RESET => ASYNC_RESET
+        )
+        port map(
+            clk            => clk,
+            rst            => rst,
+            ce             => ce,
+            data_dwn_valid => data_dwn_valid_wfg,
+            data_dwn       => data_dwn,
+            data_up_ready  => data_up_ready_wfg,
+            data_up_valid  => data_up_valid_wfg,
+            data_up        => data_up_wfg,
+            dataOut        => dataOut_wfg,
+            firstsample    => firstsample,
+            sample_enable  => '1'
+        );
 
 end architecture structure;
 
