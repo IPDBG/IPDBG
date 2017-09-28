@@ -8,8 +8,8 @@ use unisim.vcomponents.all;
 entity XC7Top is
     generic(
         MFF_LENGTH : natural := 3;
-        DATA_WIDTH : natural := 10;        --! width of a sample
-        ADDR_WIDTH : natural := 10
+        DATA_WIDTH : natural := 6;        --! width of a sample
+        ADDR_WIDTH : natural := 6
     );
     port(
         --clk                              : in  std_logic;
@@ -54,7 +54,6 @@ architecture structure of XC7Top is
 
     component LogicAnalyserTop is
         generic(
-            DATA_WIDTH  : natural;
             ADDR_WIDTH  : natural;
             ASYNC_RESET : boolean
         );
@@ -179,7 +178,6 @@ begin
 
     la : component LogicAnalyserTop
         generic map(
-            DATA_WIDTH  => DATA_WIDTH,
             ADDR_WIDTH  => ADDR_WIDTH,
             ASYNC_RESET => ASYNC_RESET
         )
@@ -202,7 +200,6 @@ begin
 
         la2 : component LogicAnalyserTop
         generic map(
-            DATA_WIDTH  => DATA_WIDTH,
             ADDR_WIDTH  => ADDR_WIDTH,
             ASYNC_RESET => ASYNC_RESET
         )
