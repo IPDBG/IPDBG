@@ -11,7 +11,6 @@ architecture structure of tb_top is
 
     component LogicAnalyserTop is
         generic(
-            DATA_WIDTH  : natural;
             ADDR_WIDTH  : natural;
             ASYNC_RESET : boolean
         );
@@ -26,7 +25,7 @@ architecture structure of tb_top is
             data_up        : out std_logic_vector(7 downto 0);
 
             sample_enable  : in  std_logic;
-            probe          : in  std_logic_vector(DATA_WIDTH-1 downto 0)
+            probe          : in  std_logic_vector
         );
     end component LogicAnalyserTop;
 
@@ -159,7 +158,6 @@ begin
 
     la: component LogicAnalyserTop
         generic map(
-            DATA_WIDTH  => DATA_WIDTH,
             ADDR_WIDTH  => ADDR_WIDTH,
             ASYNC_RESET => ASYNC_RESET
         )
