@@ -16,11 +16,11 @@ entity WaveformGeneratorMemory is
 
 
         -- write
-        data_samples            : in  std_logic_vector(DATA_WIDTH-1 downto 0);      -- from controller
-        data_samples_valid      : in  std_logic;                                    -- from controller
-        data_samples_if_reset   : in  std_logic;                                    -- from controller
+        data_samples            : in  std_logic_vector(DATA_WIDTH-1 downto 0);     -- from controller
+        data_samples_valid      : in  std_logic;                                   -- from controller
+        data_samples_if_reset   : in  std_logic;                                   -- from controller
 
-        enable                  : in  std_logic;                                   -- not pause      -- from controller
+        enable                  : in  std_logic;                                   -- from controller
         addr_of_last_sample     : in  std_logic_vector(ADDR_WIDTH-1 downto 0);     -- Length Of Waveform - 1  -- from controller
 
         data_out                : out std_logic_vector(DATA_WIDTH-1 downto 0);     -- THE output
@@ -52,15 +52,14 @@ architecture behavioral of WaveformGeneratorMemory is
 
     constant RAM_OUTPUT_REG  : boolean := true;
 
-    signal FirstSample_s     : std_logic;
+    signal first_sample_s    : std_logic;
 
-    signal adr_r             :  unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
-    signal readData          : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal read_address      : unsigned(ADDR_WIDTH-1 downto 0);
+    signal read_data         : std_logic_vector(DATA_WIDTH-1 downto 0);
 
-    signal we                : std_logic;
-    signal writeData         : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal adr_w             : unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
-    --signal AddrOfLastSample  : std_logic_vector(ADDR_WIDTH-1 downto 0);
+    signal write_enable      : std_logic;
+    signal write_data        : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal write_address     : unsigned(ADDR_WIDTH-1 downto 0);
     signal arst, srst        : std_logic;
 
 begin
@@ -75,9 +74,9 @@ begin
 
     writeFsm: process (clk, arst)
         procedure assign_reset is begin
-            we <= '0';
-            adr_w <= (others => '-');
-            writeData <= (others => '-');
+            write_enable <= '0';
+            write_address <= (others => '-');
+            write_data <= (others => '-');
         end procedure assign_reset;
     begin
         if arst = '1' then
@@ -87,20 +86,17 @@ begin
                 assign_reset;
             else
                 if ce = '1' then
-                    we <= '0';
---                    if we = '1' then
---                        AddrOfLastSample <= std_logic_vector(adr_w);
---                    end if;
+                    write_enable <= '0';
                     if data_samples_if_reset = '1' then
-                        adr_w <= (others => '0');
-                    elsif we = '1' then
-                        adr_w <= adr_w + 1;
+                        write_address <= (others => '0');
+                    elsif write_enable = '1' then
+                        write_address <= write_address + 1;
                     end if;
 
                     if data_samples_valid = '1' then
-                        we <= '1';
-                        writeData <= data_samples;
+                        write_enable <= '1';
                     end if;
+                    write_data <= data_samples;
                 end if;
             end if;
         end if;
@@ -109,12 +105,12 @@ begin
 
 
     mem: block
-        signal Adrw_slv     : std_logic_vector(ADDR_WIDTH-1 downto 0);
-        signal Adrr_slv     : std_logic_vector(ADDR_WIDTH-1 downto 0);
+        signal write_address_slv : std_logic_vector(ADDR_WIDTH-1 downto 0);
+        signal read_address_slv  : std_logic_vector(ADDR_WIDTH-1 downto 0);
     begin
 
-        Adrw_slv <= std_logic_vector(adr_w);
-        Adrr_slv <= std_logic_vector(adr_r);
+        write_address_slv <= std_logic_vector(write_address);
+        read_address_slv <= std_logic_vector(read_address);
 
         samples : component PdpRam
             generic map(
@@ -125,24 +121,24 @@ begin
             port map(
                 clk           => clk,
                 ce            => ce,
-                write_enable  => we,
-                write_address => Adrw_slv,
-                write_data    => writeData,
-                read_address  => Adrr_slv,
-                read_data     => readData
+                write_enable  => write_enable,
+                write_address => write_address_slv,
+                write_data    => write_data,
+                read_address  => read_address_slv,
+                read_data     => read_data
             );
     end block mem;
 
     readFsm: block
-        signal firstAddressSet   : std_logic;
-        signal firstAddressSet_d : std_logic;
+        signal fisrt_address_set   : std_logic;
+        signal fisrt_address_set_d : std_logic;
     begin
         process (clk, arst)
             procedure assign_reset is begin
-                adr_r <= (others => '-');
-                FirstSample_s <= '0';
-                firstAddressSet <= '0';
-                firstAddressSet_d <= '0';
+                read_address <= (others => '-');
+                first_sample_s <= '0';
+                fisrt_address_set <= '0';
+                fisrt_address_set_d <= '0';
             end procedure assign_reset;
         begin
             if arst = '1' then
@@ -153,23 +149,23 @@ begin
                 else
                     if ce = '1' then
                         if data_out_enable = '1' then
-                            firstAddressSet <= '0';
-                            if adr_r = unsigned(addr_of_last_sample) then
-                                adr_r <= (others => '0');
-                                firstAddressSet <= '1';
+                            fisrt_address_set <= '0';
+                            if read_address = unsigned(addr_of_last_sample) then
+                                read_address <= (others => '0');
+                                fisrt_address_set <= '1';
                             else
-                                adr_r <= adr_r + 1;
+                                read_address <= read_address + 1;
                             end if;
                         end if;
 
                         -- This is depending on the timing of the pdpRam. (i.e. we have a strong coupling to the pdpRam)
                         -- An alternative solution was to spend an additional bit of the waveform - a big waste.
                         -- So we live with this coupling.
-                        firstAddressSet_d <= firstAddressSet;
+                        fisrt_address_set_d <= fisrt_address_set;
                         if RAM_OUTPUT_REG then
-                            FirstSample_s <= firstAddressSet_d;
+                            first_sample_s <= fisrt_address_set_d;
                         else
-                            FirstSample_s <= firstAddressSet;
+                            first_sample_s <= fisrt_address_set;
                         end if;
                     end if;
                 end if;
@@ -183,8 +179,8 @@ begin
             if ce = '1' then
                 if enable = '1' then
                     if data_out_enable = '1' then
-                        first_sample <= FirstSample_s;
-                        data_out <= readData;
+                        first_sample <= first_sample_s;
+                        data_out <= read_data;
                     end if;
                 else
                     first_sample <= '0';
