@@ -86,7 +86,7 @@ int main()
 
 
     ///set number of samples
-    //int8_t buf[1];
+
     buf[0] = SET_NUMBEROFSAMPLES_COMMAND;
     ipdbg_org_wfg_send(&socket, buf, 1);
 
@@ -100,11 +100,11 @@ int main()
     else
     {
         printf("limit_samples: %d\n",limit_samples);
-        //uint8_t buffer[2];
+
         uint8_t buffer[4] = { (limit_samples-1)         & 0x000000ff,
                             ( (limit_samples-1) >>  8)  & 0x000000ff,
                             ( (limit_samples-1) >>  16) & 0x000000ff,
-                            ( (limit_samples-1) >>  32) & 0x000000ff};
+                            ( (limit_samples-1) >>  24) & 0x000000ff};
 
         for(size_t i = 0 ; i < ADDR_WIDTH_BYTES ; ++i)
         {
@@ -113,16 +113,11 @@ int main()
 
     }
 
-    ///set stop
-    buf[0] = STOP_COMMAND;
-    ipdbg_org_wfg_send(&socket, buf, 1);
-
     /// write samples
 
     buf[0] = WRITE_SAMPLES_COMMAND;
     ipdbg_org_wfg_send(&socket, buf, 1);
 
-    //unsigned int counter = 0;
 
     for(unsigned int counter=0; counter<limit_samples; counter++)
     {
@@ -131,7 +126,7 @@ int main()
         uint8_t buffer [4] = { (counter)         & 0x000000ff,
                              ( (counter) >>  8)  & 0x000000ff,
                              ( (counter) >>  16) & 0x000000ff,
-                             ( (counter) >>  32) & 0x000000ff};
+                             ( (counter) >>  24) & 0x000000ff};
         for(size_t i = 0 ; i < DATA_WIDTH_BYTES ; ++i)
         {
             printf("buffer: %d\n",buffer[DATA_WIDTH_BYTES-1-i]);
@@ -155,14 +150,14 @@ int ipdbg_org_wfg_open(int *socket_handle)
 {
     struct addrinfo hints;
     struct addrinfo *results, *res;
-    int err;
+    //int err;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    err = getaddrinfo("192.168.56.1", "4245", &hints, &results);
+    /*err =*/ getaddrinfo("192.168.56.1", "4245", &hints, &results);
 
 
     for (res = results; res; res = res->ai_next)
