@@ -78,10 +78,10 @@ architecture tab of LogicAnalyserController is
     type states_t      is(init, return_id, return_sizes, logic_analyser, set_delay,
                                          config_trigger, select_config_trigger_curr, select_config_trigger_last, select_config_trigger_edge,
                                          set_mask_curr, set_value_curr, set_mask_last, set_value_last, set_edge_mask, data_output);
-    signal state       : states_t :=  init;
+    signal state       : states_t;
 
     type Output        is(init, Zwischenspeicher, shift, get_next_data);
-    signal init_Output : Output := init;
+    signal init_Output : Output;
 
     --Zähler
     signal data_size_s              : natural range 0 to data_size;

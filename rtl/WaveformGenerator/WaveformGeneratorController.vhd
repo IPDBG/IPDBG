@@ -49,10 +49,10 @@ architecture tab of WaveformGeneratorController is
 
     -----------------------state machines
     type states_t is(init, set_stop, set_start, set_numberofsamples, write_samples, return_sizes);
-    signal state : states_t :=  init;
+    signal state : states_t;
 
     type Output is(init, Zwischenspeicher, shift, get_next_data);
-    signal init_Output    : Output := init;
+    signal init_Output    : Output;
 
     signal data_size_s                      : natural range 0 to data_size;
     signal addr_size_s                      : natural range 0 to data_size;

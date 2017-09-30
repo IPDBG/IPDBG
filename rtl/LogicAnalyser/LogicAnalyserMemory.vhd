@@ -61,7 +61,7 @@ architecture tab of LogicAnalyserMemory is
 
     --State machine
     type states_t            is(idle, armed, wait_trigger, fill_up, drain, drain_handshake);
-    signal buffering_state   : states_t := idle;
+    signal buffering_state   : states_t;
 
     signal write_data        : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal read_data         : std_logic_vector(DATA_WIDTH-1 downto 0):= (others => '0');
@@ -212,7 +212,6 @@ begin
 
 
 end architecture tab;
-
 
 
 
