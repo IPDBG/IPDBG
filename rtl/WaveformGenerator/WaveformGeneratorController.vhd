@@ -59,10 +59,10 @@ architecture tab of WaveformGeneratorController is
     signal data_samples_valid_early         : std_logic;
     signal setted_numberofsamples_early     : std_logic;
     signal counter                          : unsigned(ADDR_WIDTH-1 downto 0);
-    signal import_ADDR                      : std_logic := '0';
+    signal import_ADDR                      : std_logic := '0'; -- 
     signal sizes_temporary                  : std_logic_vector(31 downto 0);
     signal data_out_s                       : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal sample_counter                   : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0');
+    signal sample_counter                   : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0'); --
     signal addr_of_last_sample_s            : std_logic_vector(ADDR_WIDTH-1 downto 0);
     signal setted_numberofsamples           : std_logic;
     signal set_addroflastsample_next_byte   : std_logic;
@@ -90,9 +90,7 @@ begin
             import_ADDR                     <= '0';
             data_up                         <= (others => '-');
             data_up_valid                   <= '0';
-            addr_of_last_sample_s           <= (others => '-');
             sample_counter                  <= (others => '-');
-            data_out_s                      <= (others => '-');
             data_samples_valid              <= '0';
             enable                          <= '0';
             setted_numberofsamples          <= '0';
