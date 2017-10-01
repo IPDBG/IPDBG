@@ -79,6 +79,25 @@ architecture structure of TopTestLFE is
             probe          : in  std_logic_vector
         );
     end component LogicAnalyserTop;
+    component WaveformGeneratorTop is
+        generic(
+            ADDR_WIDTH  : natural;
+            ASYNC_RESET : boolean
+        );
+        port(
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_dwn_valid : in  std_logic;
+            data_dwn       : in  std_logic_vector(7 downto 0);
+            data_up_ready  : in  std_logic;
+            data_up_valid  : out std_logic;
+            data_up        : out std_logic_vector(7 downto 0);
+            data_out       : out std_logic_vector;
+            first_sample   : out std_logic;
+            sample_enable  : in  std_logic
+        );
+    end component WaveformGeneratorTop;
 
 	component pll0
 		port (CLK: in std_logic; CLKOP: out std_logic; LOCK: out std_logic);
@@ -93,7 +112,13 @@ architecture structure of TopTestLFE is
     signal data_up_ready_la              : std_logic;
     signal data_up_valid_la              : std_logic;
     signal data_up_la                    : std_logic_vector(7 downto 0);
-    signal probe_la                      : std_logic_vector(11 downto 0);
+    signal probe_la                      : std_logic_vector(8 downto 0);
+    signal data_dwn_valid_wfg            : std_logic;
+    signal data_up_ready_wfg             : std_logic;
+    signal data_up_valid_wfg             : std_logic;
+    signal data_up_wfg                   : std_logic_vector(7 downto 0);
+    signal data_out                      : std_logic_vector(7 downto 0);
+    signal first_sample                  : std_logic;
 
     signal clk                           : std_logic;
 	signal rst, rst_n                    : std_logic;
@@ -132,7 +157,7 @@ begin
             end if;
         end if;
     end process;
-    probe_la <= std_logic_vector(ce_div(probe_la'range));
+    probe_la <= first_sample & data_out;
 
 
 
@@ -147,19 +172,19 @@ begin
             data_dwn_valid_la     => data_dwn_valid_la,
             data_dwn_valid_ioview => data_dwn_valid_ioview,
             data_dwn_valid_gdb    => open,
-            data_dwn_valid_wfg    => open,
+            data_dwn_valid_wfg    => data_dwn_valid_wfg,
             data_up_ready_la      => data_up_ready_la,
             data_up_ready_ioview  => data_up_ready_ioview,
             data_up_ready_gdb     => open,
-            data_up_ready_wfg     => open,
+            data_up_ready_wfg     => data_up_ready_wfg,
             data_up_valid_la      => data_up_valid_la,
             data_up_valid_ioview  => data_up_valid_ioview,
             data_up_valid_gdb     => '0',
-            data_up_valid_wfg     => '0',
+            data_up_valid_wfg     => data_up_valid_wfg,
             data_up_la            => data_up_la,
             data_up_ioview        => data_up_ioview,
             data_up_gdb           => (others => '0'),
-            data_up_wfg           => (others => '0')
+            data_up_wfg           => data_up_wfg
         );
 
     iov : component IoViewTop
@@ -194,6 +219,24 @@ begin
             data_up        => data_up_la,
             sample_enable  => '1',
             probe          => probe_la
+        );
+    wfg : component WaveformGeneratorTop
+        generic map(
+            ADDR_WIDTH  => 4,
+            ASYNC_RESET => ASYNC_RESET
+        )
+        port map(
+            clk            => clk,
+            rst            => rst,
+            ce             => '1',
+            data_dwn_valid => data_dwn_valid_wfg,
+            data_dwn       => data_dwn,
+            data_up_ready  => data_up_ready_wfg,
+            data_up_valid  => data_up_valid_wfg,
+            data_up        => data_up_wfg,
+            data_out       => data_out,
+            first_sample   => first_sample,
+            sample_enable  => '1'
         );
 
 end;

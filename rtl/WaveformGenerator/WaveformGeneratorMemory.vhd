@@ -90,7 +90,7 @@ begin
                     if data_samples_if_reset = '1' then
                         write_address <= (others => '0');
                     elsif write_enable = '1' then
-                        write_address <= write_address + 1;
+                        write_address <= to_01(write_address) + 1;
                     end if;
 
                     if data_samples_valid = '1' then
@@ -150,11 +150,11 @@ begin
                     if ce = '1' then
                         if data_out_enable = '1' then
                             fisrt_address_set <= '0';
-                            if read_address = unsigned(addr_of_last_sample) then
+                            if to_01(read_address) = to_01(unsigned(addr_of_last_sample)) then
                                 read_address <= (others => '0');
                                 fisrt_address_set <= '1';
                             else
-                                read_address <= read_address + 1;
+                                read_address <= to_01(read_address) + 1;
                             end if;
                         end if;
 

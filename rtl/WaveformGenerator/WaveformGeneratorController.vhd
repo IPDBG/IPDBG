@@ -91,7 +91,6 @@ begin
             data_up                         <= (others => '-');
             data_up_valid                   <= '0';
             sample_counter                  <= (others => '-');
-            data_out_s                      <= (others => '-');
             data_samples_valid              <= '0';
             enable                          <= '0';
             setted_numberofsamples          <= '0';
