@@ -401,13 +401,13 @@ int ipdbgJTAGtransfer(urj_chain_t *chain, uint16_t *upData, uint16_t downData)
     assert(part != NULL && "part must not be NULL");
 
     uint64_t dr_value_tx = downData;
-    printf("jtagtransfer dn %04x\n", downData);
+    if(downData & 0x0800)
+        printf("jtagtransfer dn %04x\n", downData);
     urj_tap_register_set_value(part->active_instruction->data_register->in, dr_value_tx);
     urj_tap_chain_shift_data_registers(chain, 1);
     *upData = urj_tap_register_get_value (part->active_instruction->data_register->out);
-    printf("jtagtransfer up %04x\n", *upData);
-
-    //urj_tap_chain_flush(chain);
+    if(*upData & 0x0800)
+        printf("jtagtransfer up %04x\n", *upData);
 
     return JTAG_HOST_OK;
 }
