@@ -66,8 +66,8 @@ architecture tab of WaveformGeneratorController is
     signal addr_of_last_sample_s            : std_logic_vector(ADDR_WIDTH-1 downto 0);
     signal setted_numberofsamples           : std_logic;
     signal set_addroflastsample_next_byte   : std_logic;
-    signal set_dataouts_next_byte    		: std_logic;
-    signal data_dwn_delayed          		: std_logic_vector(7 downto 0);
+    signal set_dataouts_next_byte           : std_logic;
+    signal data_dwn_delayed                 : std_logic_vector(7 downto 0);
     signal arst, srst                       : std_logic;
 
 begin
