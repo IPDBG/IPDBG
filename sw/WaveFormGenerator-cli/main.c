@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifdef _WIN32
 #define _WIN32_WINNT 0x0501
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
-//#include <glib.h>
 #include <string.h>
 #include <unistd.h>
 #ifndef _WIN32
@@ -17,6 +17,9 @@
 #endif
 #include <errno.h>
 
+#ifdef _WIN32
+    WSADATA wsaData;
+#endif
 
 #define RESET_SYMBOL  0xEE
 #define ESCAPE_SYMBOL 0x55
@@ -30,19 +33,26 @@
 
 
 
-
-int ipdbg_org_wfg_open(int *socket_handle);
+int ipdbg_org_wfg_open(int *socket_handle, char *addr, char *port);
 int ipdbg_org_wfg_send(int *socket_handle, const uint8_t *buf, size_t len);
 int ipdbg_org_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize);
 int ipdbg_org_wfg_close(int *socket_handle);
 int send_escaping(int *socket_handle, uint8_t *dataToSend, int length);
 
-int main()
+int main(int argc, char *argv[])
 {
-
     int socket = -1;
+    char *addr = "192.168.56.1";
+    char *port = "4245";
+    if (argc >= 2)
+        addr = argv[1];
+    if(argc >= 3)
+        port = argv[2];
 
-    if( ipdbg_org_wfg_open(&socket) < 0)
+#ifdef _WIN32
+    WSAStartup(0x0202, &wsaData);
+#endif
+    if( ipdbg_org_wfg_open(&socket, addr, port) < 0)
     {
         printf("not able to open!\n");
         return -1;
@@ -143,10 +153,14 @@ int main()
 
     ipdbg_org_wfg_close(&socket);
 
+#ifdef _WIN32
+    WSACleanup();
+#endif
+
     return 0;
 }
 
-int ipdbg_org_wfg_open(int *socket_handle)
+int ipdbg_org_wfg_open(int *socket_handle, char *addr, char *port)
 {
     struct addrinfo hints;
     struct addrinfo *results, *res;
@@ -157,7 +171,7 @@ int ipdbg_org_wfg_open(int *socket_handle)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    /*err =*/ getaddrinfo("192.168.56.1", "4245", &hints, &results);
+    /*err =*/ getaddrinfo(addr, port, &hints, &results);
 
 
     for (res = results; res; res = res->ai_next)
