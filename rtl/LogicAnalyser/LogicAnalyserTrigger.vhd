@@ -29,10 +29,10 @@ end entity LogicAnalyserTrigger;
 
 
 architecture behavioral of LogicAnalyserTrigger is
-    signal probe_last  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal mask_curr_n : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal mask_last_n : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal mask_edge_n : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    signal probe_last  : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal mask_curr_n : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal mask_last_n : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal mask_edge_n : std_logic_vector(DATA_WIDTH-1 downto 0);
     constant all_ones  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
     signal arst, srst  : std_logic;
 begin

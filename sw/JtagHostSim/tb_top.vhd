@@ -43,8 +43,8 @@ architecture structure of tb_top is
             data_up_ready  : in  std_logic;
             data_up_valid  : out std_logic;
             data_up        : out std_logic_vector(7 downto 0);
-            dataOut        : out std_logic_vector;
-            firstsample    : out std_logic;
+            data_out       : out std_logic_vector;
+            first_sample   : out std_logic;
             sample_enable  : in  std_logic
         );
     end component WaveformGeneratorTop;
@@ -98,8 +98,8 @@ architecture structure of tb_top is
     signal count         : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal count_max     : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
 
-    signal firstsample   : std_logic;
-    signal dataOut_wfg   : std_logic_vector(DATA_WIDTH-2 downto 0);
+    signal first_sample  : std_logic;
+    signal data_out_wfg  : std_logic_vector(DATA_WIDTH-2 downto 0);
     signal data_in_la    : std_logic_vector(DATA_WIDTH-1 downto 0);
 
 begin
@@ -117,17 +117,17 @@ begin
     end process;
 
     ce <= '1';
-    process(clk, rst)begin
-        if rst = '1' then
-            count <= (others => '0');
-        elsif rising_edge(clk) then
-            if count = count_max then
-                count <= (others => '0');
-            else
-                count <= std_logic_vector(unsigned(count) + 1);
-            end if;
-        end if;
-    end process;
+--    process(clk, rst)begin
+--        if rst = '1' then
+--            count <= (others => '0');
+--        elsif rising_edge(clk) then
+--            if count = count_max then
+--                count <= (others => '0');
+--            else
+--                count <= std_logic_vector(unsigned(count) + 1);
+--            end if;
+--        end if;
+--    end process;
 
 
     jh: component JtagHub
@@ -173,7 +173,7 @@ begin
             sample_enable  => '1',
             probe          => data_in_la
         );
-    data_in_la <= firstsample & dataOut_wfg;
+    data_in_la <= first_sample & data_out_wfg;
     wfg: component WaveformGeneratorTop
         generic map(
             ADDR_WIDTH  => 9,
@@ -188,8 +188,8 @@ begin
             data_up_ready  => data_up_ready_wfg,
             data_up_valid  => data_up_valid_wfg,
             data_up        => data_up_wfg,
-            dataOut        => dataOut_wfg,
-            firstsample    => firstsample,
+            data_out       => data_out_wfg,
+            first_sample   => first_sample,
             sample_enable  => '1'
         );
 

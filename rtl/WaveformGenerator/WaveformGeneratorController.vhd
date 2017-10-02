@@ -48,26 +48,26 @@ architecture tab of WaveformGeneratorController is
     constant set_numberofsamples_command    :std_logic_vector := "11110100"; --F4
 
     -----------------------state machines
-    type states_t is(init, set_stop, set_start, set_numberofsamples, write_samples, return_sizes);
-    signal state : states_t :=  init;
+    type states_t is(init, set_numberofsamples, write_samples, return_sizes);
+    signal state : states_t;
 
     type Output is(init, Zwischenspeicher, shift, get_next_data);
-    signal init_Output    : Output := init;
+    signal init_Output    : Output;
 
     signal data_size_s                      : natural range 0 to data_size;
     signal addr_size_s                      : natural range 0 to data_size;
     signal data_samples_valid_early         : std_logic;
     signal setted_numberofsamples_early     : std_logic;
     signal counter                          : unsigned(ADDR_WIDTH-1 downto 0);
-    signal import_ADDR                      : std_logic := '0';
+    signal import_ADDR                      : std_logic;
     signal sizes_temporary                  : std_logic_vector(31 downto 0);
     signal data_out_s                       : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal sample_counter                   : unsigned(ADDR_WIDTH-1 downto 0):= (others => '0');
+    signal sample_counter                   : unsigned(ADDR_WIDTH-1 downto 0);
     signal addr_of_last_sample_s            : std_logic_vector(ADDR_WIDTH-1 downto 0);
     signal setted_numberofsamples           : std_logic;
     signal set_addroflastsample_next_byte   : std_logic;
-    signal set_dataouts_next_byte    		: std_logic;
-    signal data_dwn_delayed          		: std_logic_vector(7 downto 0);
+    signal set_dataouts_next_byte           : std_logic;
+    signal data_dwn_delayed                 : std_logic_vector(7 downto 0);
     signal arst, srst                       : std_logic;
 
 begin
@@ -90,9 +90,7 @@ begin
             import_ADDR                     <= '0';
             data_up                         <= (others => '-');
             data_up_valid                   <= '0';
-            addr_of_last_sample_s           <= (others => '-');
             sample_counter                  <= (others => '-');
-            data_out_s                      <= (others => '-');
             data_samples_valid              <= '0';
             enable                          <= '0';
             setted_numberofsamples          <= '0';
@@ -121,10 +119,10 @@ begin
                     when init =>
                         if data_dwn_valid = '1' then
                             if data_dwn = start_command then
-                                state <= set_start;
+                                enable <= '1';
                             end if ;
                             if data_dwn = stop_command then
-                                state <= set_stop;
+                                enable <= '0';
                             end if ;
                             if data_dwn = return_sizes_command then
                                 counter <= (others => '0');
@@ -144,14 +142,6 @@ begin
                                 addr_size_s <= 0;
                             end if ;
                         end if;
-
-                    when set_start =>
-                        enable <= '1';
-                        state <= init;
-
-                    when set_stop =>
-                        enable <= '0';
-                        state <= init;
 
                     when return_sizes =>
                         case init_Output is

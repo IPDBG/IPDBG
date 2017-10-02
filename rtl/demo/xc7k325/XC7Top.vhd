@@ -104,8 +104,8 @@ architecture structure of XC7Top is
             data_up_ready  : in  std_logic;
             data_up_valid  : out std_logic;
             data_up        : out std_logic_vector(7 downto 0);
-            dataOut        : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            firstsample    : out std_logic;
+            data_out       : out std_logic_vector(DATA_WIDTH-1 downto 0);
+            first_sample   : out std_logic;
             sample_enable  : in  std_logic
 
         );
@@ -289,8 +289,8 @@ begin
             data_up_ready  => data_up_ready_wfg,
             data_up_valid  => data_up_valid_wfg,
             data_up        => data_up_wfg,
-            dataOut        => DataIn_LogicAnalyser,
-            firstsample    => open,
+            data_out        => DataIn_LogicAnalyser,
+            first_sample   => open,
             sample_enable  => sample_enable_wfg
         );
     sample_enable_wfg <= '1';

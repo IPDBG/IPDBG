@@ -21,16 +21,15 @@ entity WaveformGeneratorTop is
         data_up        : out std_logic_vector(7 downto 0);
 
         -- WaveformGenerator interface
-        dataOut        : out std_logic_vector;
-        firstsample    : out std_logic;
+        data_out       : out std_logic_vector;
+        first_sample   : out std_logic;
         sample_enable  : in  std_logic
 
     );
 end entity WaveformGeneratorTop;
 
 architecture structure of WaveformGeneratorTop is
-    constant DATA_WIDTH : natural := dataOut'length;
-
+    constant DATA_WIDTH : natural := data_out'length;
 
     component ipdbgEscaping is
         generic(
@@ -99,7 +98,7 @@ architecture structure of WaveformGeneratorTop is
     signal dataifreset_me       : std_logic;
     signal data_in_uesc         : std_logic_vector(7 downto 0);
     signal data_me              : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal AddrOfLastSample     : std_logic_vector(ADDR_WIDTH-1 downto 0);
+    signal addr_of_last_sample  : std_logic_vector(ADDR_WIDTH-1 downto 0);
 
 begin
 
@@ -122,7 +121,7 @@ begin
             data_samples_valid     => data_valid_me,
             data_samples_if_reset  => dataifreset_me,
             enable                 => enable_me,
-            addr_of_last_sample    => AddrOfLastSample
+            addr_of_last_sample    => addr_of_last_sample
         );
 
     Memory: component WaveformGeneratorMemory
@@ -139,9 +138,9 @@ begin
             data_samples_valid      => data_valid_me,
             data_samples_if_reset   => dataifreset_me,
             enable                  => enable_me,
-            addr_of_last_sample     => AddrOfLastSample,
-            data_out                => dataOut,
-            first_sample            => firstsample,
+            addr_of_last_sample     => addr_of_last_sample,
+            data_out                => data_out,
+            first_sample            => first_sample,
             data_out_enable         => sample_enable
 
         );
