@@ -20,14 +20,13 @@
 #include <cassert>
 
 #include <tgmath.h>
-#include <glib.h>
 
 #include <octave/oct.h>
 #include <iostream>
 #include <fstream>
 #include <cmath>
 
-using ctype=gboolean;
+//using ctype=gboolean;
 using std::exception;
 using std::shared_ptr;
 using std::string;
@@ -109,12 +108,12 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
 
     uint8_t buf[2] = {0xee, 0xee};
     if (ipdbg_org_wfg_send(&socket, buf, 2)>0)
-        printf("ERROR: not able to send reset");
+        printf("ERROR: not able to send reset\n");
 
     /// get sizes
     buf[0] = RETURN_SIZES_COMMAND;
     if(ipdbg_org_wfg_send(&socket, buf, 1))
-        printf("ERROR: not able to send command");
+        printf("ERROR: not able to send command\n");
 
     uint8_t buf1[8];
     if (ipdbg_org_wfg_receive(&socket, buf1, 8));
@@ -130,8 +129,8 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     ADDR_WIDTH |= (buf1[7] << 24) & 0xFF000000;
 
 
-    printf("DataWidth = %d\n", DATA_WIDTH);
-    printf("AddrWidth = %d\n", ADDR_WIDTH);
+    printf("DATA_WIDTH = %d\n", DATA_WIDTH);
+    printf("ADDR_WIDTH = %d\n", ADDR_WIDTH);
     int HOST_WORD_SIZE = 8; // bits/ word
 
     unsigned int DATA_WIDTH_BYTES = (DATA_WIDTH+HOST_WORD_SIZE -1)/HOST_WORD_SIZE;
@@ -145,12 +144,12 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
 
     buf[0] = SET_NUMBEROFSAMPLES_COMMAND;
     if (ipdbg_org_wfg_send(&socket, buf, 1)>0)
-        printf("ERROR: not able to send command");
+        printf("ERROR: not able to send command\n");
 
 
     if(limit_samples>limit_samples_max)
     {
-        printf("limitsamples zu gross!!! ");
+        printf("ERROR: too many samples\n");
         return octave_value_list ();
     }
     else
@@ -173,7 +172,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
         /// write samples
         buf[0] = WRITE_SAMPLES_COMMAND;
         if (ipdbg_org_wfg_send(&socket, buf, 1)>0)
-            printf("not able to send command");
+            printf("ERROR: not able to send command");
 
 
         for(unsigned int i = 0; i < limit_samples; i++)
@@ -195,7 +194,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
         ///send start
         buf[0] = START_COMMAND;
         if (ipdbg_org_wfg_send(&socket, buf, 1))
-            printf("not able to send command");
+            printf("ERROR: not able to send command");
 
     }
     ipdbg_org_wfg_close(&socket);
@@ -273,7 +272,7 @@ int ipdbg_org_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize)
 
         if (len < 0)
         {
-            printf("Receive error: %s", g_strerror(errno));
+            printf("Receive error: %d", errno);
         }
         else
         {
