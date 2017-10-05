@@ -59,29 +59,28 @@ int main(int argc, char *argv[])
     }
 
     //uint8_t buf[4] = {0xee, 0xee, 0x00, 0x00};
-    uint8_t buf[2] = {0xee, 0xee};
+    uint8_t buf[8] = {0xee, 0xee};
     ipdbg_org_wfg_send(&socket, buf, 2);
 
     /// get sizes
     buf[0] = RETURN_SIZES_COMMAND; // get id command
     ipdbg_org_wfg_send(&socket, buf, 1);
 
-    uint8_t buf1[8];
-    ipdbg_org_wfg_receive(&socket, buf1, 8);
+    ipdbg_org_wfg_receive(&socket, buf, 8);
     unsigned int DATA_WIDTH = 0;
     unsigned int ADDR_WIDTH = 0;
     unsigned int limit_samples_max = 0;
     unsigned int limit_samples = 0;
 
-    DATA_WIDTH  =  buf1[0]        & 0x000000FF;
-    DATA_WIDTH |= (buf1[1] <<  8) & 0x0000FF00;
-    DATA_WIDTH |= (buf1[2] << 16) & 0x00FF0000;
-    DATA_WIDTH |= (buf1[3] << 24) & 0xFF000000;
+    DATA_WIDTH  =  buf[0]        & 0x000000FF;
+    DATA_WIDTH |= (buf[1] <<  8) & 0x0000FF00;
+    DATA_WIDTH |= (buf[2] << 16) & 0x00FF0000;
+    DATA_WIDTH |= (buf[3] << 24) & 0xFF000000;
 
-    ADDR_WIDTH  =  buf1[4]        & 0x000000FF;
-    ADDR_WIDTH |= (buf1[5] <<  8) & 0x0000FF00;
-    ADDR_WIDTH |= (buf1[6] << 16) & 0x00FF0000;
-    ADDR_WIDTH |= (buf1[7] << 24) & 0xFF000000;
+    ADDR_WIDTH  =  buf[4]        & 0x000000FF;
+    ADDR_WIDTH |= (buf[5] <<  8) & 0x0000FF00;
+    ADDR_WIDTH |= (buf[6] << 16) & 0x00FF0000;
+    ADDR_WIDTH |= (buf[7] << 24) & 0xFF000000;
 
 
     printf("dataWidth = %d\n", DATA_WIDTH);
@@ -133,10 +132,10 @@ int main(int argc, char *argv[])
     {
         printf("send counter %d\n ", counter);
 
-        uint8_t buffer [4] = { (counter)         & 0x000000ff,
-                             ( (counter) >>  8)  & 0x000000ff,
-                             ( (counter) >>  16) & 0x000000ff,
-                             ( (counter) >>  24) & 0x000000ff};
+        uint8_t buffer [4] = { ((int)counter-limit_samples/2)         & 0x000000ff,
+                             ( ((int)counter-limit_samples/2) >>  8)  & 0x000000ff,
+                             ( ((int)counter-limit_samples/2) >>  16) & 0x000000ff,
+                             ( ((int)counter-limit_samples/2) >>  24) & 0x000000ff};
         for(size_t i = 0 ; i < DATA_WIDTH_BYTES ; ++i)
         {
             printf("buffer: %d\n",buffer[DATA_WIDTH_BYTES-1-i]);
@@ -171,7 +170,7 @@ int ipdbg_org_wfg_open(int *socket_handle, char *addr, char *port)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    /*err =*/ getaddrinfo(addr, port, &hints, &results);
+    getaddrinfo(addr, port, &hints, &results);
 
 
     for (res = results; res; res = res->ai_next)
