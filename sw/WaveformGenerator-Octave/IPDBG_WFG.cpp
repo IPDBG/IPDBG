@@ -1,3 +1,8 @@
+//
+// mkoctfile IPDBG_WFG.cpp
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -6,7 +11,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
-//#include <glib.h>
 #include <string.h>
 #include <unistd.h>
 #ifndef _WIN32
@@ -26,7 +30,7 @@
 #include <fstream>
 #include <cmath>
 
-//using ctype=gboolean;
+
 using std::exception;
 using std::shared_ptr;
 using std::string;
@@ -94,7 +98,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     unsigned int limit_samples = 0;
 
     const octave_value &arg2 = args(2);
-    uint64NDArray data_to_send= arg2.array_value();
+    int64NDArray data_to_send= arg2.array_value();
     dim_vector dv = data_to_send.dims();
     limit_samples = data_to_send.numel();
 
@@ -150,7 +154,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     if(limit_samples>limit_samples_max)
     {
         printf("ERROR: too many samples\n");
-        return octave_value_list ();
+        //return octave_value_list ();
     }
     else
     {
@@ -177,11 +181,12 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
 
         for(unsigned int i = 0; i < limit_samples; i++)
         {
-
-            uint8_t buffer [4] = { (uint8_t) ((data_to_send(i))         & 0x000000ff),
-                                 ( (uint8_t)(((data_to_send(i)) >>  8)  & 0x000000ff)),
-                                 ( (uint8_t)(((data_to_send(i)) >>  16) & 0x000000ff)),
-                                 ( (uint8_t)(((data_to_send(i)) >>  24) & 0x000000ff))};
+            int64_t val = data_to_send(i);
+            //printf("%ld, ", val);
+            uint8_t buffer [4] = { (uint8_t) (val         & 0x000000ff),
+                                 ( (uint8_t)((val >>   8) & 0x000000ff)),
+                                 ( (uint8_t)((val >>  16) & 0x000000ff)),
+                                 ( (uint8_t)((val >>  24) & 0x000000ff))};
             for(size_t i = 0 ; i < DATA_WIDTH_BYTES ; ++i)
             {
                 //printf("buffer: %x\n",buffer[DATA_WIDTH_BYTES-1-i]);
