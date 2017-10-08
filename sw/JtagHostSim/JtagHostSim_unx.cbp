@@ -30,6 +30,8 @@
 			<Add option="-pthread" />
 			<Add library="boost_system" />
 		</Linker>
+		<Unit filename="../../rtl/IoView/IoViewController.vhd" />
+		<Unit filename="../../rtl/IoView/IoViewTop.vhd" />
 		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserController.vhd">
 			<Option compile="1" />
 		</Unit>
@@ -45,6 +47,7 @@
 		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorController.vhd" />
 		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorMemory.vhd" />
 		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorTop.vhd" />
+		<Unit filename="../../rtl/common/IpdbgEscaping.vhd" />
 		<Unit filename="JtagHub_sim.vhd">
 			<Option compile="1" />
 		</Unit>

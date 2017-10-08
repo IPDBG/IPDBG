@@ -217,8 +217,8 @@ begin
             sample_enable  => '1'
         );
     test_iov: block
-        signal probe_inputs_iov   : std_logic_vector(15 downto 0);
-        signal probe_outputs_iov  : std_logic_vector(7 downto 0);
+        signal probe_inputs_iov   : std_logic_vector(17 downto 0);
+        signal probe_outputs_iov  : std_logic_vector(8 downto 0);
     begin
         iov: component IoViewTop
             generic map(
@@ -236,7 +236,7 @@ begin
                 probe_inputs   => probe_inputs_iov,
                 probe_outputs  => probe_outputs_iov
             );
-        probe_inputs_iov <= probe_outputs_iov & probe_outputs_iov;-- & probe_outputs_iov;
+        probe_inputs_iov <= probe_outputs_iov & probe_outputs_iov;
     end block test_iov;
 end architecture structure;
 
