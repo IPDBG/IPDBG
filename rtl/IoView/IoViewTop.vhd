@@ -12,11 +12,11 @@ entity IoViewTop is
         ce             : in  std_logic;
 
         -- host interface (JtagHub or UART or ....)
-        data_dwn_valid  : in  std_logic;
-        data_dwn        : in  std_logic_vector(7 downto 0);
-        data_up_ready : in  std_logic;
-        data_up_valid : out std_logic;
-        data_up       : out std_logic_vector(7 downto 0);
+        data_dwn_valid : in  std_logic;
+        data_dwn       : in  std_logic_vector(7 downto 0);
+        data_up_ready  : in  std_logic;
+        data_up_valid  : out std_logic;
+        data_up        : out std_logic_vector(7 downto 0);
 
         --- Input & Ouput--------
         probe_inputs   : in  std_logic_vector;

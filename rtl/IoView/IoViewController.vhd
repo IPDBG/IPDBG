@@ -13,11 +13,11 @@ entity IoViewController is
         ce             : in  std_logic;
 
         -- host interface (JTAG-HUB or UART or ....)
-        data_dwn_valid  : in  std_logic;
-        data_dwn        : in  std_logic_vector(7 downto 0);
-        data_up_ready   : in  std_logic;
-        data_up_valid   : out std_logic;
-        data_up         : out std_logic_vector(7 downto 0);
+        data_dwn_valid : in  std_logic;
+        data_dwn       : in  std_logic_vector(7 downto 0);
+        data_up_ready  : in  std_logic;
+        data_up_valid  : out std_logic;
+        data_up        : out std_logic_vector(7 downto 0);
 
         --- Input & Ouput--------
         input          : in  std_logic_vector;
@@ -58,7 +58,7 @@ architecture behavioral of IoViewController is
     signal width_temporary_reg        : std_logic_vector(31 downto 0);
     signal data_out_temporary         : std_logic_vector(INPUT'length-1 downto 0);
 
-    signal arst, srst        : std_logic;
+    signal arst, srst                 : std_logic;
 begin
     async_init: if ASYNC_RESET generate begin
         arst <= rst;
@@ -73,12 +73,18 @@ begin
 
     process (clk, arst)
         procedure fsm_reset_assignment is begin
-            state                  <= init;
-            output_handshake_state <= start;
-            data_in_reg            <= (others => '-');
-            data_in_reg_valid      <= '0';
-            data_in_reg_last       <= '0';
-            width_temporary_reg    <= (others => '-');
+            state                    <= init;
+            output_handshake_state   <= start;
+            data_in_reg              <= (others => '-');
+            data_in_reg_valid        <= '0';
+            data_in_reg_last         <= '0';
+            data_up_valid            <= '0';
+            data_up                  <= (others => '-');
+            data_out_temporary       <= (others => '-');
+            width_temporary_reg      <= (others => '-');
+            width_bytes_sent_counter <= 0;
+            counter                  <= (others => '-');
+            import_ADDR              <= '-';
         end procedure fsm_reset_assignment;
     begin
         if arst = '1' then
@@ -103,9 +109,9 @@ begin
                             if data_dwn = read_input_cmd then
                                 state <= read_input;
                                 data_out_temporary <= Input;
-                                counter <= (others => '0');
                             end if;
                             width_bytes_sent_counter <= 0;
+                            counter <= (others => '0');
                         end if;
 
                     when read_width =>
@@ -199,15 +205,16 @@ begin
     end process ;
 
     outputGreater8: if OUTPUT_WIDTH_BYTES > 1 generate
-        signal output_s             : std_logic_vector(OUTPUT_WIDTH-HOST_WORD_SIZE-1 downto 0);
-        constant output_reset_value : std_logic_Vector(output'left downto 0) := (others => '0');
+        signal output_s : std_logic_vector(OUTPUT_WIDTH-HOST_WORD_SIZE-1 downto 0);
     begin
         process(clk, arst)begin
             if arst = '1' then
-               output <= output_reset_value;
+                output_s <= (others => '0');
+                output <= (output'range => '0');
             elsif rising_edge(clk) then
                 if srst = '1' then
-                    output <= output_reset_value;
+                output_s <= (others => '0');
+                output <= (output'range => '0');
                 else
                     if ce = '1' then
                         if data_in_reg_valid = '1' then
