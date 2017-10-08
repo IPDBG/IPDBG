@@ -27,8 +27,7 @@ architecture structure of IPDBG is
             clk      : in  std_logic;
             rst      : in  std_logic;
             ce       : in  std_logic;
-            DatenOut : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            Debug    : out std_logic_vector(DATA_WIDTH-1 downto 0)
+            DatenOut : out std_logic_vector(DATA_WIDTH-1 downto 0)
         );
     end component Zaehler;
 
@@ -43,19 +42,27 @@ architecture structure of IPDBG is
             data_dwn_valid_la     : out std_logic;
             data_dwn_valid_ioview : out std_logic;
             data_dwn_valid_gdb    : out std_logic;
+            data_dwn_valid_wfg    : out std_logic;
             data_up_ready_la      : out std_logic;
             data_up_ready_ioview  : out std_logic;
             data_up_ready_gdb     : out std_logic;
+            data_up_ready_wfg     : out std_logic;
             data_up_valid_la      : in  std_logic;
             data_up_valid_ioview  : in  std_logic;
             data_up_valid_gdb     : in  std_logic;
+            data_up_valid_wfg     : in  std_logic;
             data_up_la            : in  std_logic_vector(7 downto 0);
             data_up_ioview        : in  std_logic_vector(7 downto 0);
+            data_up_wfg           : in  std_logic_vector(7 downto 0);
             data_up_gdb           : in  std_logic_vector(7 downto 0)
         );
     end component JtagHub;
 
+
     component IoViewTop is
+        generic(
+            ASYNC_RESET : boolean
+        );
         port(
             clk            : in  std_logic;
             rst            : in  std_logic;
@@ -72,8 +79,8 @@ architecture structure of IPDBG is
 
     component LogicAnalyserTop is
         generic(
-            DATA_WIDTH : natural;
-            ADDR_WIDTH : natural
+            ADDR_WIDTH  : natural;
+            ASYNC_RESET : boolean
         );
         port(
             clk            : in  std_logic;
@@ -85,7 +92,7 @@ architecture structure of IPDBG is
             data_up_valid  : out std_logic;
             data_up        : out std_logic_vector(7 downto 0);
             sample_enable  : in  std_logic;
-            probe          : in  std_logic_vector(DATA_WIDTH-1 downto 0)
+            probe          : in  std_logic_vector
         );
     end component LogicAnalyserTop;
 
@@ -111,14 +118,13 @@ begin
             clk      => clk,
             rst      => '0',
             ce       => '1',
-            DatenOut => DataIn_LogicAnalyser,
-            Debug    => open
+            DatenOut => DataIn_LogicAnalyser
         );
 
     la : component LogicAnalyserTop
         generic map(
-            DATA_WIDTH => DATA_WIDTH,
-            ADDR_WIDTH => ADDR_WIDTH
+            ADDR_WIDTH  => ADDR_WIDTH,
+            ASYNC_RESET => false
         )
         port map(
             clk            => clk,
@@ -134,6 +140,9 @@ begin
         );
 
     iov : component IoViewTop
+        generic map(
+            ASYNC_RESET => false
+        )
         port map(
             clk            => clk,
             rst            => '0',
@@ -159,15 +168,19 @@ begin
             data_dwn_valid_la     => data_dwn_valid_la,
             data_dwn_valid_ioview => data_dwn_valid_ioview,
             data_dwn_valid_gdb    => open,
+            data_dwn_valid_wfg    => open,
             data_up_ready_la      => data_up_ready_la,
             data_up_ready_ioview  => data_up_ready_ioview,
             data_up_ready_gdb     => open,
+            data_up_ready_wfg     => open,
             data_up_valid_la      => data_up_valid_la,
             data_up_valid_ioview  => data_up_valid_ioview,
             data_up_valid_gdb     => '0',
+            data_up_valid_wfg     => '0',
             data_up_la            => data_up_la,
             data_up_ioview        => data_up_ioview,
-            data_up_gdb           => (others => '0')
+            data_up_gdb           => (others => '0'),
+            data_up_wfg           => (others => '0')
         );
 
 end architecture structure;
