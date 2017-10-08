@@ -76,6 +76,25 @@ architecture structure of tb_top is
         );
     end component JtagHub;
 
+
+    component IoViewTop is
+        generic(
+            ASYNC_RESET : boolean := true
+        );
+        port(
+            clk            : in  std_logic;
+            rst            : in  std_logic;
+            ce             : in  std_logic;
+            data_dwn_valid : in  std_logic;
+            data_dwn       : in  std_logic_vector(7 downto 0);
+            data_up_ready  : in  std_logic;
+            data_up_valid  : out std_logic;
+            data_up        : out std_logic_vector(7 downto 0);
+            probe_inputs   : in  std_logic_vector;
+            probe_outputs  : out std_logic_vector
+        );
+    end component IoViewTop;
+
     signal clk, rst, ce  : std_logic;
 
 
@@ -92,15 +111,20 @@ architecture structure of tb_top is
     signal data_up_ready_wfg  : std_logic;
     signal data_up_valid_wfg  : std_logic;
     signal data_up_wfg        : std_logic_vector(7 downto 0);
+    signal data_dwn_valid_iov : std_logic;
+    signal data_up_ready_iov  : std_logic;
+    signal data_up_valid_iov  : std_logic;
+    signal data_up_iov        : std_logic_vector(7 downto 0);
 
-    constant T           : time := 10 ns;
+    constant T                : time := 10 ns;
 
-    signal count         : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal count_max     : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
+    signal count              : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal count_max          : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
 
-    signal first_sample  : std_logic;
-    signal data_out_wfg  : std_logic_vector(DATA_WIDTH-2 downto 0);
-    signal data_in_la    : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal first_sample       : std_logic;
+    signal data_out_wfg       : std_logic_vector(DATA_WIDTH-2 downto 0);
+    signal data_in_la         : std_logic_vector(DATA_WIDTH-1 downto 0);
+
 
 begin
     process begin
@@ -139,19 +163,19 @@ begin
             ce                    => ce,
             data_dwn              => data_dwn,
             data_dwn_valid_la     => data_dwn_valid_la,
-            data_dwn_valid_ioview => open,
+            data_dwn_valid_ioview => data_dwn_valid_iov,
             data_dwn_valid_gdb    => open,
             data_dwn_valid_wfg    => data_dwn_valid_wfg,
             data_up_ready_la      => data_up_ready_la,
-            data_up_ready_ioview  => open,
+            data_up_ready_ioview  => data_up_ready_iov,
             data_up_ready_gdb     => open,
             data_up_ready_wfg     => data_up_ready_wfg,
             data_up_valid_la      => data_up_valid_la,
-            data_up_valid_ioview  => '0',
+            data_up_valid_ioview  => data_up_valid_iov,
             data_up_valid_gdb     => '0',
             data_up_valid_wfg     => data_up_valid_wfg,
             data_up_la            => data_up_la,
-            data_up_ioview        => (others => '-'),
+            data_up_ioview        => data_up_iov,
             data_up_gdb           => (others => '-'),
             data_up_wfg           => data_up_wfg
         );
@@ -192,6 +216,27 @@ begin
             first_sample   => first_sample,
             sample_enable  => '1'
         );
-
+    test_iov: block
+        signal probe_inputs_iov   : std_logic_vector(15 downto 0);
+        signal probe_outputs_iov  : std_logic_vector(7 downto 0);
+    begin
+        iov: component IoViewTop
+            generic map(
+                ASYNC_RESET => ASYNC_RESET
+            )
+            port map(
+                clk            => clk,
+                rst            => rst,
+                ce             => ce,
+                data_dwn_valid => data_dwn_valid_iov,
+                data_dwn       => data_dwn,
+                data_up_ready  => data_up_ready_iov,
+                data_up_valid  => data_up_valid_iov,
+                data_up        => data_up_iov,
+                probe_inputs   => probe_inputs_iov,
+                probe_outputs  => probe_outputs_iov
+            );
+        probe_inputs_iov <= probe_outputs_iov & probe_outputs_iov;-- & probe_outputs_iov;
+    end block test_iov;
 end architecture structure;
 

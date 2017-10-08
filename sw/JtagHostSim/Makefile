@@ -41,6 +41,7 @@ $(OBJDIR)/server.o: server.c
 e~tb_top.o: $(OBJDIR)/tb_top.o $(OBJDIR)/tb_top.o $(OBJDIR)/JtagHub_sim.o \
     $(OBJDIR)/LogicAnalyserTop.o $(OBJDIR)/LogicAnalyserMemory.o $(OBJDIR)/LogicAnalyserTrigger.o $(OBJDIR)/LogicAnalyserController.o \
     $(OBJDIR)/WaveformGeneratorController.o $(OBJDIR)/WaveformGeneratorMemory.o $(OBJDIR)/WaveformGeneratorTop.o \
+    $(OBJDIR)/IoViewTop.o $(OBJDIR)/IoViewController.o \
     $(OBJDIR)/IpdbgEscaping.o $(OBJDIR)/pdpRam.o
 	$(GHDL) --bind $(GHDLBINDFLAGS) tb_top
 
@@ -65,5 +66,9 @@ $(OBJDIR)/WaveformGeneratorController.o: ../../rtl/WaveformGenerator/WaveformGen
 $(OBJDIR)/WaveformGeneratorMemory.o: ../../rtl/WaveformGenerator/WaveformGeneratorMemory.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/WaveformGeneratorTop.o: ../../rtl/WaveformGenerator/WaveformGeneratorTop.vhd
+	$(GHDL) -a $(GHDLFLAGS) $<
+$(OBJDIR)/IoViewTop.o: ../../rtl/IoView/IoViewTop.vhd
+	$(GHDL) -a $(GHDLFLAGS) $<
+$(OBJDIR)/IoViewController.o: ../../rtl/IoView/IoViewController.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
 
