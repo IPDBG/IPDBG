@@ -29,6 +29,7 @@ private:
         Reset = 0xee,
         Escape = 0x55
     };
+    void writeEscaping(uint8_t *buffer, size_t len);
     wxSocketClient *client;
     enum {
         SOCKET_ID = 10,

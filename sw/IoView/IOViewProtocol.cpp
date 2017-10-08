@@ -125,7 +125,20 @@ void IOViewProtocol::setOutput(uint8_t *buffer, size_t len)
     uint8_t cmd = IOViewIPCommands::WriteOutput;
     client->Write(&cmd, 1);
 
-    client->Write(buffer, NumberOfOutputBytes);
+    writeEscaping(buffer, NumberOfOutputBytes);
+}
+
+void IOViewProtocol::writeEscaping(uint8_t *buffer, size_t len)
+{
+    for (size_t i = 0 ; i< len ; ++i)
+    {
+        if(buffer[i] == IOViewIPCommands::Reset || buffer[i] == IOViewIPCommands::Escape)
+        {
+            uint8_t buf = IOViewIPCommands::Escape;
+            client->Write(&buf, 1);
+        }
+        client->Write(&buffer[i], 1);
+    }
 }
 
 void IOViewProtocol::Notify()//from timer
