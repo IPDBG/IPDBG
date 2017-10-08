@@ -207,14 +207,17 @@ begin
     outputGreater8: if OUTPUT_WIDTH_BYTES > 1 generate
         signal output_s : std_logic_vector(OUTPUT_WIDTH-HOST_WORD_SIZE-1 downto 0);
     begin
-        process(clk, arst)begin
-            if arst = '1' then
-                output_s <= (others => '0');
+        process(clk, arst)
+            procedure reset_outputs is begin
+                output_s <= (others => '-');
                 output <= (output'range => '0');
+            end procedure reset_outputs;
+        begin
+            if arst = '1' then
+                reset_outputs;
             elsif rising_edge(clk) then
                 if srst = '1' then
-                output_s <= (others => '0');
-                output <= (output'range => '0');
+                    reset_outputs;
                 else
                     if ce = '1' then
                         if data_in_reg_valid = '1' then
@@ -229,15 +232,13 @@ begin
         end process;
     end generate;
 
-    outputSmallerOrEqual8: if OUTPUT_WIDTH_BYTES = 1 generate
-        constant output_reset_value : std_logic_Vector(output'left downto 0) := (others => '0');
-    begin
+    outputSmallerOrEqual8: if OUTPUT_WIDTH_BYTES = 1 generate begin
         process(clk, arst)begin
             if arst = '1' then
-               output <= output_reset_value;
+               output <= (output'range => '0');
             elsif rising_edge(clk) then
                 if srst = '1' then
-                    output <= output_reset_value;
+                    output <= (output'range => '0');
                 else
                     if ce = '1' then
                         if data_in_reg_last = '1' then
