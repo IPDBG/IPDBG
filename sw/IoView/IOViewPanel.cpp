@@ -25,16 +25,16 @@ IOViewPanel::IOViewPanel( wxWindow* parent, IOViewPanelObserver *obs ):
     NumberOfOutputs(0),
     observer(obs)
 {
-	mainSizer = new wxBoxSizer( wxVERTICAL );
+    mainSizer = new wxBoxSizer( wxVERTICAL );
 
-	sbLedsSizer = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Inputs") ), wxHORIZONTAL );
-	mainSizer->Add( sbLedsSizer, 1, wxEXPAND, 5 );
+    sbLedsSizer = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Inputs") ), wxHORIZONTAL );
+    mainSizer->Add( sbLedsSizer, 1, wxEXPAND, 5 );
 
-	sbCBoxesSizer = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Outputs") ), wxHORIZONTAL );
-	mainSizer->Add( sbCBoxesSizer, 1, wxEXPAND, 5 );
+    sbCBoxesSizer = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Outputs") ), wxHORIZONTAL );
+    mainSizer->Add( sbCBoxesSizer, 1, wxEXPAND, 5 );
 
-	this->SetSizer( mainSizer );
-	this->Layout();
+    this->SetSizer( mainSizer );
+    this->Layout();
 }
 //////////////////////////////////////////////////////////////////////////////????????????????????????????????????
 IOViewPanel::~IOViewPanel()
@@ -52,7 +52,7 @@ void IOViewPanel::onCheckBox(wxCommandEvent& event)
 
     for (size_t idx = 0 ; idx < NumberOfOutputs ; ++idx)
         if(checkBoxes[NumberOfOutputs-1-idx]->IsChecked())
-            buffer[(idx & 0xf8)>>3] |= (0x01 << (idx & 0x07));
+            buffer[idx >> 3] |= (0x01 << (idx & 0x07));
 
     if(observer)
         observer->setOutput(buffer, NumberOfOutputBytes);
@@ -81,7 +81,7 @@ void IOViewPanel::setOutputs(unsigned int outputs)
 
     NumberOfOutputs = outputs;
 
-	for(uint32_t i = 0 ; i < NumberOfOutputs ; ++i)
+    for(uint32_t i = 0 ; i < NumberOfOutputs ; ++i)
     {
         wxString str = wxString::Format(_T("P%d"), NumberOfOutputs-1-i);
         wxCheckBox *checkBox = new wxCheckBox( this, wxID_ANY, str, wxDefaultPosition, wxDefaultSize, 0 );
@@ -89,8 +89,8 @@ void IOViewPanel::setOutputs(unsigned int outputs)
         checkBoxes.push_back(checkBox);
     }
 
-	this->SetSizer( mainSizer );
-	this->Layout();
+    this->SetSizer( mainSizer );
+    this->Layout();
 }
 
 void IOViewPanel::setInputs(unsigned int inputs)
@@ -101,19 +101,16 @@ void IOViewPanel::setInputs(unsigned int inputs)
 
     NumberOfInputs = inputs;
 
-	for(size_t i = 0 ; i < NumberOfInputs ; ++i)
+    for(size_t i = 0 ; i < NumberOfInputs ; ++i)
     {
         awxLed *led = new awxLed(this, wxID_ANY);
         sbLedsSizer->Add( led, 0, wxALL, 5 );
         led->SetColour(awxLED_RED);
-        if(i%2)
-            led->SetState(awxLED_ON);
         leds.push_back(led);
     }
 
-	this->SetSizer( mainSizer );
-	this->Layout();
+    this->SetSizer( mainSizer );
+    this->Layout();
 }
-
 
 

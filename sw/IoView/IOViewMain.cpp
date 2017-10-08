@@ -65,13 +65,13 @@ IOViewFrame::IOViewFrame(wxFrame *frame, const wxString& title)
 
     mainPanel = new IOViewPanel(this, this);
 
-	wxBoxSizer* bSizer;
-	bSizer = new wxBoxSizer( wxVERTICAL );
+    wxBoxSizer* bSizer;
+    bSizer = new wxBoxSizer( wxVERTICAL );
 
-	bSizer->Add( mainPanel, 1, wxEXPAND, 5 );
+    bSizer->Add( mainPanel, 1, wxEXPAND, 5 );
 
-	this->SetSizer( bSizer );
-	this->Layout();
+    this->SetSizer( bSizer );
+    this->Layout();
 }
 
 IOViewFrame::~IOViewFrame()

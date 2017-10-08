@@ -10,33 +10,33 @@
 
 class ConnectionDialog: public wxDialog
 {
-	public:
+    public:
 
-		ConnectionDialog(wxWindow* parent, wxString *addr, wxString *port, wxWindowID id=wxID_ANY, const wxPoint& pos=wxDefaultPosition, const wxSize& size=wxDefaultSize);
-		virtual ~ConnectionDialog();
+        ConnectionDialog(wxWindow* parent, wxString *addr, wxString *port, wxWindowID id=wxID_ANY, const wxPoint& pos=wxDefaultPosition, const wxSize& size=wxDefaultSize);
+        virtual ~ConnectionDialog();
 
-		//(*Declarations(ConnectionDialog)
-		wxStaticText* StaticText1;
-		wxStaticText* StaticText2;
-		wxTextCtrl* textCtrlIp;
-		wxTextCtrl* textCtrlPort;
-		//*)
+        //(*Declarations(ConnectionDialog)
+        wxStaticText* StaticText1;
+        wxStaticText* StaticText2;
+        wxTextCtrl* textCtrlIp;
+        wxTextCtrl* textCtrlPort;
+        //*)
 
-	protected:
+    protected:
 
-		//(*Identifiers(ConnectionDialog)
-		static const long ID_STATICTEXT1;
-		static const long ID_TEXTCTRL1;
-		static const long ID_STATICTEXT2;
-		static const long ID_TEXTCTRL2;
-		//*)
+        //(*Identifiers(ConnectionDialog)
+        static const long ID_STATICTEXT1;
+        static const long ID_TEXTCTRL1;
+        static const long ID_STATICTEXT2;
+        static const long ID_TEXTCTRL2;
+        //*)
 
-	private:
+    private:
 
-		//(*Handlers(ConnectionDialog)
-		//*)
+        //(*Handlers(ConnectionDialog)
+        //*)
 
-		DECLARE_EVENT_TABLE()
+        DECLARE_EVENT_TABLE()
 };
 
 #endif
