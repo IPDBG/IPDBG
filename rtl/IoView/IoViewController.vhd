@@ -205,7 +205,10 @@ begin
     end process ;
 
     outputGreater8: if OUTPUT_WIDTH_BYTES > 1 generate
-        signal output_s : std_logic_vector(OUTPUT_WIDTH-HOST_WORD_SIZE-1 downto 0);
+        constant TEMPORARY_REG_SIZE : natural := (OUTPUT_WIDTH / HOST_WORD_SIZE)*HOST_WORD_SIZE;
+        constant LAST_ACCESS_WIDTH  : natural := OUTPUT_WIDTH - TEMPORARY_REG_SIZE;
+        signal output_s      : std_logic_vector(TEMPORARY_REG_SIZE-1 downto 0);
+        signal output_s_next : std_logic_vector(TEMPORARY_REG_SIZE-1 downto 0);
     begin
         process(clk, arst)
             procedure reset_outputs is begin
@@ -221,15 +224,21 @@ begin
                 else
                     if ce = '1' then
                         if data_in_reg_valid = '1' then
-                            output_s <= data_in_reg & output_s(output_s'left downto HOST_WORD_SIZE);
+                            output_s <= output_s_next;
                         end if;
                         if data_in_reg_last = '1' then
-                            output  <=  data_in_reg & output_s(output_s'left downto 0);
+                            output  <=  data_in_reg(LAST_ACCESS_WIDTH-1 downto 0) & output_s;
                         end if;
                     end if;
                 end if;
             end if;
         end process;
+        temporary_reg_width8: if TEMPORARY_REG_SIZE = HOST_WORD_SIZE generate begin
+            output_s_next <= data_in_reg;
+        end generate temporary_reg_width8;
+        temporary_reg_widthbigger8: if TEMPORARY_REG_SIZE > HOST_WORD_SIZE generate begin
+            output_s_next <= data_in_reg & output_s(output_s'left downto HOST_WORD_SIZE);
+        end generate temporary_reg_widthbigger8;
     end generate;
 
     outputSmallerOrEqual8: if OUTPUT_WIDTH_BYTES = 1 generate begin
