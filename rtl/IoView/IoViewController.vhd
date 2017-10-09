@@ -57,6 +57,8 @@ architecture behavioral of IoViewController is
     signal import_ADDR                : std_logic;
     signal width_temporary_reg        : std_logic_vector(31 downto 0);
     signal data_out_temporary         : std_logic_vector(INPUT'length-1 downto 0);
+    signal data_out_temporary_next    : std_logic_vector(INPUT'length-1 downto 0);
+    signal data_up_next               : std_logic_vector(data_up'range);
 
     signal arst, srst                 : std_logic;
 begin
@@ -68,8 +70,6 @@ begin
         arst <= '0';
         srst <= rst;
     end generate sync_init;
-
-    assert INPUT_WIDTH >= 8 report "input width must at least be 8, (hint: connect unused input to a constant)" severity failure;
 
     process (clk, arst)
         procedure fsm_reset_assignment is begin
@@ -108,7 +108,7 @@ begin
                             end if;
                             if data_dwn = read_input_cmd then
                                 state <= read_input;
-                                data_out_temporary <= Input;
+                                data_out_temporary <= input;
                             end if;
                             width_bytes_sent_counter <= 0;
                             counter <= (others => '0');
@@ -177,7 +177,7 @@ begin
                         when mem =>
                             if data_up_ready = '1' then
                                 data_up_valid <= '1';
-                                data_up <= data_out_temporary(data_up'range);
+                                data_up <= data_up_next;
                                 output_handshake_state <= shift;
                                 counter <= counter + 1;
                             end if;
@@ -189,7 +189,7 @@ begin
                                     output_handshake_state <= next_data;
                                 else
                                     output_handshake_state <= mem;
-                                    data_out_temporary <= x"00" & data_out_temporary( data_out_temporary'left downto data_up'length);
+                                    data_out_temporary <= data_out_temporary_next;
                                 end if;
                             end if ;
 
@@ -203,6 +203,19 @@ begin
             end if;
         end if;
     end process ;
+
+    inputGe8:if INPUT_WIDTH >= HOST_WORD_SIZE generate begin
+        data_up_next <= data_out_temporary(data_up'range);
+        data_out_temporary_next <= x"00" & data_out_temporary(data_out_temporary'left downto HOST_WORD_SIZE);
+    end generate;
+    inputLess8:if INPUT_WIDTH < HOST_WORD_SIZE generate begin
+        process ( data_out_temporary ) begin
+            data_up_next <= (others => '0');
+            data_up_next(input'length-1 downto 0) <= data_out_temporary;
+            data_out_temporary_next <= data_out_temporary; -- will never be used.
+        end process;
+    end generate;
+
 
     outputGreater8: if OUTPUT_WIDTH_BYTES > 1 generate
         constant TEMPORARY_REG_SIZE : natural := (OUTPUT_WIDTH / HOST_WORD_SIZE)*HOST_WORD_SIZE;
