@@ -4,31 +4,31 @@ use ieee.numeric_std.all;
 
 entity IpdbgClockDomainCrossing is
     generic(
-        ASYNC_RESET: boolean := true;
+        ASYNC_RESET: boolean := false;
         MFF_LENGTH : natural := 3
     );
     port(
-        clk       : in  std_logic;
-        clk_jtag  : in  std_logic;
-        rst       : in  std_logic;
-        rst_jtag  : in  std_logic;
-        ce        : in  std_logic;
-        ce_jtag   : in  std_logic;
+        clk_func  : in  std_logic;
+        rst_func  : in  std_logic;
+        ce_func   : in  std_logic;
+        clk_host  : in  std_logic;
+        rst_host  : in  std_logic;
+        ce_host   : in  std_logic;
 
-        data_dwn_valid_jtag : in  std_logic;
-        data_dwn_jtag       : in  std_logic_vector(7 downto 0);
-        data_dwn_ready_jtag : out std_logic;
+        data_dwn_valid_host : in  std_logic;
+        data_dwn_host       : in  std_logic_vector(7 downto 0);
+        data_dwn_ready_host : out std_logic;
 
-        data_dwn_valid      : out std_logic;
-        data_dwn            : out std_logic_vector(7 downto 0);
+        data_dwn_valid_func : out std_logic;
+        data_dwn_func       : out std_logic_vector(7 downto 0);
 
-        data_up_ready_jtag  : in  std_logic;
-        data_up_valid_jtag  : out std_logic;
-        data_up_jtag        : out std_logic_vector(7 downto 0);
+        data_up_ready_host  : in  std_logic;
+        data_up_valid_host  : out std_logic;
+        data_up_host        : out std_logic_vector(7 downto 0);
 
-        data_up_ready       : out std_logic;
-        data_up_valid       : in  std_logic;
-        data_up             : in  std_logic_vector(7 downto 0)
+        data_up_ready_func  : out std_logic;
+        data_up_valid_func  : in  std_logic;
+        data_up_func        : in  std_logic_vector(7 downto 0)
 
     );
 end entity IpdbgClockDomainCrossing;
@@ -49,49 +49,53 @@ architecture behavioral of IpdbgClockDomainCrossing is
 
 begin
     async_init_host: if ASYNC_RESET generate begin
-        arst_host <= rst_jtag;
+        arst_host <= rst_host;
         srst_host <= '0';
     end generate async_init_host;
     sync_init_host: if not ASYNC_RESET generate begin
         arst_host <= '0';
-        srst_host <= rst_jtag;
+        srst_host <= rst_host;
     end generate sync_init_host;
 
     async_init_func: if ASYNC_RESET generate begin
-        arst_func <= rst;
+        arst_func <= rst_func;
         srst_func <= '0';
     end generate async_init_func;
     sync_init_func: if not ASYNC_RESET generate begin
         arst_func <= '0';
-        srst_func <= rst;
+        srst_func <= rst_func;
     end generate sync_init_func;
-
+----
     data_dwn_block : block
         signal data_dwn_register          : std_logic_vector(7 downto 0);
         signal data_out_register_enable   : std_logic;
-        signal data_dwn_ready_jtag_n      : std_logic;
+        signal data_dwn_ready_host_n      : std_logic;
     begin
 
-        data_dwn_ready_jtag <= not data_dwn_ready_jtag_n;
+        data_dwn_ready_host <= not data_dwn_ready_host_n;
 
         jtag_clockdomain: block
-            signal data_out_register_enable_jtag : std_logic := '0';
+            signal data_out_register_enable_jtag : std_logic;
         begin
-            process (clk_jtag, arst_host)
+            process (clk_host, arst_host, srst_host)
                 procedure assign_reset is begin
-                    data_dwn_ready_jtag_n <= '0';
+                    data_dwn_ready_host_n <= '0';
                 end procedure assign_reset;
             begin
                 if arst_host = '1' then
                     assign_reset;
-                elsif rising_edge(clk_jtag)then
-                    if ce_jtag = '1' then
-                        if data_dwn_valid_jtag = '1' then
-                            data_dwn_ready_jtag_n <= '1';
-                            data_dwn_register <= data_dwn_jtag;
-                        end if;
-                        if data_out_register_enable_jtag = '1' then
-                            data_dwn_ready_jtag_n <= '0';
+                elsif rising_edge(clk_host)then
+                    if srst_host = '1' then
+                        assign_reset;
+                    else
+                        if ce_host = '1' then
+                            if data_dwn_valid_host = '1' then
+                                data_dwn_ready_host_n <= '1';
+                                data_dwn_register <= data_dwn_host;
+                            end if;
+                            if data_out_register_enable_jtag = '1' then
+                                data_dwn_ready_host_n <= '0';
+                            end if;
                         end if;
                     end if;
                 end if;
@@ -107,8 +111,8 @@ begin
 
                     MFF : dffpc
                         port map(
-                            clk => clk_jtag,
-                            ce  => ce_jtag,
+                            clk => clk_host,
+                            ce  => ce_host,
                             d   => ff(K),
                             q   => ff(K+1)
                         );
@@ -121,17 +125,23 @@ begin
             signal update_synced                : std_logic;
             signal update_synced_prev           : std_logic;
         begin
-            process (clk) begin
-                if rising_edge(clk) then
-                    if ce = '1' then
-                        data_dwn_valid <= '0';
-                        update_synced_prev <= update_synced;
-                        if update_synced = '1' and update_synced_prev = '0' then -- detect 0 -> 1 change
-                            data_out_register_enable <= '1';
-                            data_dwn_valid <= '1';
-                            data_dwn <= data_dwn_register;
-                        elsif update_synced = '0' and update_synced_prev = '1' then -- detect 1 -> 0 change
-                            data_out_register_enable <= '0';
+            process (clk_func, arst_func, srst_func) begin
+                if arst_func = '1' then
+                    data_out_register_enable <= '0';
+                elsif rising_edge(clk_func) then
+                    if srst_func = '1' then
+                        data_out_register_enable <= '0';
+                    else
+                        if ce_func = '1' then
+                            data_dwn_valid_func <= '0';
+                            update_synced_prev <= update_synced;
+                            if update_synced = '1' and update_synced_prev = '0' then -- detect 0 -> 1 change
+                                data_out_register_enable <= '1';
+                                data_dwn_valid_func <= '1';
+                                data_dwn_func <= data_dwn_register;
+                            elsif update_synced = '0' and update_synced_prev = '1' then -- detect 1 -> 0 change
+                                data_out_register_enable <= '0';
+                            end if;
                         end if;
                     end if;
                 end if;
@@ -141,14 +151,14 @@ begin
                 signal ff   : std_logic_vector(MFF_LENGTH downto 0);
             begin
 
-                ff(0) <= data_dwn_ready_jtag_n;
+                ff(0) <= data_dwn_ready_host_n;
 
                 mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
 
                     MFF : dffpc
                         port map(
-                            clk => clk,
-                            ce  => ce,
+                            clk => clk_func,
+                            ce  => ce_func,
                             d   => ff(K),
                             q   => ff(K+1)
                         );
@@ -164,54 +174,41 @@ begin
         signal transfer_register  : std_logic_vector(7 downto 0);
         signal pending            : std_logic;
         signal data_transmitted   : std_logic;
-        signal jtag_ready         : std_logic;
 
     begin
         clk_clockdomain : block
-            signal ready_set            : std_logic;
-            signal set_pending          : std_logic;
-            signal data_send_jtag       : std_logic;
-            signal ff                   : std_logic_vector(MFF_LENGTH downto 0);
-            signal ff_e                 : std_logic_vector(MFF_LENGTH downto 0);
-            signal data_up_ready_jtag_s : std_logic;
-            signal probe                : std_logic;
-            signal data_send_jtag_prev  : std_logic;
+            signal data_send_host       : std_logic;
+            signal data_send_host_prev  : std_logic;
 
 
         begin
-            process (clk, arst_func)
+            process (clk_func, arst_func, srst_func)
                 procedure assign_reset is begin
-                    set_pending <= '0';
                     pending <= '0';
-                    data_up_ready <= '1';
-                    ready_set <= '0';
+                    data_up_ready_func <= '1';
                 end procedure assign_reset;
             begin
                 if arst_func = '1' then
                     assign_reset;
-                elsif rising_edge(clk) then
-                    set_pending <= '0';
-                    if data_up_ready_jtag_s = '1' then
-                        if ready_set = '1' then
-                            data_up_ready <= '1';
-                            ready_set <= '0';
-                        end if;
-                        if data_up_valid =  '1' then
-                            transfer_register <= data_up;
-                            data_up_ready <= '0';
-                            pending <= '1';
-                        end if;
+                elsif rising_edge(clk_func) then
+                    if srst_func = '1' then
+                        assign_reset;
                     else
-                        data_up_ready <= '0';
-                        ready_set <= '1';
+                        if ce_func = '1' then
+                            data_send_host_prev <= data_send_host;
+                            if data_up_valid_func =  '1' then
+                                transfer_register <= data_up_func;
+                                data_up_ready_func <= '0';
+                                pending <= '1';
+                            end if;
+                            if data_send_host = '1' and data_send_host_prev = '0'then
+                                pending <= '0';
+                            end if;
+                            if data_send_host = '0' and data_send_host_prev = '1'then
+                                data_up_ready_func <= '1';
+                            end if;
+                        end if;
                     end if;
-
-                    data_send_jtag_prev <= data_send_jtag;
-                    if data_send_jtag = '1' then
-                        pending <= '0';
-                    elsif data_send_jtag = '0' and data_send_jtag_prev = '1' then
-                        ready_set <= '1';
-                   end if;
                 end if;
             end process;
             ff_clk1: block
@@ -224,59 +221,48 @@ begin
 
                     MFF : dffpc
                         port map(
-                            clk => clk,
-                            ce  => ce,
+                            clk => clk_func,
+                            ce  => ce_func,
                             d   => ff(K),
                             q   => ff(K+1)
                         );
                 end generate;
-                data_send_jtag <= ff(MFF_LENGTH);
+                data_send_host <= ff(MFF_LENGTH);
 
             end block;
-            ff_clk2: block
-                signal ff       : std_logic_vector(MFF_LENGTH downto 0);
-            begin
-
-                ff(0) <= jtag_ready;
-
-                mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
-
-                    MFF : dffpc
-                        port map(
-                            clk => clk,
-                            ce  => ce,
-                            d   => ff(K),
-                            q   => ff(K+1)
-                        );
-                end generate;
-                data_up_ready_jtag_s <= ff(MFF_LENGTH);
-
-            end block;
-
         end block;
 
 ----------------------------------------------------------------------------
         clkjtag_block: block
-            signal pending_jtag       : std_logic;
-            signal pending_jtag_prev  : std_logic;
+            signal pending_host       : std_logic;
+            signal pending_host_prev  : std_logic;
 
 
         begin
-            process(clk_jtag) begin
-                if rising_edge(clk_jtag) then
-                    data_up_valid_jtag <= '0';
-                    pending_jtag_prev <= pending_jtag;
-                    if pending_jtag = '1' and pending_jtag_prev = '0' then
-                        data_up_valid_jtag <= '1';
-                        data_up_jtag <= transfer_register;
-                        data_transmitted <= '1';
-                    elsif pending_jtag = '0' and pending_jtag_prev = '1' then
-                        data_transmitted <= '0';
-                    end if;
-                    if data_up_ready_jtag = '1' then
-                        jtag_ready <= '1';
+            process(clk_host, arst_host, srst_host)
+                procedure assign_reset is begin
+                    data_transmitted <= '0';
+                end procedure assign_reset;
+            begin
+                if arst_host= '1' then
+                    assign_reset;
+                elsif rising_edge(clk_host) then
+                    if srst_host= '1' then
+                         assign_reset;
                     else
-                        jtag_ready <= '0';
+                        if ce_host = '1' then
+                            data_up_valid_host <= '0';
+                            pending_host_prev <= pending_host;
+                            if data_up_ready_host = '1' then
+                                if pending_host = '1'  then
+                                    data_up_valid_host <= '1';
+                                    data_up_host <= transfer_register;
+                                    data_transmitted <= '1';
+                                end if;
+                            elsif pending_host = '0' then
+                                data_transmitted <= '0';
+                            end if;
+                        end if;
                     end if;
                 end if;
             end process;
@@ -289,13 +275,13 @@ begin
 
                     MFF : dffpc
                         port map(
-                            clk => clk_jtag,
-                            ce  => ce_jtag,
+                            clk => clk_host,
+                            ce  => ce_host,
                             d   => ff(K),
                             q   => ff(K+1)
                         );
                 end generate;
-                pending_jtag <= ff(MFF_LENGTH);
+                pending_host <= ff(MFF_LENGTH);
 
             end block;
         end block;
