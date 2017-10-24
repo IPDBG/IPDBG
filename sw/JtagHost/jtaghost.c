@@ -50,6 +50,7 @@ int initiCE40(urj_chain_t *chain);
 int initEcp2(urj_chain_t *chain);
 int initSpartan6(urj_chain_t *chain);
 int init7Series(urj_chain_t *chain);
+int initVirtex6(urj_chain_t *chain);
 
 urj_chain_t *ipdbgJtagAllocChain(void)
 {
@@ -118,6 +119,8 @@ int ipdbgJtagInit(urj_chain_t *chain, int apart)
 
                 strcmp(part->part, "xc7k325t") == 0 )
             return init7Series(chain);
+        else if(strcmp(part->part, "xc6vlx240t") == 0)
+            return initVirtex6(chain);
         else
         {
             printf("xilinx family not supported yet");
@@ -159,6 +162,59 @@ int init7Series(urj_chain_t *chain)
 
 
     urj_part_instruction_t *instr = urj_part_instruction_define(part, "USER1", "000010", user1register_register_name);
+
+    if(!instr)
+    {
+        printf("defining instruction failed\n");
+        return -7;
+    }
+
+
+    /// load USER1 instruction
+    urj_part_set_instruction(part, "USER1");
+    urj_tap_chain_shift_instructions(chain);
+
+
+
+    /// do datashift data shift
+    urj_part_instruction_t *active_ir = part->active_instruction;
+    if (active_ir == NULL)
+    {
+        printf("5 ?????\n");
+        return -5;
+    }
+    urj_data_register_t *dreg = active_ir->data_register;
+    if (dreg == NULL)
+    {
+        printf("6 ?????\n");
+        return -6;
+    }
+    return 0;
+}
+
+int initVirtex6(urj_chain_t *chain)
+{
+    printf("init Vertex 6\n");
+
+    urj_part_t *part = urj_tap_chain_active_part(chain);
+    assert(part != NULL && "part must not be NULL");
+
+    /// set instruction register length of part if database does not contain part?
+    urj_part_instruction_length_set (part, 10);
+
+
+
+    int user1register_register_length = 12; /// length of data register
+    char *user1register_register_name = "USER1REGISTER";
+
+    if(urj_part_data_register_define(part, user1register_register_name, user1register_register_length) != URJ_STATUS_OK)
+    {
+        printf("definition of register failed\n");
+        return -8;
+    }
+
+
+    urj_part_instruction_t *instr = urj_part_instruction_define(part, "USER1", "1111000010", user1register_register_name);
 
     if(!instr)
     {
