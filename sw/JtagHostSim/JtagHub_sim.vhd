@@ -79,22 +79,22 @@ begin
                 if data_in_valid(0) = '1' and data_in_ready_o(0) = '1' then
                     data_in_ready_o(0) <= '0';
                     data_temp_up := x"0C" & data_in(0);
-                    set_data_to_jtag_host(to_integer(unsigned(data_temp_up)));
+                    set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
                 end if;
                 if data_in_valid(1) = '1' and data_in_ready_o(1) = '1' then
                     data_in_ready_o(1) <= '0';
                     data_temp_up := x"0A" & data_in(1);
-                    set_data_to_jtag_host(to_integer(unsigned(data_temp_up)));
+                    set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
                 end if;
                 if data_in_valid(2) = '1' and data_in_ready_o(2) = '1' then
                     data_in_ready_o(2) <= '0';
                     data_temp_up := x"09" & data_in(2);
-                    set_data_to_jtag_host(to_integer(unsigned(data_temp_up)));
+                    set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
                 end if;
                 if data_in_valid(3) = '1' and data_in_ready_o(3) = '1' then
                     data_in_ready_o(3) <= '0';
                     data_temp_up := x"0B" & data_in(3);
-                    set_data_to_jtag_host(to_integer(unsigned(data_temp_up)));
+                    set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
                 end if;
             end if;
         end if;

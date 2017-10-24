@@ -218,7 +218,7 @@ begin
 
 
     outputGreater8: if OUTPUT_WIDTH_BYTES > 1 generate
-        constant TEMPORARY_REG_SIZE : natural := (OUTPUT_WIDTH / HOST_WORD_SIZE)*HOST_WORD_SIZE;
+        constant TEMPORARY_REG_SIZE : natural := ((OUTPUT_WIDTH-1) / HOST_WORD_SIZE)*HOST_WORD_SIZE;
         constant LAST_ACCESS_WIDTH  : natural := OUTPUT_WIDTH - TEMPORARY_REG_SIZE;
         signal output_s      : std_logic_vector(TEMPORARY_REG_SIZE-1 downto 0);
         signal output_s_next : std_logic_vector(TEMPORARY_REG_SIZE-1 downto 0);
