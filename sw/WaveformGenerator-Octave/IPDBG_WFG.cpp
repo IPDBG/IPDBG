@@ -61,6 +61,12 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
           "IPDBG_WFG Help String")
 {
     int nargin = args.length();
+    if(nargin < 2 )
+    {
+        printf("ERROR: WFG_ADC(ipAddrStr, portNumberStr) or\n");
+        printf("ERROR: WFG_ADC(ipAddrStr, portNumberStr, signal)\n");
+        return octave_value_list();
+    }
     const octave_value &arg0 = args(0);
     string ipAddrStr;
 
@@ -134,10 +140,10 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
 
     if(nargin > 2 )
     {
-      const octave_value &arg2 = args(2);
-      int64NDArray data_to_send= arg2.array_value();
-      dim_vector dv = data_to_send.dims();
-      limit_samples = data_to_send.numel();
+        const octave_value &arg2 = args(2);
+        int64NDArray data_to_send= arg2.array_value();
+        dim_vector dv = data_to_send.dims();
+        limit_samples = data_to_send.numel();
 
         ///set number of samples
         buf[0] = SET_NUMBEROFSAMPLES_COMMAND;
