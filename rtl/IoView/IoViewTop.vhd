@@ -7,20 +7,21 @@ entity IoViewTop is
         ASYNC_RESET : boolean := true
     );
     port(
-        clk            : in  std_logic;
-        rst            : in  std_logic;
-        ce             : in  std_logic;
+        clk                  : in  std_logic;
+        rst                  : in  std_logic;
+        ce                   : in  std_logic;
 
         -- host interface (JtagHub or UART or ....)
-        data_dwn_valid : in  std_logic;
-        data_dwn       : in  std_logic_vector(7 downto 0);
-        data_up_ready  : in  std_logic;
-        data_up_valid  : out std_logic;
-        data_up        : out std_logic_vector(7 downto 0);
+        data_dwn_valid       : in  std_logic;
+        data_dwn             : in  std_logic_vector(7 downto 0);
+        data_up_ready        : in  std_logic;
+        data_up_valid        : out std_logic;
+        data_up              : out std_logic_vector(7 downto 0);
 
         --- Input & Ouput--------
-        probe_inputs   : in  std_logic_vector;
-        probe_outputs  : out std_logic_vector
+        probe_inputs         : in  std_logic_vector;
+        probe_outputs        : out std_logic_vector;
+        probe_outputs_update : out std_logic
     );
 end entity IoViewTop;
 
@@ -40,7 +41,8 @@ architecture struct of IoViewTop is
             data_up_valid  : out std_logic;
             data_up        : out std_logic_vector(7 downto 0);
             input          : in  std_logic_vector;
-            output         : out std_logic_vector
+            output         : out std_logic_vector;
+            output_update  : out std_logic
         );
     end component IoViewController;
 
@@ -79,7 +81,8 @@ begin
             data_up_valid  => data_up_valid,
             data_up        => data_up,
             input          => probe_inputs,
-            output         => probe_outputs
+            output         => probe_outputs,
+            output_update  => probe_outputs_update
         );
 
     escaping : component IpdbgEscaping

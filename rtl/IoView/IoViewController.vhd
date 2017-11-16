@@ -21,7 +21,8 @@ entity IoViewController is
 
         --- Input & Ouput--------
         input          : in  std_logic_vector;
-        output         : out std_logic_vector
+        output         : out std_logic_vector;
+        output_update  : out std_logic
     );
 end entity;
 
@@ -227,6 +228,7 @@ begin
             procedure reset_outputs is begin
                 output_s <= (others => '-');
                 output <= (output'range => '0');
+                output_update <= '0';
             end procedure reset_outputs;
         begin
             if arst = '1' then
@@ -236,11 +238,13 @@ begin
                     reset_outputs;
                 else
                     if ce = '1' then
+                        output_update <= '0';
                         if data_in_reg_valid = '1' then
                             output_s <= output_s_next;
                         end if;
                         if data_in_reg_last = '1' then
                             output  <=  data_in_reg(LAST_ACCESS_WIDTH-1 downto 0) & output_s;
+                            output_update <= '1';
                         end if;
                     end if;
                 end if;
@@ -255,16 +259,23 @@ begin
     end generate;
 
     outputSmallerOrEqual8: if OUTPUT_WIDTH_BYTES = 1 generate begin
-        process(clk, arst)begin
+        process(clk, arst)
+            procedure reset_outputs is begin
+                output <= (output'range => '0');
+                output_update <= '0';
+            end procedure reset_outputs;
+        begin
             if arst = '1' then
-               output <= (output'range => '0');
+               reset_outputs;
             elsif rising_edge(clk) then
                 if srst = '1' then
-                    output <= (output'range => '0');
+                    reset_outputs;
                 else
                     if ce = '1' then
+                        output_update <= '0';
                         if data_in_reg_last = '1' then
                             output <= data_in_reg(output'range);
+                            output_update <= '1';
                         end if;
                     end if;
                 end if;
