@@ -8,12 +8,12 @@ entity IpdbgClockDomainCrossing is
         MFF_LENGTH : natural := 3
     );
     port(
-        clk_func  : in  std_logic;
-        rst_func  : in  std_logic;
-        ce_func   : in  std_logic;
-        clk_host  : in  std_logic;
-        rst_host  : in  std_logic;
-        ce_host   : in  std_logic;
+        clk_func            : in  std_logic;
+        rst_func            : in  std_logic;
+        ce_func             : in  std_logic;
+        clk_host            : in  std_logic;
+        rst_host            : in  std_logic;
+        ce_host             : in  std_logic;
 
         data_dwn_valid_host : in  std_logic;
         data_dwn_host       : in  std_logic_vector(7 downto 0);
@@ -77,7 +77,7 @@ begin
         jtag_clockdomain: block
             signal data_out_register_enable_jtag : std_logic;
         begin
-            process (clk_host, arst_host, srst_host)
+            process (clk_host, arst_host)
                 procedure assign_reset is begin
                     data_dwn_ready_host_n <= '0';
                 end procedure assign_reset;
@@ -121,11 +121,11 @@ begin
             end block;
         end block;
 ------------------------------------------------------------------------------------------------------------
-        clk_clockDomain : block
+        clk_clock_domain : block
             signal update_synced                : std_logic;
             signal update_synced_prev           : std_logic;
         begin
-            process (clk_func, arst_func, srst_func) begin
+            process (clk_func, arst_func) begin
                 if arst_func = '1' then
                     data_out_register_enable <= '0';
                 elsif rising_edge(clk_func) then
@@ -182,7 +182,7 @@ begin
 
 
         begin
-            process (clk_func, arst_func, srst_func)
+            process (clk_func, arst_func)
                 procedure assign_reset is begin
                     pending <= '0';
                     data_up_ready_func <= '1';
@@ -239,7 +239,7 @@ begin
 
 
         begin
-            process(clk_host, arst_host, srst_host)
+            process(clk_host, arst_host)
                 procedure assign_reset is begin
                     data_transmitted <= '0';
                 end procedure assign_reset;
@@ -247,7 +247,7 @@ begin
                 if arst_host= '1' then
                     assign_reset;
                 elsif rising_edge(clk_host) then
-                    if srst_host= '1' then
+                    if srst_host = '1' then
                          assign_reset;
                     else
                         if ce_host = '1' then
