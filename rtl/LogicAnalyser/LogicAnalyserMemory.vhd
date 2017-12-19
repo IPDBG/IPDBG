@@ -115,7 +115,7 @@ begin
                         full <= '0';
                         write_address <= (others => '1');
                         finish <= '0';
-                        delay_s <= signed(delay);
+                        delay_s <= signed(delay)+1;
                         if trigger_active = '1' then -- wait until trigger is active
                             buffering_state <= armed;
                         end if;
@@ -125,7 +125,7 @@ begin
                             write_enable <= '1';
                             write_address <= write_address + 1;
                             counter <= counter + 1;
-                            if std_logic_vector(counter) = std_logic_vector(delay_s +1 ) then -- ignoring trigger to fill buffer to requested minimum
+                            if std_logic_vector(counter) = std_logic_vector(delay_s) then -- ignoring trigger to fill buffer to requested minimum
                                 buffering_state <= wait_trigger ;
                             end if;
                         end if;
@@ -155,13 +155,15 @@ begin
 
                     when drain =>
                         if data_request_next = '1' then
-                            if data_ready = to_unsigned(2, data_ready'length) then
+                            if data_ready = to_unsigned(3, data_ready'length) then
                                 data_valid <= '1';
                                 counter <= counter - 1;
                                 data <= read_data;
                                 buffering_state <= drain_handshake;
+                                data_ready <= (others => '0');
+                            else
+                                data_ready <= data_ready + 1;
                             end if;
-                            data_ready <= data_ready + 1;
                         end if;
 
                     when drain_handshake =>
@@ -188,10 +190,20 @@ begin
     mem: block
         signal write_address_slv : std_logic_vector(ADDR_WIDTH-1 downto 0);
         signal read_address_slv  : std_logic_vector(ADDR_WIDTH-1 downto 0);
+        signal write_enable_dly  : std_logic;
+        signal write_data_dly    : std_logic_vector(write_data'range);
     begin
 
-        write_address_slv <= std_logic_vector(write_address);
-        read_address_slv  <= std_logic_vector(read_address);
+        process (clk) begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    write_enable_dly  <= write_enable;
+                    write_address_slv <= std_logic_vector(write_address);
+                    write_data_dly    <= write_data;
+                    read_address_slv  <= std_logic_vector(read_address);
+                end if;
+            end if;
+        end process;
 
         probes : component PdpRam
             generic map(
@@ -202,9 +214,9 @@ begin
             port map(
                 clk           => clk,
                 ce            => ce,
-                write_enable  => write_enable,
+                write_enable  => write_enable_dly,
                 write_address => write_address_slv,
-                write_data    => write_data,
+                write_data    => write_data_dly,
                 read_address  => read_address_slv,
                 read_data     => read_data
             );
