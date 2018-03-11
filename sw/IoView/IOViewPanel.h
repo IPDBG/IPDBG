@@ -59,8 +59,6 @@ protected:
     std::vector<wxCheckBox*> checkBoxes;
     std::vector<awxLed*> leds;
 
-
-
     DECLARE_EVENT_TABLE()
 
 };

@@ -19,7 +19,8 @@
 #include "IOViewPanel.h"
 #include "IOViewProtocol.h"
 
-namespace{
+namespace
+{
     int idMenuQuit = wxNewId();
     int idMenuAbout = wxNewId();
     int idMenuConnect = wxNewId();

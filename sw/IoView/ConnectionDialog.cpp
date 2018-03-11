@@ -16,9 +16,9 @@ const long ConnectionDialog::ID_TEXTCTRL2 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(ConnectionDialog,wxDialog)
-    //(*EventTable(ConnectionDialog)
-    //*)
-    END_EVENT_TABLE()
+//(*EventTable(ConnectionDialog)
+//*)
+END_EVENT_TABLE()
 
 ConnectionDialog::ConnectionDialog(wxWindow* parent, wxString *addr, wxString *port, wxWindowID id, const wxPoint& pos, const wxSize& size)
 {

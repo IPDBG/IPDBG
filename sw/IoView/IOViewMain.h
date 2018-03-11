@@ -23,9 +23,9 @@ class IOViewProtocol;
 
 class IOViewFrame: public wxFrame, public IOViewPanelObserver, public IOViewProtocolObserver
 {
-    public:
-        IOViewFrame(wxFrame *frame, const wxString& title);
-        ~IOViewFrame();
+public:
+    IOViewFrame(wxFrame *frame, const wxString& title);
+    ~IOViewFrame();
 
     virtual void visualizeInputs(uint8_t *buffer, size_t len);
     virtual void setPortWidths(unsigned int inputs, unsigned int outputs);

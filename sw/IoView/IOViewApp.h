@@ -14,8 +14,8 @@
 
 class IOViewApp : public wxApp
 {
-    public:
-        virtual bool OnInit();
+public:
+    virtual bool OnInit();
 };
 
 #endif // IOVIEWAPP_H
