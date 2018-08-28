@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#define __USE_LARGEFILE64
 #include <apr_general.h>
 #include <apr_file_io.h>
 #include <apr_strings.h>
