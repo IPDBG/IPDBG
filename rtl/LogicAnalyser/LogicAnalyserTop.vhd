@@ -140,15 +140,36 @@ architecture structure of LogicAnalyserTop is
     signal data_in_valid_uesc : std_logic;
     signal data_in_uesc       : std_logic_vector(7 downto 0);
     signal reset              : std_logic;
+
+    signal probe_dly          : std_logic_vector(probe'range);
+
 begin
 
-    process (clk) begin
+    combine_trigger: process (clk) begin --! combines "manual" and configurable trigger
         if rising_edge(clk) then
             if ce = '1' then
-                trigger <= fire_trigger_cltrl or trigger_logic;
+                if sample_enable = '1' then
+                    trigger <= fire_trigger_cltrl or trigger_logic;
+                end if;
             end if;
         end if;
     end process;
+
+    compensate_trigger_delay: block
+        -- delay from trigger logic and combine_trigger logic
+        signal tmp : std_logic_vector(probe'range);
+    begin
+        process (clk) begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if sample_enable = '1' then
+                        tmp <= probe;
+                        probe_dly <= tmp;
+                    end if;
+                end if;
+            end if;
+        end process;
+    end block;
 
     memory : component LogicAnalyserMemory
         generic map(
@@ -161,7 +182,7 @@ begin
             rst               => reset,
             ce                => ce,
             sample_enable     => sample_enable,
-            probe             => probe,
+            probe             => probe_dly,
             trigger_active    => trigger_active,
             trigger           => trigger,
             full              => full,

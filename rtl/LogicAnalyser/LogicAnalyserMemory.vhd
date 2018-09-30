@@ -114,8 +114,7 @@ begin
                         counter <= (others => '0');
                         full <= '0';
                         write_address <= (others => '1');
-                        finish <= '0';
-                        delay_s <= signed(delay)+1;
+                        delay_s <= signed(delay);
                         if trigger_active = '1' then -- wait until trigger is active
                             buffering_state <= armed;
                         end if;
@@ -146,7 +145,7 @@ begin
                             write_address <= write_address + 1;
                             counter <= counter + 1;
                             if counter = counter_maximum  then
-                                read_address <= write_address + 2;
+                                read_address <= write_address + 3;
                                 buffering_state <= drain;
                                 full <= '1';
                             end if;
@@ -224,6 +223,5 @@ begin
 
 
 end architecture tab;
-
 
 
