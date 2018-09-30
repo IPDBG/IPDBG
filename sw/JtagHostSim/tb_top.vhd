@@ -82,16 +82,17 @@ architecture structure of tb_top is
             ASYNC_RESET : boolean := true
         );
         port(
-            clk            : in  std_logic;
-            rst            : in  std_logic;
-            ce             : in  std_logic;
-            data_dwn_valid : in  std_logic;
-            data_dwn       : in  std_logic_vector(7 downto 0);
-            data_up_ready  : in  std_logic;
-            data_up_valid  : out std_logic;
-            data_up        : out std_logic_vector(7 downto 0);
-            probe_inputs   : in  std_logic_vector;
-            probe_outputs  : out std_logic_vector
+            clk                  : in  std_logic;
+            rst                  : in  std_logic;
+            ce                   : in  std_logic;
+            data_dwn_valid       : in  std_logic;
+            data_dwn             : in  std_logic_vector(7 downto 0);
+            data_up_ready        : in  std_logic;
+            data_up_valid        : out std_logic;
+            data_up              : out std_logic_vector(7 downto 0);
+            probe_inputs         : in  std_logic_vector;
+            probe_outputs        : out std_logic_vector;
+            probe_outputs_update : out std_logic
         );
     end component IoViewTop;
 
@@ -123,8 +124,9 @@ architecture structure of tb_top is
 
     signal first_sample       : std_logic;
     signal data_out_wfg       : std_logic_vector(DATA_WIDTH-2 downto 0);
-    signal data_in_la         : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal data_in_la         : std_logic_vector(17 downto 0);
 
+    signal sample_enable      : std_logic;
 
 begin
     process begin
@@ -194,10 +196,11 @@ begin
             data_up_ready  => data_up_ready_la,
             data_up_valid  => data_up_valid_la,
             data_up        => data_up_la,
-            sample_enable  => '1',
+            sample_enable  => sample_enable,
             probe          => data_in_la
         );
-    data_in_la <= first_sample & data_out_wfg;
+        sample_enable <= not data_out_wfg(0);--not data_out_wfg(1); --'1'; --
+    data_in_la <= data_out_wfg & data_out_wfg(10 downto 4);
     wfg: component WaveformGeneratorTop
         generic map(
             ADDR_WIDTH  => 9,
@@ -225,16 +228,17 @@ begin
                 ASYNC_RESET => ASYNC_RESET
             )
             port map(
-                clk            => clk,
-                rst            => rst,
-                ce             => ce,
-                data_dwn_valid => data_dwn_valid_iov,
-                data_dwn       => data_dwn,
-                data_up_ready  => data_up_ready_iov,
-                data_up_valid  => data_up_valid_iov,
-                data_up        => data_up_iov,
-                probe_inputs   => probe_inputs_iov,
-                probe_outputs  => probe_outputs_iov
+                clk                  => clk,
+                rst                  => rst,
+                ce                   => ce,
+                data_dwn_valid       => data_dwn_valid_iov,
+                data_dwn             => data_dwn,
+                data_up_ready        => data_up_ready_iov,
+                data_up_valid        => data_up_valid_iov,
+                data_up              => data_up_iov,
+                probe_inputs         => probe_inputs_iov,
+                probe_outputs        => probe_outputs_iov,
+                probe_outputs_update => open
             );
         probe_inputs_iov <= probe_outputs_iov & probe_outputs_iov;
     end block test_iov;
