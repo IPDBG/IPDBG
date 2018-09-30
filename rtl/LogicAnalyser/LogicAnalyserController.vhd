@@ -420,6 +420,7 @@ begin
                     when data_output =>
                         if finish = '1' then
                             trigger_active <= '0';
+                            fire_trigger <= '0';
                             ende_ausgabe <= '1';
                         end if;
 
