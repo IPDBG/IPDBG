@@ -66,10 +66,10 @@ architecture tab of LogicAnalyserMemory is
     signal write_data        : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal read_data         : std_logic_vector(DATA_WIDTH-1 downto 0):= (others => '0');
 
-    signal write_address     : signed(ADDR_WIDTH-1 downto 0);
-    signal read_address      : signed(ADDR_WIDTH-1 downto 0);
+    signal write_address     : unsigned(ADDR_WIDTH-1 downto 0);
+    signal read_address      : unsigned(ADDR_WIDTH-1 downto 0);
 
-    signal delay_s           : signed(ADDR_WIDTH-1 downto 0);
+    signal delay_s           : unsigned(ADDR_WIDTH-1 downto 0);
 
     signal arst, srst        : std_logic;
 begin
@@ -107,14 +107,16 @@ begin
                     write_enable <= '0';
                     write_data <= probe;
 
+                    if sample_enable = '1' then
+                        write_address <= to_01(write_address) + 1;
+                    end if;
+
                     case buffering_state is
                     when idle =>
                         finish <= '0';
-                        read_address <= (others => '0');
                         counter <= (others => '0');
                         full <= '0';
-                        write_address <= (others => '1');
-                        delay_s <= signed(delay);
+                        delay_s <= unsigned(delay);
                         if trigger_active = '1' then -- wait until trigger is active
                             buffering_state <= armed;
                         end if;
@@ -122,9 +124,8 @@ begin
                     when armed =>
                         if sample_enable = '1' then
                             write_enable <= '1';
-                            write_address <= write_address + 1;
                             counter <= counter + 1;
-                            if std_logic_vector(counter) = std_logic_vector(delay_s) then -- ignoring trigger to fill buffer to requested minimum
+                            if counter = delay_s then -- ignoring trigger to fill buffer to requested minimum
                                 buffering_state <= wait_trigger ;
                             end if;
                         end if;
@@ -132,7 +133,6 @@ begin
                     when wait_trigger =>
                         if sample_enable = '1' then
                             write_enable <= '1';
-                            write_address <= write_address + 1;
                             if trigger = '1' then
                                 buffering_state <= fill_up;
                                 counter <= counter + 1;
@@ -142,10 +142,9 @@ begin
                     when fill_up =>
                         if sample_enable = '1' then
                             write_enable <= '1';
-                            write_address <= write_address + 1;
                             counter <= counter + 1;
                             if counter = counter_maximum  then
-                                read_address <= write_address + 3;
+                                read_address <= write_address + 1;
                                 buffering_state <= drain;
                                 full <= '1';
                             end if;
@@ -199,7 +198,7 @@ begin
                     write_enable_dly  <= write_enable;
                     write_address_slv <= std_logic_vector(write_address);
                     write_data_dly    <= write_data;
-                    read_address_slv  <= std_logic_vector(read_address);
+                    read_address_slv  <= std_logic_vector(to_01(read_address));
                 end if;
             end if;
         end process;
@@ -223,5 +222,4 @@ begin
 
 
 end architecture tab;
-
 

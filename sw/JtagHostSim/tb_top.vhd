@@ -199,7 +199,9 @@ begin
             sample_enable  => sample_enable,
             probe          => data_in_la
         );
-        sample_enable <= not data_out_wfg(0);--not data_out_wfg(1); --'1'; --
+    sample_enable <= -- not data_out_wfg(0);
+                     not data_out_wfg(1);
+                     -- '1'; --
     data_in_la <= data_out_wfg & data_out_wfg(10 downto 4);
     wfg: component WaveformGeneratorTop
         generic map(
