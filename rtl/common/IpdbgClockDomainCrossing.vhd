@@ -128,9 +128,15 @@ begin
             process (clk_func, arst_func) begin
                 if arst_func = '1' then
                     data_out_register_enable <= '0';
+                    data_dwn_valid_func <= '0';
+                    data_dwn_func <= (others => '-');
+                    update_synced_prev <= '-';
                 elsif rising_edge(clk_func) then
                     if srst_func = '1' then
                         data_out_register_enable <= '0';
+                        data_dwn_valid_func <= '0';
+                        data_dwn_func <= (others => '-');
+                        update_synced_prev <= '-';
                     else
                         if ce_func = '1' then
                             data_dwn_valid_func <= '0';
@@ -179,13 +185,13 @@ begin
         clk_clockdomain : block
             signal data_send_host       : std_logic;
             signal data_send_host_prev  : std_logic;
-
-
         begin
             process (clk_func, arst_func)
                 procedure assign_reset is begin
                     pending <= '0';
                     data_up_ready_func <= '1';
+                    data_send_host_prev <= '-';
+                    transfer_register <= (others => '-')
                 end procedure assign_reset;
             begin
                 if arst_func = '1' then
@@ -236,12 +242,13 @@ begin
         clkjtag_block: block
             signal pending_host       : std_logic;
             signal pending_host_prev  : std_logic;
-
-
         begin
             process(clk_host, arst_host)
                 procedure assign_reset is begin
                     data_transmitted <= '0';
+                    data_up_valid_host <= '0';
+                    pending_host_prev <= '-';
+                    data_up_host <= (others => '-');
                 end procedure assign_reset;
             begin
                 if arst_host= '1' then
