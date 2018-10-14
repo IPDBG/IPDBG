@@ -80,6 +80,7 @@ begin
             process (clk_host, arst_host)
                 procedure assign_reset is begin
                     data_dwn_ready_host_n <= '0';
+                    data_dwn_register <= (others => '-');
                 end procedure assign_reset;
             begin
                 if arst_host = '1' then
