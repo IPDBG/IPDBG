@@ -191,7 +191,7 @@ begin
                     pending <= '0';
                     data_up_ready_func <= '1';
                     data_send_host_prev <= '-';
-                    transfer_register <= (others => '-')
+                    transfer_register <= (others => '-');
                 end procedure assign_reset;
             begin
                 if arst_func = '1' then
