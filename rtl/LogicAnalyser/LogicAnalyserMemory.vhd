@@ -36,19 +36,19 @@ end entity LogicAnalyserMemory;
 architecture tab of LogicAnalyserMemory is
 
     component PdpRam is
-        generic(
-            DATA_WIDTH     : natural;
-            ADDR_WIDTH     : natural;
+        generic
+        (
             OUTPUT_REG     : boolean
         );
-        port(
+        port
+        (
             clk           : in  std_logic;
             ce            : in  std_logic;
             write_enable  : in  std_logic;
-            write_address : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-            write_data    : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            read_address  : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-            read_data     : out std_logic_vector(DATA_WIDTH-1 downto 0)
+            write_address : in  std_logic_vector;
+            write_data    : in  std_logic_vector;
+            read_address  : in  std_logic_vector;
+            read_data     : out std_logic_vector
         );
     end component PdpRam;
 
@@ -204,12 +204,12 @@ begin
         end process;
 
         probes : component PdpRam
-            generic map(
-                DATA_WIDTH     => DATA_WIDTH,
-                ADDR_WIDTH     => ADDR_WIDTH,
+            generic map
+            (
                 OUTPUT_REG     => true
             )
-            port map(
+            port map
+            (
                 clk           => clk,
                 ce            => ce,
                 write_enable  => write_enable_dly,

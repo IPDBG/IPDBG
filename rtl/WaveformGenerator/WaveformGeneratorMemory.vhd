@@ -34,19 +34,19 @@ end entity WaveformGeneratorMemory;
 architecture behavioral of WaveformGeneratorMemory is
 
     component PdpRam is
-        generic(
-            DATA_WIDTH     : natural;
-            ADDR_WIDTH     : natural;
+        generic
+        (
             OUTPUT_REG     : boolean
         );
-        port(
+        port
+        (
             clk           : in  std_logic;
             ce            : in  std_logic;
             write_Enable  : in  std_logic;
-            write_Address : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-            write_Data    : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            read_Address  : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-            read_Data     : out std_logic_vector(DATA_WIDTH-1 downto 0)
+            write_Address : in  std_logic_vector;
+            write_Data    : in  std_logic_vector;
+            read_Address  : in  std_logic_vector;
+            read_Data     : out std_logic_vector
         );
     end component PdpRam;
 
@@ -113,12 +113,12 @@ begin
         read_address_slv <= std_logic_vector(read_address);
 
         samples : component PdpRam
-            generic map(
-                DATA_WIDTH     => DATA_WIDTH,
-                ADDR_WIDTH     => ADDR_WIDTH,
+            generic map
+            (
                 OUTPUT_REG     => RAM_OUTPUT_REG
             )
-            port map(
+            port map
+            (
                 clk           => clk,
                 ce            => ce,
                 write_enable  => write_enable,
