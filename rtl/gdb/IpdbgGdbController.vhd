@@ -28,8 +28,6 @@ entity IpdbgGdbController is
         data_up_ready           : in  std_logic;
         data_up_valid           : out std_logic;
         data_up                 : out std_logic_vector(7 downto 0)
-
-
     );
 end entity IpdbgGdbController;
 
@@ -54,9 +52,6 @@ architecture behavioral of IpdbgGdbController is
         );
     end component Fifo;
 
-    signal break_enable : std_logic;
-    signal break_local  : std_logic;
-
     signal fifo_full              : std_logic;
     signal fifo_write_data_enable : std_logic;
     signal fifo_write_data        : std_logic_vector(7 downto 0);
@@ -67,7 +62,6 @@ architecture behavioral of IpdbgGdbController is
     signal arst, srst             : std_logic;
     signal ack_wr                 : std_logic;
     signal ack_rd                 : std_logic;
-
 begin
 
     gen_arst: if ASYNC_RESET generate begin
@@ -79,29 +73,33 @@ begin
         srst <= rst;
     end generate gen_srst;
 
-    break_process : process(clk) begin
+    break_handling : block
+        signal break_enable : std_logic;
+        signal break_local  : std_logic;
+    begin
 
         break <= break_local and break_enable;
-        if rising_edge(clk) then
-            break_local <= '0';
-            if fifo_full = '0'and data_dwn_valid = '1' then -- data received from jtag if
-                break_local <= '1';
+
+        process (clk) begin
+            if rising_edge(clk) then
+                break_local <= '0';
+                if fifo_full = '0' and data_dwn_valid = '1' then -- data received from jtag if
+                    break_local <= '1';
+                end if;
             end if;
-        end if;
+        end process;
 
-
-
-        if rising_edge(clk) then
-            if (break_local and break_enable) = '1' then
-                break_enable <= '0'; -- clear after activation
+        process (clk) begin
+            if rising_edge(clk) then
+                if (break_local and break_enable) = '1' then
+                    break_enable <= '0'; -- clear after activation
+                end if;
+                if (cyc_i and stb_i) = '1' and we_i = '1' and adr_i = "1" and ack_wr = '0' then
+                    break_enable <= dat_i(0);
+                end if;
             end if;
-            if (cyc_i and stb_i) = '1' and we_i = '1' and adr_i = "1" and ack_wr = '0' then
-                break_enable <= dat_i(0);
-            end if;
-        end if;
-
-
-    end process;
+        end process;
+    end block;
 
     ack_o <= ack_wr or ack_rd;
 
@@ -110,20 +108,21 @@ begin
         signal fifo_read_data_enable_delayed : std_logic;
         signal data_o_local                  : std_logic_vector(7 downto 0);
     begin
-        dat_o <= x"0000" & "0000000" & valid & data_o_local;
+        dat_o <= x"00000" & "000" & valid & data_o_local;
 
-        process (clk, arst) begin
-            if arst = '1' then
+        process (clk, arst)
+            procedure rd_reset_assignment is begin
                 valid <= '0';
                 ack_rd <= '0';
                 fifo_read_data_enable <= '-';
                 fifo_read_data_enable_delayed <= '-';
+            end procedure rd_reset_assignment;
+        begin
+            if arst = '1' then
+                rd_reset_assignment;
             elsif rising_edge(clk) then
                 if srst = '1' then
-                    valid <= '0';
-                    ack_rd <= '0';
-                    fifo_read_data_enable <= '-';
-                    fifo_read_data_enable_delayed <= '-';
+                    rd_reset_assignment;
                 else
                     fifo_read_data_enable_delayed <= fifo_read_data_enable;
 
@@ -145,7 +144,6 @@ begin
                     else
                         fifo_read_data_enable <= '0';
                     end if;
-
                 end if;
             end if;
         end process;
@@ -157,26 +155,23 @@ begin
         signal data_up_valid_local : std_logic;
         signal ack_wr_data_buffer  : std_logic;
         signal data_i_local        :std_logic_vector(7 downto 0 );
-
     begin
 
-        process (clk, arst) begin
-
-            if arst = '1' then
+        process (clk, arst)
+            procedure wr_reset_assignment is begin
                 empty <= '1';
                 ack_wr <= '0';
                 ack_wr_data_buffer <= '0';
                 data_i_local  <= (others => '-');
                 data_up  <= (others => '-');
                 data_up_valid_local <= '0';
-
+            end procedure wr_reset_assignment;
+        begin
+            if arst = '1' then
+                wr_reset_assignment;
             elsif rising_edge(clk) then
                 if srst = '1' then
-                    data_up_valid_local <= '0';
-                    empty <= '1';
-                    ack_wr <= '0';
-                    data_i_local  <= (others => '-');
-                    data_up  <= (others => '-');
+                    wr_reset_assignment;
                 else
                     ack_wr_data_buffer <= '0';
                     if (cyc_i and stb_i) = '1' and we_i = '1' and (empty = '1' or adr_i = "1") and ack_wr = '0' then
@@ -201,12 +196,10 @@ begin
                     else
                         data_up_valid_local <= '0';
                     end if;
-
                 end if;
             end if;
         end process;
         data_up_valid <= data_up_valid_local;
-
     end block;
 
     our_fifo : component Fifo
@@ -237,6 +230,5 @@ begin
             end if;
         end if;
     end process;
-
 
 end architecture behavioral;
