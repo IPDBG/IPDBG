@@ -85,7 +85,6 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     if(!arg1.is_string())
     {
         portNumberStr = "4245";
-
     }
     else
     {
@@ -141,66 +140,73 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     if(nargin > 2 )
     {
         const octave_value &arg2 = args(2);
-        int64NDArray data_to_send= arg2.array_value();
-        dim_vector dv = data_to_send.dims();
-        limit_samples = data_to_send.numel();
 
-        ///set number of samples
-        buf[0] = SET_NUMBEROFSAMPLES_COMMAND;
-        if (ipdbg_org_wfg_send(&socket, buf, 1)>0)
-            printf("ERROR: not able to send command\n");
-
-
-        if(limit_samples>limit_samples_max)
+        if(arg2.is_string())
         {
-            printf("ERROR: too many samples\n");
-            //return octave_value_list ();
+            string commandStr = arg2.string_value();
+
+            if ( commandStr == std::string("start") )/// send start
+            {
+                printf("sending start");
+                buf[0] = START_COMMAND;
+            }
+            else                                     /// send stop
+            {
+                printf("sending stop");
+                buf[0] = STOP_COMMAND;
+            }
+
+            if (ipdbg_org_wfg_send(&socket, buf, 1))
+                printf("ERROR: not able to send command");
         }
         else
         {
-            printf("limit_samples: %d\n",limit_samples);
+            int64NDArray data_to_send= arg2.array_value();
+            dim_vector dv = data_to_send.dims();
+            limit_samples = data_to_send.numel();
 
-            uint8_t  buffer[4] = { (uint8_t)((limit_samples-1)         & 0x000000ff),
-                                 ( (uint8_t)(((limit_samples-1) >>  8)  & 0x000000ff)),
-                                 ( (uint8_t)(((limit_samples-1) >>  16) & 0x000000ff)),
-                                 ( (uint8_t)(((limit_samples-1) >>  24) & 0x000000ff))};
-
-            for(size_t i = 0 ; i < ADDR_WIDTH_BYTES ; ++i)
-            {
-                //printf("buffer_limitsamples: %x\n",buffer[ADDR_WIDTH_BYTES-1-i]);
-                send_escaping(&socket, &(buffer[ADDR_WIDTH_BYTES-1-i]), 1);
-            }
-
-
-
-            /// write samples
-            buf[0] = WRITE_SAMPLES_COMMAND;
+            ///set number of samples
+            buf[0] = SET_NUMBEROFSAMPLES_COMMAND;
             if (ipdbg_org_wfg_send(&socket, buf, 1)>0)
-                printf("ERROR: not able to send command");
+                printf("ERROR: not able to send command\n");
 
-
-            for(unsigned int i = 0; i < limit_samples; i++)
+            if(limit_samples>limit_samples_max)
             {
-                int64_t val = data_to_send(i);
-                //printf("%ld, ", val);
-                uint8_t buffer [4] = { (uint8_t) (val         & 0x000000ff),
-                                     ( (uint8_t)((val >>   8) & 0x000000ff)),
-                                     ( (uint8_t)((val >>  16) & 0x000000ff)),
-                                     ( (uint8_t)((val >>  24) & 0x000000ff))};
-                for(size_t i = 0 ; i < DATA_WIDTH_BYTES ; ++i)
+                printf("ERROR: too many samples\n");
+            }
+            else
+            {
+                printf("limit_samples: %d\n",limit_samples);
+                uint8_t  buffer[4] = { (uint8_t)((limit_samples-1)         & 0x000000ff),
+                                     ( (uint8_t)(((limit_samples-1) >>  8)  & 0x000000ff)),
+                                     ( (uint8_t)(((limit_samples-1) >>  16) & 0x000000ff)),
+                                     ( (uint8_t)(((limit_samples-1) >>  24) & 0x000000ff))};
+
+                for(size_t i = 0 ; i < ADDR_WIDTH_BYTES ; ++i)
+                    send_escaping(&socket, &(buffer[ADDR_WIDTH_BYTES-1-i]), 1);
+
+                /// write samples
+                buf[0] = WRITE_SAMPLES_COMMAND;
+                if (ipdbg_org_wfg_send(&socket, buf, 1)>0)
+                    printf("ERROR: not able to send command");
+
+                for(unsigned int i = 0; i < limit_samples; i++)
                 {
-                    //printf("buffer: %x\n",buffer[DATA_WIDTH_BYTES-1-i]);
-                    send_escaping(&socket, &(buffer[DATA_WIDTH_BYTES-1-i]), 1);
+                    int64_t val = data_to_send(i);
+                    //printf("%ld, ", val);
+                    uint8_t buffer [4] = { (uint8_t) (val         & 0x000000ff),
+                                         ( (uint8_t)((val >>   8) & 0x000000ff)),
+                                         ( (uint8_t)((val >>  16) & 0x000000ff)),
+                                         ( (uint8_t)((val >>  24) & 0x000000ff))};
+                    for(size_t i = 0 ; i < DATA_WIDTH_BYTES ; ++i)
+                        send_escaping(&socket, &(buffer[DATA_WIDTH_BYTES-1-i]), 1);
                 }
 
-
+                ///send start
+                buf[0] = START_COMMAND;
+                if (ipdbg_org_wfg_send(&socket, buf, 1))
+                    printf("ERROR: not able to send command");
             }
-
-            ///send start
-            buf[0] = START_COMMAND;
-            if (ipdbg_org_wfg_send(&socket, buf, 1))
-                printf("ERROR: not able to send command");
-
         }
     }
     ipdbg_org_wfg_close(&socket);
