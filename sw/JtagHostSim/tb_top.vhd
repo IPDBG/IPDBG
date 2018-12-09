@@ -45,7 +45,8 @@ architecture structure of tb_top is
             data_up        : out std_logic_vector(7 downto 0);
             data_out       : out std_logic_vector;
             first_sample   : out std_logic;
-            sample_enable  : in  std_logic
+            sample_enable  : in  std_logic;
+            output_active  : out std_logic
         );
     end component WaveformGeneratorTop;
 
@@ -123,10 +124,11 @@ architecture structure of tb_top is
     signal count_max          : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
 
     signal first_sample       : std_logic;
-    signal data_out_wfg       : std_logic_vector(DATA_WIDTH-2 downto 0);
+    signal data_out_wfg       : std_logic_vector(31 downto 0);
     signal data_in_la         : std_logic_vector(17 downto 0);
 
     signal sample_enable      : std_logic;
+    signal output_active      : std_logic;
 
 begin
     process begin
@@ -199,10 +201,8 @@ begin
             sample_enable  => sample_enable,
             probe          => data_in_la
         );
-    sample_enable <= -- not data_out_wfg(0);
-                     not data_out_wfg(1);
-                     -- '1'; --
-    data_in_la <= data_out_wfg & data_out_wfg(10 downto 4);
+    sample_enable <= not data_out_wfg(18);
+    data_in_la <= data_out_wfg(17 downto 0);
     wfg: component WaveformGeneratorTop
         generic map(
             ADDR_WIDTH  => 9,
@@ -219,7 +219,8 @@ begin
             data_up        => data_up_wfg,
             data_out       => data_out_wfg,
             first_sample   => first_sample,
-            sample_enable  => '1'
+            sample_enable  => '1',
+            output_active  => output_active
         );
     test_iov: block
         signal probe_inputs_iov   : std_logic_vector(17 downto 0);

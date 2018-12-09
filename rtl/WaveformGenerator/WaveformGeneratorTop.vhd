@@ -23,7 +23,8 @@ entity WaveformGeneratorTop is
         -- WaveformGenerator interface
         data_out       : out std_logic_vector;
         first_sample   : out std_logic;
-        sample_enable  : in  std_logic
+        sample_enable  : in  std_logic;
+        output_active  : out std_logic
 
     );
 end entity WaveformGeneratorTop;
@@ -123,6 +124,8 @@ begin
             enable                 => enable_me,
             addr_of_last_sample    => addr_of_last_sample
         );
+
+    output_active <= enable_me;
 
     Memory: component WaveformGeneratorMemory
         generic map(
