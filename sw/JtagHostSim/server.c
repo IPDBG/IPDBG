@@ -172,7 +172,7 @@ int jtagHostLoop()
                         }
                         if (ret == FALSE)
                         {
-                            printf("closing connection %d", serv_ctx->channel_number);
+                            //printf("closing connection %d", serv_ctx->channel_number);
                             apr_socket_t *sock = ret_pfd[i].desc.s;
 
                             apr_socket_close(sock);
@@ -249,7 +249,7 @@ static int do_accept(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_socket_t 
 
         apr_pollset_add(pollset, &pfd); //Add a socket or file descriptor to a pollset
 
-        printf("connected client to channel %d\n", serv_ctx->channel_number);
+        //printf("connected client to channel %d\n", serv_ctx->channel_number);
     }
     return TRUE;
 }
@@ -272,7 +272,7 @@ static int connection_tx_cb(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_so
 
 static int connection_rx_cb(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_socket_t *sock)
 {
-    printf("connection_rx_cb()\n");
+    //printf("connection_rx_cb()\n");
 
 
     apr_size_t len = BUFSIZE - serv_ctx->down_buf_level;
@@ -292,10 +292,10 @@ static int connection_rx_cb(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_so
     else
     {
         /* we got data */
-        printf("rx(%d): ", serv_ctx->channel_number);
-        for(size_t i = 0; i < len ;++i)
-            printf("0x%02x ", (int)serv_ctx->down_buf[serv_ctx->down_buf_level+i]);
-        printf("\n");
+//        printf("rx(%d): ", serv_ctx->channel_number);
+//        for(size_t i = 0; i < len ;++i)
+//            printf("0x%02x ", (int)serv_ctx->down_buf[serv_ctx->down_buf_level+i]);
+//        printf("\n");
 
         serv_ctx->down_buf_level += len;
 

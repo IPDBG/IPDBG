@@ -48,10 +48,10 @@ architecture tab of LogicAnalyserController is
 
     constant HOST_WORD_SIZE : natural := 8;
 
-    constant data_size      : natural := (DATA_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;                                  -- Berechnung wie oft dass Mask, Value, Mask_last und Value_last eingelesen werden müssen.
-    constant addr_size      : natural := (ADDR_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;                                  -- Berechnung wie oft, dass das Delay für das Memory eingelesen werden muss.
-    constant DATA_WIDTH_slv : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(DATA_WIDTH, 32)); -- DATA_WIDTH_slv = Wert der Übertragung des DATA_WIDTH
-    constant ADDR_WIDTH_slv : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(ADDR_WIDTH, 32)); -- DATA_WIDTH_slv = Wert der Übertragung des DATA_WIDTH
+    constant data_size      : natural := (DATA_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;                                  -- Berechnung wie oft dass Mask, Value, Mask_last und Value_last eingelesen werden muss.
+    constant addr_size      : natural := (ADDR_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;                                  -- Berechnung wie oft, dass das Delay fÃ¼r das Memory eingelesen werden muss.
+    constant DATA_WIDTH_slv : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(DATA_WIDTH, 32)); -- DATA_WIDTH_slv = Wert der Uebertragung des DATA_WIDTH
+    constant ADDR_WIDTH_slv : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(ADDR_WIDTH, 32)); -- DATA_WIDTH_slv = Wert der Uebertragung des DATA_WIDTH
 
     ------------------------------------------------------------------Befehle um den LogicAnalyser zu bedienen-------------------------------------------------------------------------------------------------------------------------------------------------------------
     constant activate_trigger_command : std_logic_vector := "11111110";--FE
@@ -83,7 +83,7 @@ architecture tab of LogicAnalyserController is
     type Output        is(init, Zwischenspeicher, shift, get_next_data);
     signal init_Output : Output;
 
-    --Zähler
+    --ZÃ¤hler
     signal data_size_s              : natural range 0 to data_size;
     signal addr_size_s              : natural range 0 to addr_size;
 
@@ -113,6 +113,26 @@ architecture tab of LogicAnalyserController is
     signal set_mask_edge_next_byte  : std_logic;
 
     signal data_up_from_la_data     : std_logic_vector(data_up'range);
+
+    signal data_dwn_valid_reg       : std_logic;
+    signal data_dwn_reg             : std_logic_vector(7 downto 0);
+
+    signal get_id_active            : std_logic;
+    signal get_sizes_active         : std_logic;
+    signal activate_trigger_active  : std_logic;
+    signal fire_trigger_active      : std_logic;
+    signal config_trigger_active    : std_logic;
+    signal logic_analyser_a         : std_logic;
+    signal set_delay_active         : std_logic;
+    signal select_curr_active       : std_logic;
+    signal select_last_active       : std_logic;
+    signal select_edge_active       : std_logic;
+    signal set_value_curr_active    : std_logic;
+    signal set_mask_curr_active     : std_logic;
+    signal set_mask_last_active     : std_logic;
+    signal set_value_last_active    : std_logic;
+    signal set_edge_mask_active     : std_logic;
+
 begin
     async_init: if ASYNC_RESET generate begin
         arst <= rst;
@@ -122,6 +142,103 @@ begin
         arst <= '0';
         srst <= rst;
     end generate sync_init;
+
+
+    data_dwn_registers: process(clk, arst)
+        procedure reset_assignments is begin
+            data_dwn_valid_reg <= '0';
+            data_dwn_reg <= (others => '-');
+        end procedure reset_assignments;
+    begin
+        if arst = '1' then
+            reset_assignments;
+        elsif rising_edge(clk) then
+            if srst = '1' then
+                reset_assignments;
+            else
+                if ce = '1' then
+                    data_dwn_valid_reg <= data_dwn_valid;
+                    data_dwn_reg       <= data_dwn;
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process(clk) begin
+        if rising_edge(clk) then
+            if ce = '1' then
+                get_id_active <= '0';
+                get_sizes_active <= '0';
+                activate_trigger_active <= '0';
+                fire_trigger_active <= '0';
+                config_trigger_active <= '0';
+                logic_analyser_a <= '0';
+                set_delay_active <= '0';
+                select_curr_active <= '0';
+                select_last_active <= '0';
+                select_edge_active <= '0';
+                set_value_curr_active <= '0';
+                set_mask_curr_active <= '0';
+                set_mask_last_active <= '0';
+                set_value_last_active <= '0';
+                set_edge_mask_active <= '0';
+
+                if data_dwn_valid = '1' then
+                    if data_dwn = get_id_command then
+                        get_id_active <= '1';
+                    end if;
+                    if data_dwn = get_sizes_command then
+                        get_sizes_active <= '1';
+                    end if;
+                    if data_dwn = activate_trigger_command then
+                        activate_trigger_active <= '1';
+                    end if;
+                    if data_dwn = fire_trigger_command then
+                        fire_trigger_active <= '1';
+                    end if;
+                    if data_dwn = config_trigger_command then
+                        config_trigger_active <= '1';
+                    end if;
+                    if data_dwn = logic_analyser_c then
+                        logic_analyser_a <= '1';
+                    end if;
+                    if data_dwn = set_delay_command then
+                        set_delay_active <= '1';
+                    end if;
+
+                    if data_dwn = select_curr_command then
+                        select_curr_active <= '1';
+                    end if;
+                    if data_dwn = select_last_command then
+                        select_last_active <= '1';
+                    end if;
+                    if data_dwn = select_edge_command then
+                        select_edge_active <= '1';
+                    end if;
+
+                    if data_dwn = set_mask_curr_command then
+                        set_mask_curr_active <= '1';
+                    end if;
+                    if data_dwn = set_value_curr_command then
+                        set_value_curr_active <= '1';
+                    end if;
+
+                    if data_dwn = set_mask_last_command then
+                        set_mask_last_active <= '1';
+                    end if;
+                    if data_dwn = set_value_last_command then
+                        set_value_last_active <= '1';
+                    end if;
+
+                    if data_dwn = set_edge_mask_command then
+                        set_edge_mask_active <= '1';
+                    end if;
+
+                end if;
+            end if;
+        end if;
+    end process;
+
 
     process (clk, arst)
         procedure reset_assignments is begin
@@ -165,7 +282,7 @@ begin
                     set_mask_last_next_byte     <= '0';
                     set_value_last_next_byte    <= '0';
                     set_mask_edge_next_byte     <= '0';
-                    data_dwn_delayed            <= data_dwn;
+                    data_dwn_delayed            <= data_dwn_reg;
                     data_up_valid <= '0';
                     case state is
                     when init =>
@@ -178,35 +295,30 @@ begin
                             theend <= '0';
                         end if;
 
-                        if data_dwn_valid = '1' then
-                            if data_dwn = get_id_command then
+                        if get_id_active = '1' then
                                 state <= return_id;
-                            end if;
+                        end if;
 
+                        if get_sizes_active = '1' then
+                            sizes_temporary <= (others => '0');
+                            state <= return_sizes;
+                            import_ADDR <= '0';
+                        end if;
 
-                            if data_dwn = get_sizes_command then
-                                --x <= '0';
-                                sizes_temporary <= (others => '0');
-                                state <= return_sizes;
-                                import_ADDR <= '0';
-                            end if;
+                        if activate_trigger_active = '1' then
+                            trigger_active <= '1';
+                        end if;
 
-                            if data_dwn = activate_trigger_command then
-                                trigger_active <= '1';
-                            end if;
+                        if fire_trigger_active = '1' then
+                            fire_trigger <= '1';
+                        end if;
 
-                            if data_dwn = fire_trigger_command then
-                                fire_trigger <= '1';
-                            end if;
+                        if config_trigger_active = '1' then
+                            state <= config_trigger;
+                        end if;
 
-                            if data_dwn = config_trigger_command then
-                                state <= config_trigger;
-                            end if;
-
-                            if data_dwn = logic_analyser_c then
-                                state <= logic_analyser;
-                            end if;
-
+                        if logic_analyser_a = '1' then
+                            state <= logic_analyser;
                         end if;
 
                     when return_id =>
@@ -301,15 +413,12 @@ begin
 
                     when logic_analyser =>
                         addr_size_s <= 0;
-                        if data_dwn_valid = '1' then
-                            if data_dwn = set_delay_command then
-                                state <= set_delay;
-                            end if;
-
+                        if set_delay_active = '1' then
+                            state <= set_delay;
                         end if;
 
                     when set_delay =>
-                        if data_dwn_valid = '1' then
+                        if data_dwn_valid_reg = '1' then
                             if addr_size_s + 1 = addr_size  then
                                 state <= init;
                             end if;
@@ -319,36 +428,29 @@ begin
                         end if;
 
                     when config_trigger =>
-                        if data_dwn_valid = '1' then
-                            if data_dwn = select_curr_command then
-                                state <= select_config_trigger_curr;
-                            end if;
-
-                            if data_dwn = select_last_command then
-                                state <= select_config_trigger_last;
-                            end if;
-
-                            if data_dwn = select_edge_command then
-                                state <= select_config_trigger_edge;
-                            end if;
+                        if select_curr_active = '1' then
+                            state <= select_config_trigger_curr;
                         end if;
 
+                        if select_last_active = '1' then
+                            state <= select_config_trigger_last;
+                        end if;
+
+                        if select_edge_active = '1' then
+                            state <= select_config_trigger_edge;
+                        end if;
                     when select_config_trigger_curr =>
                         data_size_s <= 0;
 
-                        if data_dwn_valid = '1' then
-                            if data_dwn = set_mask_curr_command then
-                                state <= set_mask_curr;
-                            end if;
-
-                            if data_dwn = set_value_curr_command then
-                                state <= set_value_curr;
-                            end if;
-
+                        if set_mask_curr_active = '1' then
+                            state <= set_mask_curr;
                         end if;
 
+                        if set_value_curr_active = '1' then
+                            state <= set_value_curr;
+                        end if;
                     when set_mask_curr =>
-                        if data_dwn_valid = '1' then
+                        if data_dwn_valid_reg = '1' then
                             data_size_s <= data_size_s + 1;
                             set_mask_curr_next_byte <= '1';
 
@@ -358,7 +460,7 @@ begin
                         end if;
 
                     when set_value_curr =>
-                        if data_dwn_valid = '1' then
+                        if data_dwn_valid_reg = '1' then
                             data_size_s <= data_size_s + 1;
                             set_value_curr_next_byte <= '1';
 
@@ -369,18 +471,15 @@ begin
 
                     when select_config_trigger_last =>
                         data_size_s <= 0;
-                        if data_dwn_valid = '1' then
-                            if data_dwn = set_mask_last_command then
-                                state <= set_mask_last;
-                            end if;
-
-                            if data_dwn = set_value_last_command then
-                                state <= set_value_last;
-                            end if;
+                        if set_mask_last_active = '1' then
+                            state <= set_mask_last;
                         end if;
 
+                        if set_value_last_active = '1' then
+                            state <= set_value_last;
+                        end if;
                     when set_mask_last =>
-                        if data_dwn_valid = '1' then
+                        if data_dwn_valid_reg = '1' then
                             data_size_s <= data_size_s + 1;
                             set_mask_last_next_byte  <= '1';
 
@@ -390,7 +489,7 @@ begin
                         end if;
 
                     when set_value_last =>
-                        if data_dwn_valid = '1' then
+                        if data_dwn_valid_reg = '1' then
                             data_size_s <= data_size_s + 1;
                             set_value_last_next_byte <= '1';
 
@@ -401,13 +500,11 @@ begin
 
                     when select_config_trigger_edge =>
                         data_size_s <= 0;
-                        if data_dwn_valid = '1' then
-                            if data_dwn = set_edge_mask_command then
-                                state <= set_edge_mask;
-                            end if;
+                        if set_edge_mask_active = '1' then
+                            state <= set_edge_mask;
                         end if;
                     when set_edge_mask =>
-                        if data_dwn_valid = '1' then
+                        if data_dwn_valid_reg = '1' then
                             data_size_s <= data_size_s + 1;
                             set_mask_edge_next_byte <= '1';
 

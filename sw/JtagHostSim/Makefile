@@ -27,14 +27,16 @@ cleanall:
 directories:
 	@mkdir -p $(OBJDIR)
 
-JtagHostSim: $(OBJDIR)/jtaghost.o $(OBJDIR)/main.o $(OBJDIR)/server.o e~tb_top.o
-	$(CXX) $(LDFLAGS) -o JtagHostSim $(OBJDIR)/jtaghost.o $(OBJDIR)/main.o $(OBJDIR)/server.o `$(GHDL) --list-link $(GHDLFLAGS) tb_top` -pthread -lboost_system -lapr-1 $(LDLIBS)
+JtagHostSim: $(OBJDIR)/jtaghost.o $(OBJDIR)/main.o $(OBJDIR)/server.o e~tb_top.o $(OBJDIR)/JtagHostLoop.o
+	$(CXX) $(LDFLAGS) -o JtagHostSim $(OBJDIR)/jtaghost.o $(OBJDIR)/main.o $(OBJDIR)/server.o $(OBJDIR)/JtagHostLoop.o `$(GHDL) --list-link $(GHDLFLAGS) tb_top` -pthread -lboost_system -lapr-1 $(LDLIBS)
 
 # Targets to analyze/compile files
 $(OBJDIR)/jtaghost.o: jtaghost.c
 	$(CC) $(CFLAGS) -c jtaghost.c -o $(OBJDIR)/jtaghost.o
 $(OBJDIR)/main.o: main.cpp
 	$(CXX) $(CXXFLAGS) -I/usr/include/apr-1 -c main.cpp -o $(OBJDIR)/main.o
+$(OBJDIR)/JtagHostLoop.o: JtagHostLoop.cpp
+	$(CXX) $(CXXFLAGS) -c JtagHostLoop.cpp -o $(OBJDIR)/JtagHostLoop.o
 $(OBJDIR)/server.o: server.c
 	$(CC) $(CFLAGS) -I/usr/include/apr-1 -c server.c -o $(OBJDIR)/server.o
 

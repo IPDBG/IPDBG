@@ -48,6 +48,8 @@
 		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorMemory.vhd" />
 		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorTop.vhd" />
 		<Unit filename="../../rtl/common/IpdbgEscaping.vhd" />
+		<Unit filename="JtagHostLoop.cpp" />
+		<Unit filename="JtagHostLoop.h" />
 		<Unit filename="JtagHub_sim.vhd">
 			<Option compile="1" />
 		</Unit>
