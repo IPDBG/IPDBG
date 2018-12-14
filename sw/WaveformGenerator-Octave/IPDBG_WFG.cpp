@@ -147,17 +147,17 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
 
             if ( commandStr == std::string("start") )/// send start
             {
-                printf("sending start");
+                printf("sending start\n");
                 buf[0] = START_COMMAND;
             }
             else                                     /// send stop
             {
-                printf("sending stop");
+                printf("sending stop\n");
                 buf[0] = STOP_COMMAND;
             }
 
             if (ipdbg_org_wfg_send(&socket, buf, 1))
-                printf("ERROR: not able to send command");
+                printf("ERROR: not able to send command\n");
         }
         else
         {
