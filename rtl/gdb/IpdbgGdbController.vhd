@@ -59,6 +59,8 @@ architecture behavioral of IpdbgGdbController is
     signal fifo_read_data_enable  : std_logic;
     signal fifo_read_data         : std_logic_vector(7 downto 0);
 
+    signal TxReady                : std_logic;
+
     signal arst, srst             : std_logic;
     signal ack_wr                 : std_logic;
     signal ack_rd                 : std_logic;
@@ -79,7 +81,6 @@ begin
     begin
 
         break <= break_local and break_enable;
-
         process (clk) begin
             if rising_edge(clk) then
                 break_local <= '0';
@@ -105,15 +106,17 @@ begin
 
     output_wb: block
         signal valid                         : std_logic;
+        signal clear_valid                   : std_logic;
         signal fifo_read_data_enable_delayed : std_logic;
         signal data_o_local                  : std_logic_vector(7 downto 0);
     begin
-        dat_o <= x"00000" & "000" & valid & data_o_local;
+        dat_o <= x"00000" & "00" & TxReady & valid & data_o_local;
 
         process (clk, arst)
             procedure rd_reset_assignment is begin
                 valid <= '0';
                 ack_rd <= '0';
+                clear_valid <= '-';
                 fifo_read_data_enable <= '-';
                 fifo_read_data_enable_delayed <= '-';
             end procedure rd_reset_assignment;
@@ -125,17 +128,20 @@ begin
                     rd_reset_assignment;
                 else
                     fifo_read_data_enable_delayed <= fifo_read_data_enable;
+                    clear_valid <= '0';
+                    ack_rd <= '0';
 
                     if (cyc_i and stb_i) = '1' and we_i = '0' and ack_rd = '0' then
                         ack_rd <= '1';
-                    else
-                        ack_rd <= '0';
+                        if adr_i = "0" then
+                            clear_valid <= '1';
+                        end if;
                     end if;
 
                     if fifo_read_data_enable_delayed = '1' then
                         data_o_local <= fifo_read_data;
                         valid <= '1';
-                    elsif ack_rd = '1' then
+                    elsif clear_valid = '1' then
                         valid <= '0';
                     end if;
 
@@ -154,7 +160,7 @@ begin
         signal empty_delay         : std_logic;
         signal data_up_valid_local : std_logic;
         signal ack_wr_data_buffer  : std_logic;
-        signal data_i_local        :std_logic_vector(7 downto 0 );
+        signal data_i_local        : std_logic_vector(7 downto 0 );
     begin
 
         process (clk, arst)
@@ -174,7 +180,7 @@ begin
                     wr_reset_assignment;
                 else
                     ack_wr_data_buffer <= '0';
-                    if (cyc_i and stb_i) = '1' and we_i = '1' and (empty = '1' or adr_i = "1") and ack_wr = '0' then
+                    if (cyc_i and stb_i) = '1' and we_i = '1' and ack_wr = '0' and (empty = '1' or adr_i = "1") then
                         ack_wr <= '1';
                         if adr_i = "0" then
                             data_i_local <= dat_i(data_i_local'range);
@@ -200,18 +206,19 @@ begin
             end if;
         end process;
         data_up_valid <= data_up_valid_local;
+        TxReady <= empty;
     end block;
 
     our_fifo : component Fifo
         generic map(
-            EXTRA_LEVEL_COUNTER => true,
+            EXTRA_LEVEL_COUNTER => false,
             ASYNC_RESET         => ASYNC_RESET,
             MEM_DEPTH           => 8
         )
         port map(
             clk               => clk,
             rst               => rst,
-            ce                => '1',
+            ce                => ce,
             full              => fifo_full,
             write_data_enable => fifo_write_data_enable,
             write_data        => fifo_write_data,
