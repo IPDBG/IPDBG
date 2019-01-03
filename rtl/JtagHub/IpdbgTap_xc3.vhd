@@ -17,7 +17,7 @@ entity IpdbgTap is
     );
 end entity;
 
-architecture xc3s_BSCAN of IpdbgTap is
+architecture xc3s of IpdbgTap is
 
 begin
 
@@ -36,4 +36,4 @@ begin
         TDO2        =>  '0'      -- Data  input  for  USER2  function
     );
 
-end architecture xc3s_BSCAN;
+end architecture xc3s;

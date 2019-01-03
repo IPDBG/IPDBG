@@ -18,7 +18,7 @@ entity IpdbgTap is
     );
 end entity IpdbgTap;
 
-architecture Structure of IpdbgTap is
+architecture lfe2 of IpdbgTap is
     component jtagc
         generic(
             ER1             : String  := "ENABLED";
@@ -115,4 +115,4 @@ begin
         end if;
     end process;
 
-end Structure;
+end lfe2;

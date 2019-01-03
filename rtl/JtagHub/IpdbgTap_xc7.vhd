@@ -17,7 +17,7 @@ entity IpdbgTap is
     );
 end entity;
 
-architecture SevenSeries_BSCAN2 of IpdbgTap is
+architecture xc7 of IpdbgTap is
 
 begin
 
@@ -39,4 +39,4 @@ begin
         TDO         => tdo      --  Data  input  for  USER1  function
     );
 
-end architecture SevenSeries_BSCAN2;
+end architecture xc7;
