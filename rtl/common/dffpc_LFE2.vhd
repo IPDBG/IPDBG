@@ -14,7 +14,7 @@ entity dffpc is
     );
 end entity dffpc;
 
-architecture LFE2 of dffpc is
+architecture lfe2 of dffpc is
 begin
     FF : FD1P3AX
         port map
@@ -24,4 +24,4 @@ begin
             SP => ce,
             D  => d
         );
-end architecture LFE2;
+end architecture lfe2;

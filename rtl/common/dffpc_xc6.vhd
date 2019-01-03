@@ -14,7 +14,7 @@ entity dffpc is
     );
 end entity dffpc;
 
-architecture dffpc_Virtex6 of dffpc is
+architecture xc6v of dffpc is
 begin
     FF : FDRE
         generic map
@@ -29,4 +29,4 @@ begin
             D  => d,
             R  => '0'
         );
-end architecture dffpc_Virtex6;
+end architecture xc6v;
