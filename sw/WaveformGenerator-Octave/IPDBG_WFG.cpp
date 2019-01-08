@@ -1,13 +1,13 @@
 //
 // mkoctfile IPDBG_WFG.cpp
-
+// on windows : -l
+// mkoctfile IPDBG_WFG.cpp -lws2_32
 
 
 #include <stdio.h>
 #include <stdlib.h>
 
 #ifdef _WIN32
-#define _WIN32_WINNT 0x0501
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
@@ -49,6 +49,9 @@ using namespace std;
 #define SET_NUMBEROFSAMPLES_COMMAND     0xF4
 
 
+#ifdef _WIN32
+    WSADATA wsaData;
+#endif
 
 
 int ipdbg_org_wfg_open(int *socket_handle, string *ipAddrStr, string *portNumberStr);
@@ -98,10 +101,20 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
 
     int socket = -1;
 
+#ifdef _WIN32
+    if (WSAStartup(0x0202, &wsaData) != NO_ERROR)
+    {
+      printf("WSAStartup failed!");
+      return octave_value_list();
+    }
+#endif
     if( ipdbg_org_wfg_open(&socket, &ipAddrStr, &portNumberStr) > 0)
     {
         printf("ERROR: Port not able to open!\n");
-        return octave_value_list ();
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        return octave_value_list();
     }
 
     uint8_t buf[2] = {0xee, 0xee};
@@ -114,7 +127,14 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
         printf("ERROR: not able to send command\n");
 
     uint8_t buf1[8];
-    if (ipdbg_org_wfg_receive(&socket, buf1, 8));
+    int received = ipdbg_org_wfg_receive(&socket, buf1, 8);
+    if (received < 0)
+    {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        return octave_value_list();
+    }
 
     DATA_WIDTH  =  buf1[0]        & 0x000000FF;
     DATA_WIDTH |= (buf1[1] <<  8) & 0x0000FF00;
@@ -211,6 +231,10 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     }
     ipdbg_org_wfg_close(&socket);
 
+#ifdef _WIN32
+    WSACleanup();
+#endif
+
     return octave_value_list();
 }
 
@@ -284,7 +308,8 @@ int ipdbg_org_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize)
 
         if (len < 0)
         {
-            printf("Receive error: %d", errno);
+            printf("Receive error: %d; len = %d\n", errno, len);
+            return len;
         }
         else
         {
@@ -299,11 +324,19 @@ int ipdbg_org_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize)
 int ipdbg_org_wfg_close(int *socket_handle)
 {
     int ret = -1;
+#ifdef _WIN32
+    if (shutdown(*socket_handle, SD_SEND) != SOCKET_ERROR)
+    {
+        char recvbuf[16];
+        int recvbuflen = 16;
+        // Receive until the peer closes the connection
+        while(recv(*socket_handle, recvbuf, recvbuflen, 0) > 0);
+    }
+#endif
     if (close(*socket_handle) >= 0)
         ret = 0;
 
     *socket_handle = -1;
-
     return ret;
 }
 
