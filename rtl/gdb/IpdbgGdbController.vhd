@@ -65,8 +65,6 @@ architecture behavioral of IpdbgGdbController is
     signal ack_wr                 : std_logic;
     signal ack_rd                 : std_logic;
 begin
-    process (clk) begin
-    if ce = '1' then
     gen_arst: if ASYNC_RESET generate begin
         arst <= rst;
         srst <= '0';
