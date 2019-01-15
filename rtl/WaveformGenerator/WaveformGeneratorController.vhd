@@ -10,23 +10,24 @@ entity WaveformGeneratorController is
         ASYNC_RESET          : boolean := true
     );
     port(
-        clk                  : in  std_logic;
-        rst                  : in  std_logic;
-        ce                   : in  std_logic;
+        clk                     : in  std_logic;
+        rst                     : in  std_logic;
+        ce                      : in  std_logic;
 
         ----------------HOST INTERFACE-----------------------
-        data_dwn_valid        : in  std_logic;
-        data_dwn              : in  std_logic_vector(7 downto 0);
-        data_up_ready         : in  std_logic;
-        data_up_valid         : out std_logic;
-        data_up               : out std_logic_vector(7 downto 0);
+        data_dwn_valid          : in  std_logic;
+        data_dwn                : in  std_logic_vector(7 downto 0);
+        data_up_ready           : in  std_logic;
+        data_up_valid           : out std_logic;
+        data_up                 : out std_logic_vector(7 downto 0);
 
-        ---------------Signals from the memory --------------
-        data_samples          : out std_logic_vector(DATA_WIDTH-1 downto 0);
-        data_samples_valid    : out std_logic;
-        data_samples_if_reset : out std_logic;
-        enable                : out std_logic;
-        addr_of_last_sample   : out std_logic_vector(ADDR_WIDTH-1 downto 0)
+        ---------------Signals to the memory --------------
+        data_samples            : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        data_samples_valid      : out std_logic;
+        data_samples_if_reset   : out std_logic;
+        data_samples_last       : out std_logic;
+        start                   : out std_logic;
+        stop                    : out std_logic
     );
 end entity WaveformGeneratorController;
 
@@ -57,15 +58,15 @@ architecture tab of WaveformGeneratorController is
     signal data_size_s                      : natural range 0 to data_size;
     signal addr_size_s                      : natural range 0 to data_size;
     signal data_samples_valid_early         : std_logic;
-    signal setted_numberofsamples_early     : std_logic;
+    signal data_samples_last_early          : std_logic;
     signal counter                          : unsigned(ADDR_WIDTH-1 downto 0);
     signal import_ADDR                      : std_logic;
     signal sizes_temporary                  : std_logic_vector(31 downto 0);
     signal data_out_s                       : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal sample_counter                   : unsigned(ADDR_WIDTH-1 downto 0);
     signal addr_of_last_sample_s            : std_logic_vector(ADDR_WIDTH-1 downto 0);
-    signal setted_numberofsamples           : std_logic;
     signal set_addroflastsample_next_byte   : std_logic;
+    signal addr_of_last_sample_stb_early    : std_logic;
     signal set_dataouts_next_byte           : std_logic;
     signal data_dwn_delayed                 : std_logic_vector(7 downto 0);
     signal arst, srst                       : std_logic;
@@ -92,14 +93,15 @@ begin
             data_up_valid                   <= '0';
             sample_counter                  <= (others => '-');
             data_samples_valid              <= '0';
-            enable                          <= '0';
-            setted_numberofsamples          <= '0';
+            data_samples_last               <= '0';
             data_samples_if_reset           <= '-';
             data_dwn_delayed                <= (others => '-');
             set_addroflastsample_next_byte  <= '0';
             set_dataouts_next_byte          <= '0';
-            setted_numberofsamples_early    <= '0';
             data_samples_valid_early        <= '0';
+            data_samples_last_early         <= '0';
+            start                           <= '-';
+            stop                            <= '-';
         end procedure reset_assignments;
     begin
         if arst = '1' then
@@ -109,20 +111,23 @@ begin
                 reset_assignments;
             else
                 if ce = '1' then
+                    start <= '0';
+                    stop  <= '0';
                     data_dwn_delayed <= data_dwn;
-                    data_samples_valid <= '0';
                     data_samples_valid_early <= '0';
+                    data_samples_last_early <= '0';
                     data_samples_if_reset <= '0';
                     set_addroflastsample_next_byte <= '0';
                     set_dataouts_next_byte <= '0';
+                    addr_of_last_sample_stb_early <= '0';
                     case state is
                     when init =>
                         if data_dwn_valid = '1' then
                             if data_dwn = start_command then
-                                enable <= '1';
+                                start <= '1';
                             end if ;
                             if data_dwn = stop_command then
-                                enable <= '0';
+                                stop <= '1';
                             end if ;
                             if data_dwn = return_sizes_command then
                                 counter <= (others => '0');
@@ -134,13 +139,13 @@ begin
                             if data_dwn = write_samples_command then
                                 data_samples_if_reset <= '1';
                                 sample_counter <= (others => '0');
-                                data_size_s <= 0;
                                 state <= write_samples;
                             end if ;
                             if data_dwn = set_numberofsamples_command then
                                 state <= set_numberofsamples;
-                                addr_size_s <= 0;
                             end if ;
+                            addr_size_s <= 0;
+                            data_size_s <= 0;
                         end if;
 
                     when return_sizes =>
@@ -159,66 +164,62 @@ begin
                                 init_Output <= shift;
                             end if;
                         when shift =>
-                                data_up_valid <= '0';
+                            data_up_valid <= '0';
 
-                                if data_up_ready = '0' then
-                                    init_Output <= Zwischenspeicher;
-                                end if;
+                            if data_up_ready = '0' then
+                                init_Output <= Zwischenspeicher;
+                            end if;
 
-                                if counter = to_unsigned(4, counter'length) then
-                                    if import_ADDR = '0' then
-                                        init_Output <= get_next_data;
-                                    else
-                                        init_Output <= init;
-                                        state <= init;
-                                    end if;
+                            if counter = to_unsigned(4, counter'length) then
+                                if import_ADDR = '0' then
+                                    init_Output <= get_next_data;
+                                else
+                                    init_Output <= init;
+                                    state <= init;
                                 end if;
+                            end if;
 
-                            when get_next_data =>
-                                if data_up_ready = '1' then
-                                    counter <= (others => '0');
-                                    import_ADDR <= '1';
-                                    sizes_temporary <= ADDR_WIDTH_slv;
-                                    init_Output <= Zwischenspeicher;
-                                end if;
-                            end case;
+                        when get_next_data =>
+                            if data_up_ready = '1' then
+                                counter <= (others => '0');
+                                import_ADDR <= '1';
+                                sizes_temporary <= ADDR_WIDTH_slv;
+                                init_Output <= Zwischenspeicher;
+                            end if;
+                        end case;
 
                     when write_samples =>
-                        if setted_numberofsamples = '1' then
-                            if data_dwn_valid = '1' then
-                                set_dataouts_next_byte <= '1';
-                                if (data_size_s + 1 = data_size) then
-                                    data_samples_valid_early <= '1';
-                                    sample_counter <= sample_counter + 1;
-                                    data_size_s <= 0;
-                                    if sample_counter  = unsigned(addr_of_last_sample_s) then
-                                        state <= init;
-                                        setted_numberofsamples_early <= '0';
-                                    end if;
-                                else
-                                    data_size_s <= data_size_s + 1;
+                        if data_dwn_valid = '1' then
+                            set_dataouts_next_byte <= '1';
+                            if (data_size_s + 1 = data_size) then
+                                data_samples_valid_early <= '1';
+                                sample_counter <= sample_counter + 1;
+                                data_size_s <= 0;
+                                if sample_counter  = unsigned(addr_of_last_sample_s) then
+                                    state <= init;
+                                    data_samples_last_early <= '1';
                                 end if;
-
+                            else
+                                data_size_s <= data_size_s + 1;
                             end if;
                         end if;
                     when set_numberofsamples =>
                         if data_dwn_valid = '1' then
                             if (addr_size_s + 1 = addr_size) then
                                 state <= init;
-                                setted_numberofsamples_early <= '1';
+                                addr_of_last_sample_stb_early <= '1';
                             end if;
                             addr_size_s <= addr_size_s + 1;
                             set_addroflastsample_next_byte <= '1';
                         end if;
                     end case;
+                    data_samples_valid <= data_samples_valid_early;
+                    data_samples_last <= data_samples_last_early;
                 end if;
-                setted_numberofsamples <= setted_numberofsamples_early;
-                data_samples_valid <= data_samples_valid_early;
             end if;
         end if;
     end process;
     data_samples <= data_out_s;
-    addr_of_last_sample <= addr_of_last_sample_s;
 
     set_addr_of_last_sample_narrow: if ADDR_WIDTH <= HOST_WORD_SIZE generate begin
         process (clk) begin

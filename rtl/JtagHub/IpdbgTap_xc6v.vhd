@@ -17,7 +17,7 @@ entity IpdbgTap is
     );
 end entity;
 
-architecture BSCAN_VIRTEX_SIX of IpdbgTap is
+architecture xc6v of IpdbgTap is
 
 begin
 
@@ -39,4 +39,4 @@ begin
         TDO         => tdo      --  Data  input  for  USER1  function
     );
 
-end architecture BSCAN_VIRTEX_SIX;
+end architecture xc6v;

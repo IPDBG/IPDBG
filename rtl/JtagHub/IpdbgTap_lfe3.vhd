@@ -2,8 +2,8 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 
 -- synopsys translate_off
-library ecp2;
-use ecp2.components.all;
+library ecp3;
+use ecp3.components.all;
 -- synopsys translate_on
 
 entity IpdbgTap is
@@ -18,8 +18,8 @@ entity IpdbgTap is
     );
 end entity IpdbgTap;
 
-architecture lfe2 of IpdbgTap is
-    component jtagc
+architecture lfe3 of IpdbgTap is
+    component jtage
         generic(
             ER1             : String  := "ENABLED";
             ER2             : string  := "ENABLED"
@@ -28,16 +28,11 @@ architecture lfe2 of IpdbgTap is
             TCK     : in  std_logic;
             TMS     : in  std_logic;
             TDI     : in  std_logic;
-            ITCK    : in  std_logic;
-            ITMS    : in  std_logic;
-            ITDI    : in  std_logic;
-            IJTAGEN : in  std_logic;
             JTDO1   : in  std_logic;
             JTDO2   : in  std_logic;
             TDO     : out std_logic;
-            ITDO    : out std_logic;
-            JTDI    : out std_logic;
             JTCK    : out std_logic;
+            JTDI    : out std_logic;
             JRTI1   : out std_logic;
             JRTI2   : out std_logic;
             JSHIFT  : out std_logic;
@@ -57,25 +52,20 @@ architecture lfe2 of IpdbgTap is
     signal UPDATE_lfe     : std_logic;
     signal JCE1           : std_logic;
     signal JCE1_lfe       : std_logic;
-    
+
     signal drclk_s        : std_logic;
 begin
 
-    JtagcInst: JTAGC
+    JtagcInst: JTAGE
         port map (
             TCK     => '0',
             TMS     => '0',
             TDI     => '0',
-            ITCK    => '0',
-            ITMS    => '0',
-            ITDI    => '0',
-            IJTAGEN => '1',
             JTDO1   => tdo,
             JTDO2   => '0',
             TDO     => open,
-            ITDO    => open,
-            JTDI    => tdi,
             JTCK    => drclk_s,
+            JTDI    => tdi,
             JRTI1   => open,
             JRTI2   => open,
             JSHIFT  => SHIFT_lfe,
@@ -115,4 +105,4 @@ begin
         end if;
     end process;
 
-end lfe2;
+end lfe3;

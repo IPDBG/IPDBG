@@ -31,8 +31,9 @@ architecture structure of tb_top is
 
     component WaveformGeneratorTop is
         generic(
-            ADDR_WIDTH : natural;
-            ASYNC_RESET : boolean
+            ADDR_WIDTH    : natural;
+            ASYNC_RESET   : boolean;
+            DOUBLE_BUFFER : boolean
         );
         port(
             clk            : in  std_logic;
@@ -125,7 +126,7 @@ architecture structure of tb_top is
 
     signal first_sample       : std_logic;
     signal data_out_wfg       : std_logic_vector(31 downto 0);
-    signal data_in_la         : std_logic_vector(17 downto 0);
+    signal data_in_la         : std_logic_vector(7 downto 0);
 
     signal sample_enable      : std_logic;
     signal output_active      : std_logic;
@@ -201,12 +202,13 @@ begin
             sample_enable  => sample_enable,
             probe          => data_in_la
         );
-    sample_enable <= not data_out_wfg(18);
-    data_in_la <= data_out_wfg(17 downto 0);
+    sample_enable <= '1';
+    data_in_la <= data_out_wfg(7 downto 0);
     wfg: component WaveformGeneratorTop
         generic map(
-            ADDR_WIDTH  => 9,
-            ASYNC_RESET => ASYNC_RESET
+            ADDR_WIDTH    => 9,
+            ASYNC_RESET   => ASYNC_RESET,
+            DOUBLE_BUFFER => false
         )
         port map(
             clk            => clk,

@@ -23,7 +23,7 @@ entity IpdbgTap is
     );
 end entity IpdbgTap;
 
-architecture actel of IpdbgTap is
+architecture proascic3 of IpdbgTap is
     component UJTAG
         port(
             UTDO   : in std_logic;
@@ -89,4 +89,4 @@ begin
             UIREG7 => uireg(7)
         );
 
-end architecture actel;
+end architecture proascic3;
