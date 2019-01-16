@@ -41,7 +41,7 @@ begin
             if ce = '1' then
                 if write_enable = '1' then
                     memory(to_integer(unsigned(write_address))) <= write_data;
-                    assert (write_address /= read_address) report "synthesized behavior my differ from behavioral (pre-synthesis) simulation!" severity warning;
+                    assert (write_address /= read_address) report "synthesized behavior may differ from behavioral (pre-synthesis) simulation!" severity warning;
                 end if;
                 read_data_next <= memory(to_integer(unsigned(read_address)));
             end if;
