@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="lm32-gdbstub" />
+		<Option pch_mode="2" />
+		<Option compiler="lm32-gcc" />
+		<Build>
+			<Target title="Release">
+				<Option output="bin/Release/lm32gdbstub.elf" prefix_auto="0" extension_auto="0" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="lm32-gcc" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-Os" />
+					<Add directory="../../rtl/gdb" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="lm32-elf-strip $(TARGET_OUTPUT_FILE)" />
+					<Add after="lm32-elf-size $(TARGET_OUTPUT_FILE)" />
+					<Add after="lm32-elf-objcopy -O binary -j .text -j .data -j .rodata $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_FILE).bin" />
+					<Add after="c:\tools\bin\srec_cat.exe $(TARGET_OUTPUT_FILE).bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).mem -MEM 32" />
+					<Add after="c:\tools\bin\srec_cat.exe $(TARGET_OUTPUT_FILE).bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).rom.vhd -vhdl 4" />
+				</ExtraCommands>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-msign-extend-enabled" />
+			<Add option="-mmultiply-enabled" />
+			<Add option="-mdivide-enabled" />
+			<Add option="-mbarrel-shift-enabled" />
+			<Add option="-fomit-frame-pointer" />
+			<Add option="-fexpensive-optimizations" />
+			<Add option="-Os" />
+			<Add option="-Wextra" />
+			<Add option="-Wall" />
+			<Add option="-Wshadow" />
+			<Add option="-Winit-self" />
+			<Add option="-Wredundant-decls" />
+			<Add option="-Wcast-align" />
+			<Add option="-Wundef" />
+			<Add option="-Wfloat-equal" />
+			<Add option="-Winline" />
+			<Add option="-Wunreachable-code" />
+			<Add option="-Wmissing-declarations" />
+			<Add option="-Wmissing-include-dirs" />
+			<Add option="-W" />
+			<Add option="-ffunction-sections" />
+			<Add option="-D_USE_LSCC_PRINTF_" />
+			<Add option="-D__lm32__" />
+		</Compiler>
+		<Linker>
+			<Add option="-s" />
+			<Add option="-T linker.ld" />
+		</Linker>
+		<Unit filename="crt0.S">
+			<Option weight="0" />
+		</Unit>
+		<Unit filename="gdbstub.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="linker.ld" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger>
+				<remote_debugging>
+					<options conn_type="0" serial_baud="115200" ip_address="localhost" ip_port="1000" additional_cmds="load&#x0A;" />
+				</remote_debugging>
+			</debugger>
+			<lib_finder disable_auto="1" />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
