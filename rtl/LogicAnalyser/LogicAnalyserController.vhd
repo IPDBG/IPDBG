@@ -276,14 +276,14 @@ begin
                 reset_assignments;
             else
                 if ce = '1' then
-                    set_delay_next_byte         <= '0';
-                    set_mask_curr_next_byte     <= '0';
-                    set_value_curr_next_byte    <= '0';
-                    set_mask_last_next_byte     <= '0';
-                    set_value_last_next_byte    <= '0';
-                    set_mask_edge_next_byte     <= '0';
-                    data_dwn_delayed            <= data_dwn_reg;
-                    data_up_valid <= '0';
+                    set_delay_next_byte      <= '0';
+                    set_mask_curr_next_byte  <= '0';
+                    set_value_curr_next_byte <= '0';
+                    set_mask_last_next_byte  <= '0';
+                    set_value_last_next_byte <= '0';
+                    set_mask_edge_next_byte  <= '0';
+                    data_dwn_delayed         <= data_dwn_reg;
+                    data_up_valid            <= '0';
                     case state is
                     when init =>
                         counter <= (others => '0');
@@ -296,7 +296,7 @@ begin
                         end if;
 
                         if get_id_active = '1' then
-                                state <= return_id;
+                            state <= return_id;
                         end if;
 
                         if get_sizes_active = '1' then
