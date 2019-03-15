@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity uart is
     generic (
         DIV_BAUD    : positive := 40;
-        ASYNC_RESET : boolean
+        ASYNC_RESET : boolean := false
     );
     port (
         clk                 : in  std_logic;
@@ -24,22 +24,13 @@ entity uart is
 end uart;
 
 architecture behavioral of uart is
-
-
     signal arst, srst             : std_logic;
-
     signal tx_local               : std_logic;
-
-
     signal baud_clk               : std_logic;
     signal baud_clk_tx            : std_logic;
-
     signal start_bit_valid        : std_logic;
-
 begin
     tx <= tx_local;
-
-
     gen_arst: if ASYNC_RESET generate begin
         arst <= rst;
         srst <= '0';
@@ -51,7 +42,7 @@ begin
     end generate gen_srst;
 
     baud_ce_gen:block
-        signal baud_counter    : natural range 0 to DIV_BAUD-1;
+        signal baud_counter  : natural range 0 to DIV_BAUD-1;
     begin
         gen_baud_clk: process(clk) begin
             if rising_edge(clk) then
@@ -67,12 +58,20 @@ begin
     end block;
 
     receive_data : block
-
         type rx_states is (
             idle,
             rx_data,
             send
         );
+            component dffpc is
+            port(
+                clk : in  std_logic;
+                ce  : in  std_logic;
+                d   : in  std_logic;
+                q   : out std_logic
+            );
+        end component dffpc;
+
         signal rx_state         : rx_states := idle;
         signal rx_data_vector   : std_logic_vector(7 downto 0);
         signal data_lvl_counter : natural range 0 to 16;
@@ -83,15 +82,6 @@ begin
         signal rx_synced        : std_logic;
         signal d                : std_logic;
         signal q                : std_logic;
-
-        component dffpc is
-            port(
-                clk : in  std_logic;
-                ce  : in  std_logic;
-                d   : in  std_logic;
-                q   : out std_logic
-            );
-        end component dffpc;
     begin
         rx_notsynced(0) <=rx ;
         mff_flops: for i in 0 to 3 generate begin
