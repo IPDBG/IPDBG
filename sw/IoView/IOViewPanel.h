@@ -20,6 +20,7 @@
 #include <wx/settings.h>
 #include <wx/panel.h>
 #include <wx/socket.h>
+#include <wx/textctrl.h>
 
 #include "IOViewObserver.h"
 
@@ -41,23 +42,26 @@ public:
     ~IOViewPanel();
 
     void setLeds(uint8_t *buffer, size_t len);
-    void setOutputs(unsigned int outputs);
-    void setInputs(unsigned int inputs);
+    void initOutputs(unsigned int numberOfOutputs);
+    void initInputs(unsigned int numberOfInputs);
 
 private:
     void onCheckBox(wxCommandEvent& event);
 
-    uint32_t NumberOfInputs;
-    uint32_t NumberOfOutputs;
-    IOViewPanelObserver *observer;
+    uint32_t numberOfInputs_;
+    uint32_t numberOfOutputs_;
+    IOViewPanelObserver *observer_;
 
-    wxBoxSizer* mainSizer;
-    wxStaticBoxSizer* sbLedsSizer;
-    wxStaticBoxSizer* sbCBoxesSizer;
+    wxBoxSizer* mainSizer_;
+    wxBoxSizer* bInputLedsSizer_;
+    wxBoxSizer* bInputTextSizer_;
+    wxStaticBoxSizer* sbOutputsSizer_;
 
 protected:
-    std::vector<wxCheckBox*> checkBoxes;
-    std::vector<awxLed*> leds;
+    std::vector<wxCheckBox*> outputCheckBoxes_;
+    std::vector<awxLed*> inputLeds_;
+
+    wxTextCtrl *inputText_;
 
     DECLARE_EVENT_TABLE()
 

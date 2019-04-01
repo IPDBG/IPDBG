@@ -102,8 +102,8 @@ void IOViewFrame::visualizeInputs(uint8_t *buffer, size_t len)
 
 void IOViewFrame::setPortWidths(unsigned int inputs, unsigned int outputs)
 {
-    mainPanel->setInputs(inputs);
-    mainPanel->setOutputs(outputs);
+    mainPanel->initInputs(inputs);
+    mainPanel->initOutputs(outputs);
 }
 
 void IOViewFrame::setOutput(uint8_t *buffer, size_t len)
