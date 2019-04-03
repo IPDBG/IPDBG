@@ -1,11 +1,11 @@
-#ifndef IPDBG_GDB_CONTROLLER_H_
-#define IPDBG_GDB_CONTROLLER_H_
+#ifndef IPDBG_2_WB_H_
+#define IPDBG_2_WB_H_
 
 #define TxReady         0x00000200   //empty
 #define RxValid         0x00000100   //valid
 #define BreakEn         0x00000001
 
-struct IpdbgControllerRegister_st
+struct ipdbg2WbRegister_st
 {
     union{
         volatile unsigned int TxData;
@@ -14,5 +14,6 @@ struct IpdbgControllerRegister_st
     volatile unsigned int ControlBits;
 };
 
-#define ipdbgControllerRegister  ((volatile struct IpdbgControllerRegister_st*)    0x80000000)
+#define ipdbg2WbRegister  ((volatile struct ipdbg2WbRegister_st*)    0x80000000)
+
 #endif

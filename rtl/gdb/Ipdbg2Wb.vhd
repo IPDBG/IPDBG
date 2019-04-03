@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 
-entity IpdbgGdbController is
+entity Ipdbg2Wb is
     generic(
          ASYNC_RESET : boolean
     );
@@ -29,10 +29,10 @@ entity IpdbgGdbController is
         data_up_valid           : out std_logic;
         data_up                 : out std_logic_vector(7 downto 0)
     );
-end entity IpdbgGdbController;
+end entity Ipdbg2Wb;
 
 
-architecture behavioral of IpdbgGdbController is
+architecture behavioral of Ipdbg2Wb is
     component Fifo is
         generic(
             EXTRA_LEVEL_COUNTER : boolean;
@@ -65,6 +65,7 @@ architecture behavioral of IpdbgGdbController is
     signal ack_wr                 : std_logic;
     signal ack_rd                 : std_logic;
 begin
+
     gen_arst: if ASYNC_RESET generate begin
         arst <= rst;
         srst <= '0';
