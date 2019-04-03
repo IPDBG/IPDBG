@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity uart is
     generic (
         DIV_BAUD    : positive := 40;
-        ASYNC_RESET : boolean := false
+        ASYNC_RESET : boolean
     );
     port (
         clk                 : in  std_logic;
