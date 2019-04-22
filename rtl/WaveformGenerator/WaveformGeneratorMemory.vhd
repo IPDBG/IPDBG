@@ -161,7 +161,7 @@ begin
             );
 
         mem2: if DOUBLE_BUFFER generate begin
-            samples : component PdpRam
+            samples2 : component PdpRam
                 generic map
                 (
                     OUTPUT_REG     => RAM_OUTPUT_REG
