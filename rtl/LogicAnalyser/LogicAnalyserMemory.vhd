@@ -60,7 +60,7 @@ architecture tab of LogicAnalyserMemory is
     constant counter_minimum : unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
 
     --State machine
-    type states_t            is(idle, armed, wait_trigger, fill_up, drain, drain_handshake);
+    type states_t            is(idle, armed, wait_trigger, fill_up, drain, drain_handshake, wait_ack_finish);
     signal buffering_state   : states_t;
 
     signal write_data        : std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -126,7 +126,7 @@ begin
                             write_enable <= '1';
                             counter <= counter + 1;
                             if counter = delay_s then -- ignoring trigger to fill buffer to requested minimum
-                                buffering_state <= wait_trigger ;
+                                buffering_state <= wait_trigger;
                             end if;
                         end if;
 
@@ -169,13 +169,18 @@ begin
                             data_valid <= '0';
                             read_address <= read_address + 1;
                             if counter = counter_minimum then
-                                buffering_state <= idle;
+                                buffering_state <= wait_ack_finish;
                                 finish <= '1';
                             else
                                 buffering_state <= drain;
                             end if;
                         end if;
                         data_ready <= (others => '0');
+                    when wait_ack_finish =>
+                        -- finish has been pulsed, wait until trigger_active = '0'
+                        if trigger_active = '0' then
+                            buffering_state <= idle;
+                        end if;
                     end case;
                     if trigger_active = '0' then
                         buffering_state <= idle;
