@@ -119,6 +119,7 @@ begin
                         delay_s <= unsigned(delay);
                         if trigger_active = '1' then -- wait until trigger is active
                             buffering_state <= armed;
+                            --report "delay is " & integer'image(to_integer(unsigned(delay)));
                         end if;
 
                     when armed =>
@@ -144,7 +145,7 @@ begin
                             write_enable <= '1';
                             counter <= counter + 1;
                             if counter = counter_maximum  then
-                                read_address <= write_address + 1;
+                                read_address <= write_address + 2;
                                 buffering_state <= drain;
                                 full <= '1';
                             end if;

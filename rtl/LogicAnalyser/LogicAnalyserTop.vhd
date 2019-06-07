@@ -141,13 +141,14 @@ architecture structure of LogicAnalyserTop is
     signal data_in_uesc       : std_logic_vector(7 downto 0);
     signal reset              : std_logic;
 
-
+    signal probe_dlyd         : std_logic_vector(DATA_WIDTH-1 downto 0);
 begin
 
     combine_trigger: process (clk) begin --! combines "manual" and configurable trigger
         if rising_edge(clk) then
             if ce = '1' then
                 if sample_enable = '1' then
+                    probe_dlyd <= probe;
                     trigger <= fire_trigger_cltrl or trigger_logic;
                 end if;
             end if;
@@ -166,7 +167,7 @@ begin
             rst               => reset,
             ce                => ce,
             sample_enable     => sample_enable,
-            probe             => probe,
+            probe             => probe_dlyd,
             trigger_active    => trigger_active,
             trigger           => trigger,
             full              => full,
