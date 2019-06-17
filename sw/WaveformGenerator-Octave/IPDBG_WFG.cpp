@@ -1,6 +1,7 @@
-//
+// linux:
 // mkoctfile IPDBG_WFG.cpp
-// on windows : -l
+//
+// windows:
 // mkoctfile IPDBG_WFG.cpp -lws2_32
 
 
@@ -54,10 +55,10 @@ using namespace std;
 #endif
 
 
-int ipdbg_org_wfg_open(int *socket_handle, string *ipAddrStr, string *portNumberStr);
-int ipdbg_org_wfg_send(int *socket_handle, const uint8_t *buf, size_t len);
-int ipdbg_org_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize);
-int ipdbg_org_wfg_close(int *socket_handle);
+int ipdbg_wfg_open(int *socket_handle, string *ipAddrStr, string *portNumberStr);
+int ipdbg_wfg_send(int *socket_handle, const uint8_t *buf, size_t len);
+int ipdbg_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize);
+int ipdbg_wfg_close(int *socket_handle);
 int send_escaping(int *socket_handle, uint8_t *dataToSend, int length);
 
 DEFUN_DLD (IPDBG_WFG,args,nargout,
@@ -108,7 +109,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
       return octave_value_list();
     }
 #endif
-    if( ipdbg_org_wfg_open(&socket, &ipAddrStr, &portNumberStr) > 0)
+    if( ipdbg_wfg_open(&socket, &ipAddrStr, &portNumberStr) > 0)
     {
         printf("ERROR: Port not able to open!\n");
 #ifdef _WIN32
@@ -118,16 +119,16 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     }
 
     uint8_t buf[2] = {0xee, 0xee};
-    if (ipdbg_org_wfg_send(&socket, buf, 2)>0)
+    if (ipdbg_wfg_send(&socket, buf, 2)>0)
         printf("ERROR: not able to send reset\n");
 
     /// get sizes
     buf[0] = RETURN_SIZES_COMMAND;
-    if(ipdbg_org_wfg_send(&socket, buf, 1))
+    if(ipdbg_wfg_send(&socket, buf, 1))
         printf("ERROR: not able to send command\n");
 
     uint8_t buf1[8];
-    int received = ipdbg_org_wfg_receive(&socket, buf1, 8);
+    int received = ipdbg_wfg_receive(&socket, buf1, 8);
     if (received < 0)
     {
 #ifdef _WIN32
@@ -176,7 +177,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
                 buf[0] = STOP_COMMAND;
             }
 
-            if (ipdbg_org_wfg_send(&socket, buf, 1))
+            if (ipdbg_wfg_send(&socket, buf, 1))
                 printf("ERROR: not able to send command\n");
         }
         else
@@ -187,7 +188,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
 
             ///set number of samples
             buf[0] = SET_NUMBEROFSAMPLES_COMMAND;
-            if (ipdbg_org_wfg_send(&socket, buf, 1)>0)
+            if (ipdbg_wfg_send(&socket, buf, 1)>0)
                 printf("ERROR: not able to send command\n");
 
             if(limit_samples>limit_samples_max)
@@ -207,7 +208,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
 
                 /// write samples
                 buf[0] = WRITE_SAMPLES_COMMAND;
-                if (ipdbg_org_wfg_send(&socket, buf, 1)>0)
+                if (ipdbg_wfg_send(&socket, buf, 1)>0)
                     printf("ERROR: not able to send command");
 
                 for(unsigned int i = 0; i < limit_samples; i++)
@@ -224,12 +225,12 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
 
                 ///send start
                 buf[0] = START_COMMAND;
-                if (ipdbg_org_wfg_send(&socket, buf, 1))
+                if (ipdbg_wfg_send(&socket, buf, 1))
                     printf("ERROR: not able to send command");
             }
         }
     }
-    ipdbg_org_wfg_close(&socket);
+    ipdbg_wfg_close(&socket);
 
 #ifdef _WIN32
     WSACleanup();
@@ -238,7 +239,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     return octave_value_list();
 }
 
-int ipdbg_org_wfg_open(int *socket_handle, string *ipAddrStr, string *portNumberStr)
+int ipdbg_wfg_open(int *socket_handle, string *ipAddrStr, string *portNumberStr)
 {
     struct addrinfo hints;
     struct addrinfo *results, *res;
@@ -277,7 +278,7 @@ int ipdbg_org_wfg_open(int *socket_handle, string *ipAddrStr, string *portNumber
 }
 
 
-int ipdbg_org_wfg_send(int *socket_handle, const uint8_t *buf, size_t len)
+int ipdbg_wfg_send(int *socket_handle, const uint8_t *buf, size_t len)
 {
     int out;
     out = send(*socket_handle, (char*)buf, len, 0);
@@ -296,7 +297,7 @@ int ipdbg_org_wfg_send(int *socket_handle, const uint8_t *buf, size_t len)
 }
 
 
-int ipdbg_org_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize)
+int ipdbg_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize)
 {
     int received = 0;
 
@@ -321,7 +322,7 @@ int ipdbg_org_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize)
 }
 
 
-int ipdbg_org_wfg_close(int *socket_handle)
+int ipdbg_wfg_close(int *socket_handle)
 {
     int ret = -1;
 #ifdef _WIN32
@@ -350,17 +351,17 @@ int send_escaping(int *socket_handle, uint8_t *dataToSend, int length)
         {
             uint8_t escapeSymbol = ESCAPE_SYMBOL;
 
-            ipdbg_org_wfg_send(socket_handle, &escapeSymbol, 1);
+            ipdbg_wfg_send(socket_handle, &escapeSymbol, 1);
         }
 
         if ( payload == (uint8_t)ESCAPE_SYMBOL )
         {
             uint8_t escapeSymbol = ESCAPE_SYMBOL;
 
-            ipdbg_org_wfg_send(socket_handle, &escapeSymbol, 1);
+            ipdbg_wfg_send(socket_handle, &escapeSymbol, 1);
         }
 
-        ipdbg_org_wfg_send(socket_handle, &payload, 1);
+        ipdbg_wfg_send(socket_handle, &payload, 1);
 
     }
     return 0;
