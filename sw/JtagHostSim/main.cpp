@@ -10,8 +10,8 @@ void ghdl_run()
 {
     std::cout << "calling the vhdl simulator!" << std::endl;
     //char *ghdl_args[] = {(char*)"uut", (char*)"--stop-time=5000ns", (char*)"--assert-level=failure", (char*)"--wave=wave.ghw"};
-    char *ghdl_args[] = {(char*)"tb_top"};
-    ghdl_main(1, ghdl_args);
+    char *ghdl_args[] = {(char*)"tb_top", (char*)"--wave=wave.ghw"};
+    ghdl_main(2, ghdl_args);
 
     return;
 }

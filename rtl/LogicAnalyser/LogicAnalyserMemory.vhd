@@ -120,7 +120,11 @@ begin
                         if trigger_active = '1' then -- wait until trigger is active
                             buffering_state <= armed;
                             --report "delay is " & integer'image(to_integer(unsigned(delay)));
+                            if unsigned('0' & delay) = counter_minimum then
+                                buffering_state <= wait_trigger;
+                            end if;
                         end if;
+                        data_ready <= (others => '0');
 
                     when armed =>
                         if sample_enable = '1' then
@@ -130,7 +134,6 @@ begin
                                 buffering_state <= wait_trigger;
                             end if;
                         end if;
-                        data_ready <= (others => '0');
 
                     when wait_trigger =>
                         if sample_enable = '1' then
