@@ -5,8 +5,9 @@ use ieee.numeric_std.all;
 
 entity LogicAnalyserTop is
     generic(
-         ADDR_WIDTH  : natural := 4;         --! 2**ADDR_WIDTH = size if sample memory
-         ASYNC_RESET : boolean := true
+         ADDR_WIDTH      : natural := 4;         --! 2**ADDR_WIDTH = size if sample memory
+         ASYNC_RESET     : boolean := true;
+         USE_EXT_TRIGGER : boolean := false
     );
     port(
         clk            : in  std_logic;
@@ -22,6 +23,7 @@ entity LogicAnalyserTop is
 
         -- LA interface
         sample_enable  : in  std_logic;
+        ext_trigger    : in  std_logic := '1';
         probe          : in  std_logic_vector
     );
 end entity LogicAnalyserTop;
@@ -51,7 +53,6 @@ architecture structure of LogicAnalyserTop is
             finish            : out std_logic
         );
     end component LogicAnalyserMemory;
-
 
     component LogicAnalyserTrigger is
         generic(
@@ -148,16 +149,30 @@ begin
         signal trg : std_logic;
         signal prb : std_logic_vector(DATA_WIDTH-1 downto 0);
     begin
-        process (clk) begin --! combines "manual" and configurable trigger
-            if rising_edge(clk) then
-                if ce = '1' then
-                    if sample_enable = '1' then
-                        prb <= sample;
-                        trg <= fire_trigger_cltrl or trigger_logic;
+        int_tirgger_logic: if not USE_EXT_TRIGGER generate begin
+            process (clk) begin --! combines "manual" and configurable trigger
+                if rising_edge(clk) then
+                    if ce = '1' then
+                        if sample_enable = '1' then
+                            prb <= sample;
+                            trg <= fire_trigger_cltrl or trigger_logic;
+                        end if;
                     end if;
                 end if;
-            end if;
-        end process;
+            end process;
+        end generate;
+        ext_trigger_logic: if USE_EXT_TRIGGER generate begin
+            process (clk) begin --! combines "manual" and configurable trigger
+                if rising_edge(clk) then
+                    if ce = '1' then
+                        if sample_enable = '1' then
+                            prb <= probe;
+                            trg <= fire_trigger_cltrl or ext_trigger;
+                        end if;
+                    end if;
+                end if;
+            end process;
+        end generate;
 
         memory : component LogicAnalyserMemory
             generic map(

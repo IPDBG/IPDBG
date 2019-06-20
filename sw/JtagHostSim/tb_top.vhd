@@ -11,8 +11,9 @@ architecture structure of tb_top is
 
     component LogicAnalyserTop is
         generic(
-            ADDR_WIDTH  : natural;
-            ASYNC_RESET : boolean
+            ADDR_WIDTH      : natural;
+            ASYNC_RESET     : boolean;
+            USE_EXT_TRIGGER : boolean
         );
         port(
             clk            : in  std_logic;
@@ -25,7 +26,8 @@ architecture structure of tb_top is
             data_up        : out std_logic_vector(7 downto 0);
 
             sample_enable  : in  std_logic;
-            probe          : in  std_logic_vector
+            probe          : in  std_logic_vector;
+            ext_trigger    : in  std_logic
         );
     end component LogicAnalyserTop;
 
@@ -130,7 +132,10 @@ architecture structure of tb_top is
     signal sample_enable      : std_logic;
     signal output_active      : std_logic;
 
+    signal ext_trigger        : std_logic;
+
 begin
+
     process begin
         clk <= '0';
         wait for T/2;
@@ -186,8 +191,9 @@ begin
 
     la: component LogicAnalyserTop
         generic map(
-            ADDR_WIDTH  => 4,
-            ASYNC_RESET => ASYNC_RESET
+            ADDR_WIDTH      => 4,
+            ASYNC_RESET     => ASYNC_RESET,
+            USE_EXT_TRIGGER => true
         )
         port map(
             clk            => clk,
@@ -199,8 +205,19 @@ begin
             data_up_valid  => data_up_valid_la,
             data_up        => data_up_la,
             sample_enable  => sample_enable,
-            probe          => data_in_la
+            probe          => data_in_la,
+            ext_trigger    => ext_trigger
         );
+    process(clk)begin
+        if rising_Edge(clk)then
+            if sample_enable = '1' then
+                ext_trigger <= '0';
+                if data_in_la = x"7f" then
+                    ext_trigger <= '1';
+                end if;
+            end if;
+        end if;
+    end process;
 
 
     process begin
