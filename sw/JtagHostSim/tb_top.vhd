@@ -102,7 +102,6 @@ architecture structure of tb_top is
 
 
     constant DATA_WIDTH       : natural := 12;
-    constant ADDR_WIDTH       : natural := 9;
     constant ASYNC_RESET      : boolean := true;
 
     signal data_dwn           : std_logic_vector(7 downto 0);
@@ -187,7 +186,7 @@ begin
 
     la: component LogicAnalyserTop
         generic map(
-            ADDR_WIDTH  => ADDR_WIDTH,
+            ADDR_WIDTH  => 4,
             ASYNC_RESET => ASYNC_RESET
         )
         port map(
@@ -202,8 +201,40 @@ begin
             sample_enable  => sample_enable,
             probe          => data_in_la
         );
-    sample_enable <= '1';
-    data_in_la <= data_out_wfg(7 downto 0);
+
+
+    process begin
+        sample_enable <= '0';
+        data_in_la <= x"00";
+        wait until rst = '0';
+        wait until rising_edge(clk);
+        wait for T/5;
+
+        while true loop
+            sample_enable <= '0';
+            --data_in_la <= x"00";
+            wait for T;
+
+            sample_enable <= '1';
+            data_in_la <= std_logic_vector(unsigned(data_in_la)+3);
+            wait for T;
+
+
+        end loop;
+
+        wait;
+    end process;
+
+
+
+
+    --data_in_la <= data_out_wfg(7 downto 0);
+
+
+
+
+
+
     wfg: component WaveformGeneratorTop
         generic map(
             ADDR_WIDTH    => 9,

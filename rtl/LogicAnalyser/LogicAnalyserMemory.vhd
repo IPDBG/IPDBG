@@ -52,12 +52,12 @@ architecture tab of LogicAnalyserMemory is
         );
     end component PdpRam;
 
-    signal counter           : unsigned(ADDR_WIDTH-1 downto 0);
+    signal counter           : unsigned(ADDR_WIDTH downto 0);
     signal data_ready        : unsigned(1 downto 0);
     signal write_enable      : std_logic;
 
-    constant counter_maximum : unsigned(ADDR_WIDTH-1 downto 0) := (others => '1');
-    constant counter_minimum : unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
+    constant counter_maximum : unsigned(counter'range) := to_unsigned(2**ADDR_WIDTH, ADDR_WIDTH+1);
+    constant counter_minimum : unsigned(counter'range) := (others => '0');
 
     --State machine
     type states_t            is(idle, armed, wait_trigger, fill_up, drain, drain_handshake, wait_ack_finish);
@@ -69,7 +69,7 @@ architecture tab of LogicAnalyserMemory is
     signal write_address     : unsigned(ADDR_WIDTH-1 downto 0);
     signal read_address      : unsigned(ADDR_WIDTH-1 downto 0);
 
-    signal delay_s           : unsigned(ADDR_WIDTH-1 downto 0);
+    signal delay_s           : unsigned(counter'range);
 
     signal arst, srst        : std_logic;
 begin
@@ -105,10 +105,10 @@ begin
             else
                 if ce = '1' then
                     write_enable <= '0';
-                    write_data <= probe;
 
                     if sample_enable = '1' then
                         write_address <= to_01(write_address) + 1;
+                        write_data <= probe;
                     end if;
 
                     case buffering_state is
@@ -116,7 +116,7 @@ begin
                         finish <= '0';
                         counter <= (others => '0');
                         full <= '0';
-                        delay_s <= unsigned(delay);
+                        delay_s <= unsigned('0' & delay);
                         if trigger_active = '1' then -- wait until trigger is active
                             buffering_state <= armed;
                             --report "delay is " & integer'image(to_integer(unsigned(delay)));
@@ -126,10 +126,11 @@ begin
                         if sample_enable = '1' then
                             write_enable <= '1';
                             counter <= counter + 1;
-                            if counter = delay_s then -- ignoring trigger to fill buffer to requested minimum
+                            if counter+1 = delay_s then -- ignoring trigger to fill buffer to requested minimum
                                 buffering_state <= wait_trigger;
                             end if;
                         end if;
+                        data_ready <= (others => '0');
 
                     when wait_trigger =>
                         if sample_enable = '1' then
@@ -137,6 +138,11 @@ begin
                             if trigger = '1' then
                                 buffering_state <= fill_up;
                                 counter <= counter + 1;
+                                if counter+1 = counter_maximum  then
+                                    read_address <= write_address + 2;
+                                    buffering_state <= drain;
+                                    full <= '1';
+                                end if;
                             end if;
                         end if;
 
@@ -144,13 +150,12 @@ begin
                         if sample_enable = '1' then
                             write_enable <= '1';
                             counter <= counter + 1;
-                            if counter = counter_maximum  then
+                            if counter + 1 = counter_maximum  then
                                 read_address <= write_address + 2;
                                 buffering_state <= drain;
                                 full <= '1';
                             end if;
                         end if;
-                        data_ready <= (others => '0');
 
                     when drain =>
                         if data_request_next = '1' then

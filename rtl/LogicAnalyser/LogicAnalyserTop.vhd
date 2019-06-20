@@ -63,7 +63,8 @@ architecture structure of LogicAnalyserTop is
             rst           : in  std_logic;
             ce            : in  std_logic;
             sample_enable : in  std_logic;
-            probe         : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+            probe_i       : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+            probe_o       : out std_logic_vector(DATA_WIDTH-1 downto 0);
             mask_curr     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             mask_last     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
             value_curr    : in  std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -135,48 +136,51 @@ architecture structure of LogicAnalyserTop is
 
     signal fire_trigger_cltrl : std_logic;
     signal trigger_logic      : std_logic;
-    signal trigger            : std_logic;
 
     signal data_in_valid_uesc : std_logic;
     signal data_in_uesc       : std_logic_vector(7 downto 0);
     signal reset              : std_logic;
 
-    signal probe_dlyd         : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal sample             : std_logic_vector(DATA_WIDTH-1 downto 0);
 begin
 
-    combine_trigger: process (clk) begin --! combines "manual" and configurable trigger
-        if rising_edge(clk) then
-            if ce = '1' then
-                if sample_enable = '1' then
-                    probe_dlyd <= probe;
-                    trigger <= fire_trigger_cltrl or trigger_logic;
+    combine_trigger: block
+        signal trg : std_logic;
+        signal prb : std_logic_vector(DATA_WIDTH-1 downto 0);
+    begin
+        process (clk) begin --! combines "manual" and configurable trigger
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if sample_enable = '1' then
+                        prb <= sample;
+                        trg <= fire_trigger_cltrl or trigger_logic;
+                    end if;
                 end if;
             end if;
-        end if;
-    end process;
+        end process;
 
-
-    memory : component LogicAnalyserMemory
-        generic map(
-            DATA_WIDTH  => DATA_WIDTH,
-            ADDR_WIDTH  => ADDR_WIDTH,
-            ASYNC_RESET => ASYNC_RESET
-        )
-        port map(
-            clk               => clk,
-            rst               => reset,
-            ce                => ce,
-            sample_enable     => sample_enable,
-            probe             => probe_dlyd,
-            trigger_active    => trigger_active,
-            trigger           => trigger,
-            full              => full,
-            delay             => delay,
-            data              => data,
-            data_valid        => data_valid,
-            data_request_next => data_request_next,
-            finish            => finish
-        );
+        memory : component LogicAnalyserMemory
+            generic map(
+                DATA_WIDTH  => DATA_WIDTH,
+                ADDR_WIDTH  => ADDR_WIDTH,
+                ASYNC_RESET => ASYNC_RESET
+            )
+            port map(
+                clk               => clk,
+                rst               => reset,
+                ce                => ce,
+                sample_enable     => sample_enable,
+                probe             => prb,
+                trigger_active    => trigger_active,
+                trigger           => trg,
+                full              => full,
+                delay             => delay,
+                data              => data,
+                data_valid        => data_valid,
+                data_request_next => data_request_next,
+                finish            => finish
+            );
+    end block;
 
     triggerLogic : component LogicAnalyserTrigger
         generic map(
@@ -188,7 +192,8 @@ begin
             rst           => reset,
             ce            => ce,
             sample_enable => sample_enable,
-            probe         => probe,
+            probe_i       => probe,
+            probe_o       => sample,
             mask_curr     => mask_curr,
             mask_last     => mask_last,
             value_curr    => value_curr,
