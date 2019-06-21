@@ -52,26 +52,30 @@ architecture tab of LogicAnalyserMemory is
         );
     end component PdpRam;
 
-    signal counter           : unsigned(ADDR_WIDTH downto 0);
-    signal data_ready        : unsigned(1 downto 0);
-    signal write_enable      : std_logic;
+    signal counter               : unsigned(ADDR_WIDTH downto 0);
+    signal data_ready            : unsigned(1 downto 0);
+    signal write_enable          : std_logic;
 
-    constant counter_maximum : unsigned(counter'range) := to_unsigned(2**ADDR_WIDTH, ADDR_WIDTH+1);
-    constant counter_minimum : unsigned(counter'range) := (others => '0');
+    constant counter_maximum     : unsigned(counter'range) := to_unsigned(2**ADDR_WIDTH, ADDR_WIDTH+1);
+    constant counter_minimum     : unsigned(counter'range) := (others => '0');
+    constant counter_nearmax_val : unsigned(counter'range) := to_unsigned(2**ADDR_WIDTH-2, ADDR_WIDTH+1);
 
     --State machine
-    type states_t            is(idle, armed, wait_trigger, fill_up, drain, drain_handshake, wait_ack_finish);
-    signal buffering_state   : states_t;
+    type states_t                is(idle, armed, wait_trigger, fill_up, drain, drain_handshake, wait_ack_finish);
+    signal buffering_state       : states_t;
 
-    signal write_data        : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal read_data         : std_logic_vector(DATA_WIDTH-1 downto 0):= (others => '0');
+    signal write_data            : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal read_data             : std_logic_vector(DATA_WIDTH-1 downto 0):= (others => '0');
 
-    signal write_address     : unsigned(ADDR_WIDTH-1 downto 0);
-    signal read_address      : unsigned(ADDR_WIDTH-1 downto 0);
+    signal write_address         : unsigned(ADDR_WIDTH-1 downto 0);
+    signal read_address          : unsigned(ADDR_WIDTH-1 downto 0);
 
-    signal delay_s           : unsigned(counter'range);
+    signal delay_s               : unsigned(counter'range);
 
-    signal arst, srst        : std_logic;
+    signal counter_near_max      : std_logic; --near means max -1
+    signal counter_near_delay    : std_logic; --near means delay_s -1
+
+    signal arst, srst            : std_logic;
 begin
     async_init: if ASYNC_RESET generate begin
         arst <= rst;
@@ -95,6 +99,8 @@ begin
             data_valid <= '0';
             finish <= '0';
             delay_s <= (others => '-');
+            counter_near_max <= '-';
+            counter_near_delay <= '-';
         end procedure assign_reset;
     begin
         if arst = '1' then
@@ -116,47 +122,73 @@ begin
                         finish <= '0';
                         counter <= (others => '0');
                         full <= '0';
-                        delay_s <= unsigned('0' & delay);
+                        delay_s <= to_01(unsigned('0' & delay));
+                        counter_near_max <= '0';
                         if trigger_active = '1' then -- wait until trigger is active
-                            buffering_state <= armed;
                             --report "delay is " & integer'image(to_integer(unsigned(delay)));
                             if unsigned('0' & delay) = counter_minimum then
                                 buffering_state <= wait_trigger;
+                            else
+                                buffering_state <= armed;
                             end if;
                         end if;
                         data_ready <= (others => '0');
+                        if to_01(unsigned('0' & delay)) =to_unsigned(1, delay_s'length) then
+                            counter_near_delay <= '1';
+                        else
+                            counter_near_delay <= '0';
+                        end if;
 
                     when armed =>
                         if sample_enable = '1' then
                             write_enable <= '1';
+                            counter_near_max <= '0';
                             counter <= counter + 1;
-                            if counter+1 = delay_s then -- ignoring trigger to fill buffer to requested minimum
+                            counter_near_delay <= '0';
+                            if counter_near_delay = '1' then -- ignoring trigger to fill buffer to requested minimum
                                 buffering_state <= wait_trigger;
+                            end if;
+                            if counter = counter_nearmax_val then
+                                counter_near_max <= '1';
+                            end if;
+                            if counter + 2 = delay_s then
+                                counter_near_delay <= '1';
+                            else
+                                counter_near_delay <= '0';
                             end if;
                         end if;
 
                     when wait_trigger =>
                         if sample_enable = '1' then
                             write_enable <= '1';
+                            counter_near_max <= counter_near_max;
                             if trigger = '1' then
-                                buffering_state <= fill_up;
                                 counter <= counter + 1;
-                                if counter+1 = counter_maximum  then
+                                if counter_near_max = '1' then
                                     read_address <= write_address + 2;
                                     buffering_state <= drain;
                                     full <= '1';
+                                else
+                                    buffering_state <= fill_up;
+                                end if;
+                                if counter = counter_nearmax_val then
+                                    counter_near_max <= '1';
                                 end if;
                             end if;
                         end if;
 
                     when fill_up =>
                         if sample_enable = '1' then
+                            counter_near_max <= '0';
                             write_enable <= '1';
                             counter <= counter + 1;
-                            if counter + 1 = counter_maximum  then
+                            if counter_near_max = '1' then
                                 read_address <= write_address + 2;
                                 buffering_state <= drain;
                                 full <= '1';
+                            end if;
+                            if counter = counter_nearmax_val then
+                                counter_near_max <= '1';
                             end if;
                         end if;
 
