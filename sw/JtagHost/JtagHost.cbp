@@ -30,7 +30,7 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add directory="C:/msys64/mingw32/include/apr-1" />
+			<Add directory="C:/msys64/mingw64/include/apr-1" />
 			<Add directory="C:/data/urjtag-bin/include" />
 		</Compiler>
 		<Linker>

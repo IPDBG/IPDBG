@@ -51,6 +51,7 @@ int initEcp2(urj_chain_t *chain);
 int initSpartan6(urj_chain_t *chain);
 int init7Series(urj_chain_t *chain);
 int initVirtex6(urj_chain_t *chain);
+int initAltera(urj_chain_t *chain);
 
 urj_chain_t *ipdbgJtagAllocChain(void)
 {
@@ -131,6 +132,10 @@ int ipdbgJtagInit(urj_chain_t *chain, int apart)
     {
         if(strcmp(part->part, "LFE2-12E") == 0)
             return initEcp2(chain);
+    }
+    else if ( strcmp(part->manufacurer, "Altera") == 0)
+    {
+        return initAltera(chain);
     }
     else if ( strcmp(part->manufacturer, "ipdbg.org") == 0)
     {
@@ -448,6 +453,95 @@ int initiCE40(urj_chain_t *chain)
         printf("6 ?????\n");
         return -6;
     }
+    return 0;
+}
+
+int initAltera(urj_chain_t *chain)
+{
+    printf("initAltera\n");
+    urj_part_t *part = urj_tap_chain_active_part(chain);
+    assert(part != NULL && "part must not be NULL");
+    /// set instruction register length of part if database does not contain part?
+    urj_part_instruction_length_set (part, 10);
+
+    //VIR shifts consist of a USER1 (0x0E) IR shift followed by a DR shift to the virtual Instruction Register.
+    // USER1 (0x0E)
+    // USER0 value is 0x0C
+
+    int user1register_register_length = 5; /// length of data register (vir) // 1 addr bit & 4 vir bits (assuming only one virtual jtag in he design)
+    char *user1register_register_name = "USER1REGISTER";
+
+    if(urj_part_data_register_define(part, user1register_register_name, user1register_register_length) != URJ_STATUS_OK)
+    {
+        printf("definition of register USER1REGISTER failed\n");
+        return -8;
+    }
+    urj_part_instruction_t *instr = urj_part_instruction_define(part, "USER1", "0000001110", user1register_register_name);
+
+    if(!instr)
+    {
+        printf("defining instruction USER1 failed\n");
+        return -7;
+    }
+
+    int user0register_register_length = 12; /// length of data register (vir)
+    char *user0register_register_name = "USER0REGISTER";
+
+    if(urj_part_data_register_define(part, user0register_register_name, user0register_register_length) != URJ_STATUS_OK)
+    {
+        printf("definition of register USER0REGISTER failed\n");
+        return -8;
+    }
+    instr = urj_part_instruction_define(part, "USER0", "0000001100", user0register_register_name);
+
+    if(!instr)
+    {
+        printf("defining instruction USER0 failed\n");
+        return -7;
+    }
+
+    /// load USER1 instruction select virtual jtag 0
+    urj_part_set_instruction(part, "USER1");
+    urj_tap_chain_shift_instructions(chain);
+
+    /// do datashift data shift
+    urj_part_instruction_t *active_ir = part->active_instruction;
+    if (active_ir == NULL)
+    {
+        printf("5 ?????\n");
+        return -5;
+    }
+    urj_data_register_t *dreg = active_ir->data_register;
+    if (dreg == NULL)
+    {
+        printf("6 ?????\n");
+        return -6;
+    }
+
+    // 1 addr bit (assuming only one virtual jtag in he design)     & 4 vir bits
+    uint64_t vir_value = 0x11;
+    //                     ^ 0: altera's hubs 1: virtual JTAG
+    //                      ^ any VIR value will do
+    urj_tap_register_set_value(dreg->in, vir_value);
+    urj_tap_chain_shift_data_registers(chain, 0);
+
+
+    //switch ir to VDR
+    urj_part_set_instruction(part, "USER0");
+    urj_tap_chain_shift_instructions(chain);
+    active_ir = part->active_instruction;
+    if (active_ir == NULL)
+    {
+        printf("7 ?????\n");
+        return -7;
+    }
+    dreg = active_ir->data_register;
+    if (dreg == NULL)
+    {
+        printf("8 ?????\n");
+        return -8;
+    }
+
     return 0;
 }
 
