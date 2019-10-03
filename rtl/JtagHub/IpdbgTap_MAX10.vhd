@@ -62,33 +62,8 @@ COMPONENT sld_virtual_jtag
             virtual_state_e2dr  : OUT STD_LOGIC
         );
     END COMPONENT;
-    signal tck        : std_logic;
-    signal exit1dr    : std_logic;
-    signal exit2dr 	 : std_logic;
-    signal test_reset : std_logic;
-    signal v_shift_dr : std_logic;
-	 signal v_capture_dr : std_logic;
-	 signal v_update_dr : std_logic;
-	 signal load		 : std_logic;
-	 signal update_counter : std_logic_vector(7 downto 0) := (others=>'0');
-	 signal ucounter : natural range 0 to 255 := 0;
-	 signal shift_count : natural range 0 to 255 := 0;
-	 signal sr			 : std_logic_vector(7 downto 0) := (others=>'0');
 
 begin
-
---		test : process(tck) begin
---			if rising_edge(tck) then
---				if test_reset = '1' then
---					sr <= x"42";
---				elsif v_shift_dr = '1' then
---					sr <= sr(0) & sr(7 downto 1);
---				elsif v_update_dr = '1' then
---					sr <= std_logic_vector(unsigned(sr)+1);
---				end if;
---			end if;
---		end process;
-
 
         BSCAN_MAX10_inst  :  sld_virtual_jtag
         generic map(
@@ -107,8 +82,8 @@ begin
             jtag_state_e2dr     => open,
             tms                 => open,
             jtag_state_pir      => open,
-            jtag_state_tlr      => test_reset,
-            tck                 => tck,
+            jtag_state_tlr      => open,
+            tck                 => drclk,
             jtag_state_sir      => open,
             ir_in               => open,
             virtual_state_cir   => open,
@@ -118,13 +93,13 @@ begin
             jtag_state_cir      => open,
             jtag_state_uir      => open,
             jtag_state_pdr      => open,
-            tdo                 => tdo,--sr(0),
+            tdo                 => tdo,
             jtag_state_sdrs     => open,
-            virtual_state_sdr   => v_shift_dr,
-            virtual_state_cdr   => v_capture_dr,
+            virtual_state_sdr   => shift,
+            virtual_state_cdr   => capture,
             jtag_state_sdr      => open,
             jtag_state_cdr      => open,
-            virtual_state_udr   => v_update_dr,
+            virtual_state_udr   => update,
             jtag_state_udr      => open,
             jtag_state_sirs     => open,
             jtag_state_e1ir     => open,
@@ -132,12 +107,6 @@ begin
             virtual_state_e1dr  => open,
             virtual_state_e2dr  => open
         );
-
-    drclk <= tck;
-	 update <= v_update_dr;
-	 capture <= v_capture_dr;
-	 shift <= v_shift_dr;
 	 user <= '1';
-	 --tdi <= sr(7);
 
 end architecture structure;
