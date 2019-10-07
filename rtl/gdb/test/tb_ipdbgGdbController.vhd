@@ -4,13 +4,13 @@ use ieee.numeric_std.all;
 
 entity tb_ipdbgGdbController is
     generic(
-        output_wb_boolean : boolean := false
+        output_wb_boolean : boolean := false;
         break_test        : boolean := false
     );
 end tb_ipdbgGdbController;
 
 architecture test of tb_ipdbgGdbController is
-    component IpdbgGdbController is
+    component Ipdbg2Wb is
         generic(
             ASYNC_RESET : boolean
         );
@@ -32,7 +32,7 @@ architecture test of tb_ipdbgGdbController is
             data_up_valid  : out std_logic;
             data_up        : out std_logic_vector(7 downto 0)
         );
-    end component IpdbgGdbController;
+    end component Ipdbg2Wb;
     constant input_wb_boolean  : boolean := not output_wb_boolean;
     signal clk                 : std_logic;
     signal rst                 : std_logic;
@@ -153,7 +153,7 @@ begin
 
 
 
-    uut : component IpdbgGdbController
+    uut : component Ipdbg2Wb
         generic map(
             ASYNC_RESET => false
         )
