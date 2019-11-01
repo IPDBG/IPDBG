@@ -24,9 +24,7 @@
 				<ExtraCommands>
 					<Add after="lm32-elf-strip $(TARGET_OUTPUT_FILE)" />
 					<Add after="lm32-elf-size $(TARGET_OUTPUT_FILE)" />
-					<Add after="lm32-elf-objcopy -O binary -j .text -j .data -j .rodata $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_FILE).bin" />
-					<Add after="c:\tools\bin\srec_cat.exe $(TARGET_OUTPUT_FILE).bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).mem -MEM 32" />
-					<Add after="c:\tools\bin\srec_cat.exe $(TARGET_OUTPUT_FILE).bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).rom.vhd -vhdl 4" />
+					<Add after="c:\tools\bin\srec_cat.exe $(TARGET_OUTPUT_FILE).bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).vmem -VMem 32" />
 				</ExtraCommands>
 			</Target>
 		</Build>
