@@ -1,3 +1,0 @@
-[submodule "rtl/cern_general-cores"]
-	path = rtl/cern_general-cores
-	url = https://github.com/DaAlbrecht/cern_general-cores
