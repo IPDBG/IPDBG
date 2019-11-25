@@ -24,6 +24,7 @@
 				<ExtraCommands>
 					<Add after="lm32-elf-strip $(TARGET_OUTPUT_FILE)" />
 					<Add after="lm32-elf-size $(TARGET_OUTPUT_FILE)" />
+					<Add after="lm32-elf-objcopy -O binary -j .boot -j .text -j .rodata -j .data -j .bss $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_FILE).bin" />
 					<Add after="c:\tools\bin\srec_cat.exe $(TARGET_OUTPUT_FILE).bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).vmem -VMem 32" />
 				</ExtraCommands>
 			</Target>
@@ -51,7 +52,6 @@
 			<Add option="-W" />
 			<Add option="-ffunction-sections" />
 			<Add option="-D_USE_LSCC_PRINTF_" />
-			<Add option="-D__lm32__" />
 		</Compiler>
 		<Linker>
 			<Add option="-s" />
