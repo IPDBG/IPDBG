@@ -133,7 +133,7 @@ int ipdbgJtagInit(urj_chain_t *chain, int apart)
         if(strcmp(part->part, "LFE2-12E") == 0)
             return initEcp2(chain);
     }
-    else if ( strcmp(part->manufacurer, "Altera") == 0)
+    else if ( strcmp(part->manufacturer, "Altera") == 0)
     {
         return initAltera(chain);
     }
