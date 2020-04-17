@@ -51,7 +51,7 @@ architecture behavioral of JtagCdc is
 
 ---------------------- Datenregister -----------------------------
     signal shift_register         : std_logic_vector(11 downto 0);
-    signal la_transfer_register   : std_logic_vector(7 downto 0);
+    signal transfer_data_register : std_logic_vector(7 downto 0);
     signal channel_register       : std_logic_vector(2 downto 0);
 
 ---------------------- Signale Einlesen --------------------------
@@ -91,7 +91,7 @@ begin
         if rising_edge(DRCLK) then
             if CAPTURE = '1' and USER = '1' then
 
-                shift_register <= '0' & channel_register & la_transfer_register;
+                shift_register <= '0' & channel_register & transfer_data_register;
                 shift_counter <= 12;
 
             elsif USER = '1' and SHIFT = '1' then
@@ -161,19 +161,19 @@ begin
                 data_dwn_valid_gdb <= '0';
                 data_dwn_valid_wfg <= '0';
                 clear <= '0';
-                if data_out_register_enable = '1' and shift_register(10 downto 8) = "100" and shift_register (11) = '1' then
+                if data_out_register_enable = '1' and shift_register(10 downto 8) = "100" and shift_register(11) = '1' then
                     data_dwn_valid_la <= '1';
                 end if;
-                if data_out_register_enable = '1' and shift_register(10 downto 8) = "010" and shift_register (11) = '1' then
+                if data_out_register_enable = '1' and shift_register(10 downto 8) = "010" and shift_register(11) = '1' then
                     data_dwn_valid_ioview <= '1';
                 end if;
-                if data_out_register_enable = '1' and shift_register(10 downto 8) = "001"  and shift_register (11) = '1' then
+                if data_out_register_enable = '1' and shift_register(10 downto 8) = "001"  and shift_register(11) = '1' then
                     data_dwn_valid_gdb <= '1';
                 end if;
-                if data_out_register_enable = '1' and shift_register(10 downto 8) = "011"  and shift_register (11) = '1' then
+                if data_out_register_enable = '1' and shift_register(10 downto 8) = "011"  and shift_register(11) = '1' then
                     data_dwn_valid_wfg <= '1';
                 end if;
-                if data_out_register_enable = '1' and shift_register(10 downto 8) = "111"  and shift_register (11) = '1' then
+                if data_out_register_enable = '1' and shift_register(10 downto 8) = "111"  and shift_register(11) = '1' then
                     clear <= '1';
                 end if;
             end if;
@@ -210,30 +210,24 @@ begin
                 if set_pending = '1' then
                     pending <= '1';
                 end if;
-                if data_in_ready_la_s = '1' then
-                    if data_up_valid_la = '1' then
-                        data_in_ready_la_s <= '0';
-                        register_la <= data_up_la;
-                    end if;
+                if data_in_ready_la_s = '1' and data_up_valid_la = '1' then
+                    data_in_ready_la_s <= '0';
+                    register_la <= data_up_la;
                 end if;
 
-                if data_in_ready_ioview_s = '1' then
-                    if data_up_valid_ioview = '1' then
-                        data_in_ready_ioview_s <= '0';
-                        register_ioview <= data_up_ioview;
-                    end if;
+                if data_in_ready_ioview_s = '1' and data_up_valid_ioview = '1' then
+                    data_in_ready_ioview_s <= '0';
+                    register_ioview <= data_up_ioview;
                 end if;
 
-                if data_in_ready_gdb_s = '1' then
-                    if data_up_valid_gdb = '1' then
-                        data_in_ready_gdb_s <= '0';
-                        register_gdb <= data_up_gdb;
-                    end if;
+                if data_in_ready_gdb_s = '1' and data_up_valid_gdb = '1' then
+                    data_in_ready_gdb_s <= '0';
+                    register_gdb <= data_up_gdb;
                 end if;
-                if data_in_ready_wfg_s = '1' then
-                    if data_up_valid_wfg = '1' then
-                        data_in_ready_wfg_s <= '0';
-                        register_wfg <= data_up_wfg;
+
+                if data_in_ready_wfg_s = '1' and data_up_valid_wfg = '1' then
+                    data_in_ready_wfg_s <= '0';
+                    register_wfg <= data_up_wfg;
                     end if;
                 end if;
                 if update_synced = '1' and update_synced_prev = '0' then
@@ -272,7 +266,7 @@ begin
                             ent_mux <= LA_s;
                             transfer <= is_idle;
                         else
-                            la_transfer_register <= register_gdb;
+                            transfer_data_register <= register_gdb;
                             if transfer = is_idle then
                                 set_pending <= '1';
                                 transfer <= is_active;
@@ -285,7 +279,7 @@ begin
                             ent_mux <= IOVIEW_s;
                             transfer <= is_idle;
                         else
-                            la_transfer_register <= register_la;
+                            transfer_data_register <= register_la;
                             if transfer = is_idle then
                                 set_pending <= '1';
                                 transfer <= is_active;
@@ -298,7 +292,7 @@ begin
                             ent_mux <= WFG_s;
                             transfer <= is_idle;
                         else
-                            la_transfer_register <= register_ioview;
+                            transfer_data_register <= register_ioview;
                             if transfer = is_idle then
                                 set_pending <= '1';
                                 transfer <= is_active;
@@ -310,7 +304,7 @@ begin
                             ent_mux <= GDB_s;
                             transfer <= is_idle;
                         else
-                            la_transfer_register <= register_wfg;
+                            transfer_data_register <= register_wfg;
                             if transfer = is_idle then
                                 set_pending <= '1';
                                 transfer <= is_active;
