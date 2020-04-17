@@ -85,7 +85,7 @@ static unsigned int dc;
  * Common helper functions
  *
  */
-static char *strcpy(char *dst, char *src)
+static char *strcpy(char *dst, const char *src)
 {
     char *tmp = dst;
     while ((*dst++ = *src++) != '\0');
