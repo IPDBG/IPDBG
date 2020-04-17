@@ -20,6 +20,8 @@
 
 #include "ipdbgstubcontroller.h"
 
+#define ipdbgControllerRegister  ((volatile struct IpdbgControllerRegister_st*) 0x40002000)
+
 #define SUPPORT_P_CMD 1
 #define SUPPORT_X_CMD 1
 #define SUPPORT_Z_CMD 1

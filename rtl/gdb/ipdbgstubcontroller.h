@@ -14,5 +14,4 @@ struct IpdbgControllerRegister_st
     volatile unsigned int ControlBits;
 };
 
-#define ipdbgControllerRegister  ((volatile struct IpdbgControllerRegister_st*)    0x80000000)
 #endif
