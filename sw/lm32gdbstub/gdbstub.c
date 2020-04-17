@@ -18,9 +18,9 @@
 
 #include <stdlib.h>
 
-#include "ipdbgstubcontroller.h"
+#include "iurtcontroller.h"
 
-#define ipdbgControllerRegister  ((volatile struct IpdbgControllerRegister_st*) 0x40002000)
+#define iurtControllerRegister  ((volatile struct IurtControllerRegister_st*) 0x40002000)
 
 #define SUPPORT_P_CMD 1
 #define SUPPORT_X_CMD 1
@@ -113,7 +113,7 @@ static char get_debug_char(void)
     {
         // read from jtag data register
         // return if there are is a valid (newly received) byte
-        unsigned int reg_val = ipdbgControllerRegister->RxData;
+        unsigned int reg_val = iurtControllerRegister->RxData;
         if (reg_val & RxValid)
             return (char)(reg_val & 0x000000ff);
     }
@@ -122,8 +122,8 @@ static char get_debug_char(void)
 static void put_debug_char(char c)
 {
     // busy wait until the next can be sent
-    //while ((ipdbgControllerRegister->ControlBits & TxReady) == 0);
-    ipdbgControllerRegister->TxData = (unsigned int)c; // put data into data register
+    //while ((iurtControllerRegister->ControlBits & TxReady) == 0);
+    iurtControllerRegister->TxData = (unsigned int)c; // put data into data register
 }
 
 /*
@@ -689,10 +689,10 @@ void handle_exception(unsigned int *registers)
      * ROM.
      */
 
-     ipdbgControllerRegister->ControlBits = 0x00; // disable break (break_enable to '0')
+     iurtControllerRegister->ControlBits = 0x00; // disable break (break_enable to '0')
 
 //      while (1){
-//        ipdbgControllerRegister->TxData = 0x34;
+//        iurtControllerRegister->TxData = 0x34;
 //      }
     /* clear BSS there was a board reset */
 //    if (!CSR_DBG_SCRATCHPAD) {
@@ -781,5 +781,5 @@ out:
 //    CSR_DBG_CTRL = dbg_ctrl;
 
     /* reenable break */
-    ipdbgControllerRegister->ControlBits = BreakEn; // enable break (break_enable to '1')
+    iurtControllerRegister->ControlBits = BreakEn; // enable break (break_enable to '1')
 }

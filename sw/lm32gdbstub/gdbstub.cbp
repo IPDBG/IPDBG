@@ -16,7 +16,7 @@
 					<Add option="-fomit-frame-pointer" />
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-Os" />
-					<Add directory="../../rtl/gdb" />
+					<Add directory="../../rtl/iurt" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
