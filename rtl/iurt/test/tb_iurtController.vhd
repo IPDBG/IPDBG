@@ -3,10 +3,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity tb_iurtController is
-    generic(
-        output_wb_boolean : boolean := false;
-        break_test        : boolean := false
-    );
 end tb_iurtController;
 
 architecture test of tb_iurtController is
@@ -33,10 +29,10 @@ architecture test of tb_iurtController is
             data_up        : out std_logic_vector(7 downto 0)
         );
     end component IurtController;
-    constant input_wb_boolean  : boolean := not output_wb_boolean;
     signal clk                 : std_logic;
     signal rst                 : std_logic;
     signal ce                  : std_logic;
+    signal stbcyc             : std_logic;
     signal cyc_i               : std_logic;
     signal stb_i               : std_logic;
     signal we_i                : std_logic;
@@ -51,8 +47,7 @@ architecture test of tb_iurtController is
     signal data_up_valid       : std_logic;
     signal data_up             : std_logic_vector(7 downto 0);
     constant T                 : time := 10 ns;
-    signal data                : std_logic_vector(7 downto 0);
-    signal count               : natural :=0 ;
+    signal counter            : natural range 0 to 255;
 begin
 
     process begin
@@ -72,83 +67,88 @@ begin
 
     ce <= '1';
 
-    counter : process begin
+    cyc_i <= stbcyc;
+    stb_i <= stbcyc;
+
+
+    process begin
+        adr_i <= "0";
+        dat_i <= x"00000080";
+        we_i            <= '1';
+
+        stbcyc <= '0';
         wait until rising_edge (clk);
+        wait for T/5;
+        wait for 5*T;
 
-        if count <= 10 then
-            count <= count +1;
+        for k in 1 to 2 loop
+            for i in 1 to 16 loop
+                if dat_i(7 downto 0) = x"80" then
+                    dat_i <= x"00000001";
         else
-            count <= 0 ;
+                    dat_i <= std_logic_vector(unsigned(dat_i) SLL 1);
         end if;
+                stbcyc <= '1';
 
-    end process;
+                wait until rising_edge(clk) and ack_o = '1';
 
-    handshake : process begin
+                if i > 8 then
+                    stbcyc <= '0';
             wait for T;
-            if count <= 5 then
-                stb_i <= '1';
-            else
-                stb_i <= '0';
             end if;
+            end loop;
+            stbcyc <= '0';
+            wait for T;
+        end loop;
 
-            if count <= 8 then
-                cyc_i <= '1';
-            else
-                cyc_i <= '0';
-            end if;
+        wait for 10*T;
 
+        stbcyc <= '1';
+        we_i <= '0';
+
+        wait;
     end process;
 
 
-    output : if  output_wb_boolean generate begin
         process begin
-            data_dwn <=  x"01";
+        counter <= 0;
+        data_up_ready   <= '1';
             data_dwn_valid <= '0';
-            we_i  <= '0';
-            adr_i <= "0";
+        data_dwn <= x"00";
 
             wait until rising_edge(clk);
-            wait for T/7;
-            for i in 1 to 20 loop
-                if count = 0 then
-                    data_dwn <= x"01";
-                end if;
-                wait for T;
-                if count <= 10 then
-                    data_dwn <= std_logic_vector(unsigned(data_dwn) SLL 1);
-                    data_dwn_valid <= '1';
-                else
-                    data_dwn_valid <= '0';
+        wait for T/5;
+        wait for 5*T;
+
+        for k in 1 to 2 loop
+            for i in 1 to 16 loop
+                wait until rising_edge(clk) and data_up_valid = '1';
+                wait for T/5;
+
+                counter <= counter + 1;
+
+                if k = 2 then
+                    data_up_ready <= '0';
+                    wait for 5*T;
+                    data_up_ready <= '1';
                 end if;
 
             end loop;
+        end loop;
+
+        wait for 10*T;
+
+        for i in 1 to 20 loop
+            data_dwn_valid <= '1';
+            data_dwn <= std_logic_vector(unsigned(data_dwn) + 1);
+
+            wait for T;
+            data_dwn_valid <= '0';
+        end loop;
+
+        wait;
         end process;
-    end generate;
 
-    input : if input_wb_boolean generate begin
-
-        process begin
-            adr_i <= "0";
-            dat_i <= x"00000001";
-            we_i            <= '1';
-            data_up_ready   <= '1';
-            while true loop
-                wait until rising_edge(clk);
-                    if count = 0 then
-                        dat_i <= x"00000001";
-                    end if;
-
-                    if count <= 10 then
-                        wait for 1*T;
-                        dat_i <= std_logic_vector(unsigned(dat_i) SLL 1);
-                    end if;
-
-                end loop;
-        end process;
-    end generate;
-    break_gen : if  break_test generate begin
-
-    end generate;
 
 
 
