@@ -7,30 +7,35 @@ entity JtagHub is
         MFF_LENGTH : natural
     );
     port(
-        clk                  : in  std_logic;
-        ce                   : in  std_logic;
+        clk                   : in  std_logic;
+        ce                    : in  std_logic;
 
-        data_dwn             : out std_logic_vector(7 downto 0);
+        data_dwn              : out std_logic_vector(7 downto 0);
 
-        data_dwn_valid_la    : out std_logic;
-        data_dwn_valid_ioview: out std_logic;
-        data_dwn_valid_gdb   : out std_logic;
-        data_dwn_valid_wfg   : out std_logic;
+        data_dwn_ready_la     : in  std_logic;
+        data_dwn_ready_ioview : in  std_logic;
+        data_dwn_ready_gdb    : in  std_logic;
+        data_dwn_ready_wfg    : in  std_logic;
 
-        data_up_ready_la     : out std_logic;
-        data_up_ready_ioview : out std_logic;
-        data_up_ready_gdb    : out std_logic;
-        data_up_ready_wfg    : out std_logic;
+        data_dwn_valid_la     : out std_logic;
+        data_dwn_valid_ioview : out std_logic;
+        data_dwn_valid_gdb    : out std_logic;
+        data_dwn_valid_wfg    : out std_logic;
 
-        data_up_valid_la     : in  std_logic;
-        data_up_valid_ioview : in  std_logic;
-        data_up_valid_gdb    : in  std_logic;
-        data_up_valid_wfg    : in  std_logic;
+        data_up_ready_la      : out std_logic;
+        data_up_ready_ioview  : out std_logic;
+        data_up_ready_gdb     : out std_logic;
+        data_up_ready_wfg     : out std_logic;
 
-        data_up_la           : in  std_logic_vector(7 downto 0);
-        data_up_ioview       : in  std_logic_vector(7 downto 0);
-        data_up_wfg          : in  std_logic_vector(7 downto 0);
-        data_up_gdb          : in  std_logic_vector(7 downto 0)
+        data_up_valid_la      : in  std_logic;
+        data_up_valid_ioview  : in  std_logic;
+        data_up_valid_gdb     : in  std_logic;
+        data_up_valid_wfg     : in  std_logic;
+
+        data_up_la            : in  std_logic_vector(7 downto 0);
+        data_up_ioview        : in  std_logic_vector(7 downto 0);
+        data_up_wfg           : in  std_logic_vector(7 downto 0);
+        data_up_gdb           : in  std_logic_vector(7 downto 0)
     );
 end entity;
 
@@ -49,30 +54,42 @@ architecture structure of JtagHub is
         assert false severity failure;
     end set_data_to_jtag_host;
 
+    signal data_dwn_ready  : std_logic_vector(3 downto 0);
     signal enable_o        : std_logic_vector(3 downto 0);
     signal data_in_ready_o : std_logic_vector(3 downto 0);
     signal data_in_valid   : std_logic_vector(3 downto 0);
     type data_in_t         is array (3 downto 0) of std_logic_vector(7 downto 0);
     signal data_in         : data_in_t;
+
 begin
+    data_dwn_ready <= data_dwn_ready_wfg & data_dwn_ready_gdb & data_dwn_ready_ioview & data_dwn_ready_la;
     data_in_valid <= data_up_valid_wfg & data_up_valid_gdb & data_up_valid_ioview & data_up_valid_la;
     data_in <= (3 => data_up_wfg, 2 => data_up_gdb, 1 => data_up_ioview, 0 => data_up_la);
     process(clk)
         variable data_temp_dwn : std_logic_vector(15 downto 0);
         variable data_temp_up  : std_logic_vector(15 downto 0);
+
+        variable data_pending  : std_logic_vector(3 downto 0);
     begin
         if rising_edge(clk) then
             if ce = '1' then
-                enable_o <= (others => '0');
-                data_temp_dwn := std_logic_vector(to_unsigned(get_data_from_jtag_host(0), data_temp_dwn'length));
+                if data_pending = "UUUU" then
+                    data_pending := x"0";
+                end if;
+                if data_pending = x"0" then
+                    data_temp_dwn := std_logic_vector(to_unsigned(get_data_from_jtag_host(0), data_temp_dwn'length));
 
-                data_dwn <= data_temp_dwn(7 downto 0);
-                case data_temp_dwn(11 downto 8) is
-                when x"C" => enable_o(0) <= '1';
-                when x"A" => enable_o(1) <= '1';
-                when x"9" => enable_o(2) <= '1';
-                when x"B" => enable_o(3) <= '1';
-                when others => null;
+                    data_dwn <= data_temp_dwn(7 downto 0);
+                    data_pending := data_temp_dwn(11 downto 8);
+                end if;
+
+                enable_o <= (others => '0');
+                case data_pending is
+                when x"C" => if data_dwn_ready(0) = '1' then enable_o(0) <= '1'; data_pending := x"0"; end if;
+                when x"A" => if data_dwn_ready(1) = '1' then enable_o(1) <= '1'; data_pending := x"0"; end if;
+                when x"9" => if data_dwn_ready(2) = '1' then enable_o(2) <= '1'; data_pending := x"0"; end if;
+                when x"B" => if data_dwn_ready(3) = '1' then enable_o(3) <= '1'; data_pending := x"0"; end if;
+                when others => data_pending := x"0";
                 end case;
 
                 data_in_ready_o <= (others => '1');
