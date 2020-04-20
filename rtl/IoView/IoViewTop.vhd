@@ -12,6 +12,7 @@ entity IoViewTop is
         ce                   : in  std_logic;
 
         -- host interface (JtagHub or UART or ....)
+        data_dwn_ready       : out std_logic;
         data_dwn_valid       : in  std_logic;
         data_dwn             : in  std_logic_vector(7 downto 0);
         data_up_ready        : in  std_logic;
@@ -66,6 +67,8 @@ architecture struct of IoViewTop is
     signal data_in_valid_unescaped : std_logic;
     signal reset                   : std_logic;
 begin
+
+    data_dwn_ready <= '1';
 
     controller : component IoViewController
         generic map(

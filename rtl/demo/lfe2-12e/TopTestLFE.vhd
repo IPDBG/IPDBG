@@ -26,6 +26,10 @@ architecture structure of TopTestLFE is
             clk                   : in  std_logic;
             ce                    : in  std_logic;
             data_dwn              : out std_logic_vector(7 downto 0);
+            data_dwn_ready_la     : in  std_logic;
+            data_dwn_ready_ioview : in  std_logic;
+            data_dwn_ready_gdb    : in  std_logic;
+            data_dwn_ready_wfg    : in  std_logic;
             data_dwn_valid_la     : out std_logic;
             data_dwn_valid_ioview : out std_logic;
             data_dwn_valid_gdb    : out std_logic;
@@ -52,6 +56,7 @@ architecture structure of TopTestLFE is
             clk            : in  std_logic;
             rst            : in  std_logic;
             ce             : in  std_logic;
+            data_dwn_ready : out std_logic;
             data_dwn_valid : in  std_logic;
             data_dwn       : in  std_logic_vector(7 downto 0);
             data_up_ready  : in  std_logic;
@@ -70,6 +75,7 @@ architecture structure of TopTestLFE is
             clk            : in  std_logic;
             rst            : in  std_logic;
             ce             : in  std_logic;
+            data_dwn_ready : out std_logic;
             data_dwn_valid : in  std_logic;
             data_dwn       : in  std_logic_vector(7 downto 0);
             data_up_ready  : in  std_logic;
@@ -88,6 +94,7 @@ architecture structure of TopTestLFE is
             clk            : in  std_logic;
             rst            : in  std_logic;
             ce             : in  std_logic;
+            data_dwn_ready : out std_logic;
             data_dwn_valid : in  std_logic;
             data_dwn       : in  std_logic_vector(7 downto 0);
             data_up_ready  : in  std_logic;
@@ -104,15 +111,18 @@ architecture structure of TopTestLFE is
 	end component;
 
     signal data_dwn                      : std_logic_vector(7 downto 0);
+    signal data_dwn_ready_ioview         : std_logic;
     signal data_dwn_valid_ioview         : std_logic;
     signal data_up_ready_ioview          : std_logic;
     signal data_up_valid_ioview          : std_logic;
     signal data_up_ioview                : std_logic_vector(7 downto 0);
+    signal data_dwn_ready_la             : std_logic;
     signal data_dwn_valid_la             : std_logic;
     signal data_up_ready_la              : std_logic;
     signal data_up_valid_la              : std_logic;
     signal data_up_la                    : std_logic_vector(7 downto 0);
     signal probe_la                      : std_logic_vector(8 downto 0);
+    signal data_dwn_ready_wfg            : std_logic;
     signal data_dwn_valid_wfg            : std_logic;
     signal data_up_ready_wfg             : std_logic;
     signal data_up_valid_wfg             : std_logic;
@@ -169,6 +179,10 @@ begin
             clk                   => clk,
             ce                    => '1',
             data_dwn              => data_dwn,
+            data_dwn_ready_la     => data_dwn_ready_la,
+            data_dwn_ready_ioview => data_dwn_ready_ioview,
+            data_dwn_ready_gdb    => '0',
+            data_dwn_ready_wfg    => data_dwn_ready_wfg,
             data_dwn_valid_la     => data_dwn_valid_la,
             data_dwn_valid_ioview => data_dwn_valid_ioview,
             data_dwn_valid_gdb    => open,
@@ -195,6 +209,7 @@ begin
             clk            => clk,
             rst            => rst,
             ce             => '1',
+            data_dwn_ready => data_dwn_ready_ioview,
             data_dwn_valid => data_dwn_valid_ioview,
             data_dwn       => data_dwn,
             data_up_ready  => data_up_ready_ioview,
@@ -212,6 +227,7 @@ begin
             clk            => clk,
             rst            => rst,
             ce             => '1',
+            data_dwn_ready => data_dwn_ready_la,
             data_dwn_valid => data_dwn_valid_la,
             data_dwn       => data_dwn,
             data_up_ready  => data_up_ready_la,
@@ -229,6 +245,7 @@ begin
             clk            => clk,
             rst            => rst,
             ce             => '1',
+            data_dwn_ready => data_dwn_ready_wfg,
             data_dwn_valid => data_dwn_valid_wfg,
             data_dwn       => data_dwn,
             data_up_ready  => data_up_ready_wfg,

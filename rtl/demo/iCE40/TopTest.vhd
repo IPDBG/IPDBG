@@ -31,18 +31,26 @@ architecture rtl of TopTestBplR3x is
             clk                   : in  std_logic;
             ce                    : in  std_logic;
             data_dwn              : out std_logic_vector(7 downto 0);
+            data_dwn_ready_la     : in  std_logic;
+            data_dwn_ready_ioview : in  std_logic;
+            data_dwn_ready_gdb    : in  std_logic;
+            data_dwn_ready_wfg    : in  std_logic;
             data_dwn_valid_la     : out std_logic;
             data_dwn_valid_ioview : out std_logic;
             data_dwn_valid_gdb    : out std_logic;
+            data_dwn_valid_wfg    : out std_logic;
             data_up_ready_la      : out std_logic;
             data_up_ready_ioview  : out std_logic;
             data_up_ready_gdb     : out std_logic;
+            data_up_ready_wfg     : out std_logic;
             data_up_valid_la      : in  std_logic;
             data_up_valid_ioview  : in  std_logic;
             data_up_valid_gdb     : in  std_logic;
+            data_up_valid_wfg     : in  std_logic;
             data_up_la            : in  std_logic_vector(7 downto 0);
             data_up_ioview        : in  std_logic_vector(7 downto 0);
-            data_up_gdb           : in  std_logic_vector(7 downto 0)
+            data_up_gdb           : in  std_logic_vector(7 downto 0);
+            data_up_wfg           : in  std_logic_vector(7 downto 0)
         );
     end component JtagHub;
     component IoViewTop is
@@ -50,6 +58,7 @@ architecture rtl of TopTestBplR3x is
             clk            : in  std_logic;
             rst            : in  std_logic;
             ce             : in  std_logic;
+            data_dwn_ready : out std_logic;
             data_dwn_valid : in  std_logic;
             data_dwn       : in  std_logic_vector(7 downto 0);
             data_up_ready  : in  std_logic;
@@ -80,6 +89,7 @@ architecture rtl of TopTestBplR3x is
     signal clk : std_logic;
 
     signal data_dwn              : std_logic_vector(7 downto 0);
+    signal data_dwn_ready_ioview : std_logic;
     signal data_dwn_valid_ioview : std_logic;
     signal data_up_ready_ioview  : std_logic;
     signal data_up_valid_ioview  : std_logic;
@@ -107,18 +117,26 @@ begin
             clk                   => clk,
             ce                    => '1',
             data_dwn              => data_dwn,
+            data_dwn_ready_la     => '0',
+            data_dwn_ready_ioview => data_dwn_ready_ioview,
+            data_dwn_ready_gdb    => '0',
+            data_dwn_ready_wfg    => '0',
             data_dwn_valid_la     => open,
             data_dwn_valid_ioview => data_dwn_valid_ioview,
             data_dwn_valid_gdb    => open,
+            data_dwn_valid_wfg    => open,
             data_up_ready_la      => open,
             data_up_ready_ioview  => data_up_ready_ioview,
             data_up_ready_gdb     => open,
+            data_up_ready_wfg     => open,
             data_up_valid_la      => '0',
             data_up_valid_ioview  => data_up_valid_ioview,
             data_up_valid_gdb     => '0',
+            data_up_valid_wfg     => '0',
             data_up_la            => (others => '-'),
             data_up_ioview        => data_up_ioview,
-            data_up_gdb           => (others => '-')
+            data_up_gdb           => (others => '-'),
+            data_up_wfg           => (others => '-')
         );
 
     iov : component IoViewTop
@@ -126,6 +144,7 @@ begin
             clk            => clk,
             rst            => '0',
             ce             => '1',
+            data_dwn_ready => data_dwn_ready_ioview,
             data_dwn_valid => data_dwn_valid_ioview,
             data_dwn       => data_dwn,
             data_up_ready  => data_up_ready_ioview,

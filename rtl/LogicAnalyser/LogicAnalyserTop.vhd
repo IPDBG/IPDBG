@@ -15,6 +15,7 @@ entity LogicAnalyserTop is
         ce             : in  std_logic;
 
         --      host interface (UART or ....)
+        data_dwn_ready : out std_logic;
         data_dwn_valid : in  std_logic;
         data_dwn       : in  std_logic_vector(7 downto 0);
         data_up_ready  : in  std_logic;
@@ -246,6 +247,8 @@ begin
             data_valid        => data_valid,
             finish            => finish
         );
+
+    data_dwn_ready <= '1';
 
     Escaping : component IpdbgEscaping
         generic map(
