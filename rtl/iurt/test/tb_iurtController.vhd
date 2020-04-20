@@ -22,6 +22,7 @@ architecture test of tb_iurtController is
             dat_o          : out std_logic_vector(31 downto 0);
             ack_o          : out std_logic;
             break          : out std_logic;
+            data_dwn_ready : out std_logic;
             data_dwn_valid : in  std_logic;
             data_dwn       : in  std_logic_vector(7 downto 0);
             data_up_ready  : in  std_logic;
@@ -41,6 +42,7 @@ architecture test of tb_iurtController is
     signal dat_o               : std_logic_vector(31 downto 0);
     signal ack_o               : std_logic;
     signal break               : std_logic;
+    signal data_dwn_ready      : std_logic;
     signal data_dwn_valid      : std_logic;
     signal data_dwn            : std_logic_vector(7 downto 0);
     signal data_up_ready       : std_logic;
@@ -85,17 +87,17 @@ begin
             for i in 1 to 16 loop
                 if dat_i(7 downto 0) = x"80" then
                     dat_i <= x"00000001";
-        else
+                else
                     dat_i <= std_logic_vector(unsigned(dat_i) SLL 1);
-        end if;
+                end if;
                 stbcyc <= '1';
 
                 wait until rising_edge(clk) and ack_o = '1';
 
                 if i > 8 then
                     stbcyc <= '0';
-            wait for T;
-            end if;
+                    wait for T;
+                end if;
             end loop;
             stbcyc <= '0';
             wait for T;
@@ -110,13 +112,13 @@ begin
     end process;
 
 
-        process begin
+    process begin
         counter <= 0;
-        data_up_ready   <= '1';
-            data_dwn_valid <= '0';
+        data_up_ready <= '1';
+        data_dwn_valid <= '0';
         data_dwn <= x"00";
 
-            wait until rising_edge(clk);
+        wait until rising_edge(clk);
         wait for T/5;
         wait for 5*T;
 
@@ -139,6 +141,8 @@ begin
         wait for 10*T;
 
         for i in 1 to 20 loop
+            wait until rising_edge(clk) and data_dwn_ready = '1';
+            wait for T/5;
             data_dwn_valid <= '1';
             data_dwn <= std_logic_vector(unsigned(data_dwn) + 1);
 
@@ -147,7 +151,7 @@ begin
         end loop;
 
         wait;
-        end process;
+    end process;
 
 
 
@@ -169,6 +173,7 @@ begin
             dat_o          => dat_o,
             ack_o          => ack_o,
             break          => break,
+            data_dwn_ready => data_dwn_ready,
             data_dwn_valid => data_dwn_valid,
             data_dwn       => data_dwn,
             data_up_ready  => data_up_ready,
