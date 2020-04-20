@@ -20,6 +20,7 @@ entity IpdbgClockDomainCrossing is
         data_dwn_ready_host : out std_logic;
 
         data_dwn_valid_func : out std_logic;
+        data_dwn_ready_func : in  std_logic;
         data_dwn_func       : out std_logic_vector(7 downto 0);
 
         data_up_ready_host  : in  std_logic;
@@ -123,8 +124,9 @@ begin
         end block;
 ------------------------------------------------------------------------------------------------------------
         clk_clock_domain : block
-            signal update_synced                : std_logic;
-            signal update_synced_prev           : std_logic;
+            signal update_synced      : std_logic;
+            signal update_synced_prev : std_logic;
+            signal pending            : std_logic;
         begin
             process (clk_func, arst_func) begin
                 if arst_func = '1' then
@@ -132,22 +134,36 @@ begin
                     data_dwn_valid_func <= '0';
                     data_dwn_func <= (others => '-');
                     update_synced_prev <= '-';
+                    pending <= '0'
                 elsif rising_edge(clk_func) then
                     if srst_func = '1' then
                         data_out_register_enable <= '0';
                         data_dwn_valid_func <= '0';
                         data_dwn_func <= (others => '-');
                         update_synced_prev <= '-';
+                        pending <= '0'
                     else
                         if ce_func = '1' then
                             data_dwn_valid_func <= '0';
                             update_synced_prev <= update_synced;
-                            if update_synced = '1' and update_synced_prev = '0' then -- detect 0 -> 1 change
-                                data_out_register_enable <= '1';
-                                data_dwn_valid_func <= '1';
-                                data_dwn_func <= data_dwn_register;
-                            elsif update_synced = '0' and update_synced_prev = '1' then -- detect 1 -> 0 change
-                                data_out_register_enable <= '0';
+                            if pending = '1' then
+                                if data_dwn_ready_func = '1' then
+                                    data_out_register_enable <= '1';
+                                    data_dwn_valid_func <= '1';
+                                    pending <= '0'
+                                end if;
+                            else
+                                if update_synced = '1' and update_synced_prev = '0' then -- detect 0 -> 1 change
+                                    data_dwn_func <= data_dwn_register;
+                                    if data_dwn_ready_func = '1' then
+                                        data_out_register_enable <= '1';
+                                        data_dwn_valid_func <= '1';
+                                    else
+                                        pending <= '1';
+                                    end if;
+                                elsif update_synced = '0' and update_synced_prev = '1' then -- detect 1 -> 0 change
+                                    data_out_register_enable <= '0';
+                                end if;
                             end if;
                         end if;
                     end if;
