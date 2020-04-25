@@ -4,38 +4,33 @@ use ieee.numeric_std.all;
 
 entity JtagHub is
     generic(
-        MFF_LENGTH            : natural := 3
+        MFF_LENGTH       : natural := 3;
+        HANDSHAKE_ENABLE : std_logic_vector(6 downto 0) := "0000010"
     );
     port(
         clk                   : in  std_logic;
         ce                    : in  std_logic;
+-------------------------- to function
+        data_dwn_ready        : in  std_logic_vector(6 downto 0);
+        data_dwn_valid        : out std_logic_vector(6 downto 0);
+        data_dwn_0            : out std_logic_vector(7 downto 0);
+        data_dwn_1            : out std_logic_vector(7 downto 0);
+        data_dwn_2            : out std_logic_vector(7 downto 0);
+        data_dwn_3            : out std_logic_vector(7 downto 0);
+        data_dwn_4            : out std_logic_vector(7 downto 0);
+        data_dwn_5            : out std_logic_vector(7 downto 0);
+        data_dwn_6            : out std_logic_vector(7 downto 0);
 
-        data_dwn              : out std_logic_vector(7 downto 0);
-
-        data_dwn_ready_la     : in  std_logic;
-        data_dwn_ready_ioview : in  std_logic;
-        data_dwn_ready_gdb    : in  std_logic;
-        data_dwn_ready_wfg    : in  std_logic;
-
-        data_dwn_valid_la     : out std_logic;
-        data_dwn_valid_ioview : out std_logic;
-        data_dwn_valid_gdb    : out std_logic;
-        data_dwn_valid_wfg    : out std_logic;
-
-        data_up_ready_la      : out std_logic;
-        data_up_ready_ioview  : out std_logic;
-        data_up_ready_gdb     : out std_logic;
-        data_up_ready_wfg     : out std_logic;
-
-        data_up_valid_la      : in  std_logic;
-        data_up_valid_ioview  : in  std_logic;
-        data_up_valid_gdb     : in  std_logic;
-        data_up_valid_wfg     : in  std_logic;
-
-        data_up_la            : in  std_logic_vector(7 downto 0);
-        data_up_ioview        : in  std_logic_vector(7 downto 0);
-        data_up_gdb           : in  std_logic_vector(7 downto 0);
-        data_up_wfg           : in  std_logic_vector(7 downto 0)
+-------------------------- from function
+        data_up_ready         : out std_logic_vector(6 downto 0);
+        data_up_valid         : in  std_logic_vector(6 downto 0);
+        data_up_0             : in  std_logic_vector(7 downto 0);
+        data_up_1             : in  std_logic_vector(7 downto 0);
+        data_up_2             : in  std_logic_vector(7 downto 0);
+        data_up_3             : in  std_logic_vector(7 downto 0);
+        data_up_4             : in  std_logic_vector(7 downto 0);
+        data_up_5             : in  std_logic_vector(7 downto 0);
+        data_up_6             : in  std_logic_vector(7 downto 0)
     );
 end entity JtagHub;
 
@@ -48,32 +43,25 @@ architecture structure of JtagHub is
             clk                   : in  std_logic;
             ce                    : in  std_logic;
 
-            data_dwn              : out std_logic_vector(7 downto 0);
+            data_dwn_ready        : in  std_logic_vector(6 downto 0);
+            data_dwn_valid        : out std_logic_vector(6 downto 0);
+            data_dwn_0            : out std_logic_vector(7 downto 0);
+            data_dwn_1            : out std_logic_vector(7 downto 0);
+            data_dwn_2            : out std_logic_vector(7 downto 0);
+            data_dwn_3            : out std_logic_vector(7 downto 0);
+            data_dwn_4            : out std_logic_vector(7 downto 0);
+            data_dwn_5            : out std_logic_vector(7 downto 0);
+            data_dwn_6            : out std_logic_vector(7 downto 0);
 
-            data_dwn_ready_la     : in  std_logic;
-            data_dwn_ready_ioview : in  std_logic;
-            data_dwn_ready_gdb    : in  std_logic;
-            data_dwn_ready_wfg    : in  std_logic;
-
-            data_dwn_valid_la     : out std_logic;
-            data_dwn_valid_ioview : out std_logic;
-            data_dwn_valid_gdb    : out std_logic;
-            data_dwn_valid_wfg    : out std_logic;
-
-            data_up_ready_la      : out std_logic;
-            data_up_ready_ioview  : out std_logic;
-            data_up_ready_gdb     : out std_logic;
-            data_up_ready_wfg     : out std_logic;
-
-            data_up_valid_la      : in  std_logic;
-            data_up_valid_ioview  : in  std_logic;
-            data_up_valid_gdb     : in  std_logic;
-            data_up_valid_wfg     : in  std_logic;
-
-            data_up_la            : in  std_logic_vector (7 downto 0);
-            data_up_ioview        : in  std_logic_vector (7 downto 0);
-            data_up_gdb           : in  std_logic_vector (7 downto 0);
-            data_up_wfg           : in  std_logic_vector (7 downto 0);
+            data_up_ready         : out std_logic_vector(6 downto 0);
+            data_up_valid         : in  std_logic_vector(6 downto 0);
+            data_up_0             : in  std_logic_vector(7 downto 0);
+            data_up_1             : in  std_logic_vector(7 downto 0);
+            data_up_2             : in  std_logic_vector(7 downto 0);
+            data_up_3             : in  std_logic_vector(7 downto 0);
+            data_up_4             : in  std_logic_vector(7 downto 0);
+            data_up_5             : in  std_logic_vector(7 downto 0);
+            data_up_6             : in  std_logic_vector(7 downto 0)
 
             DRCLK                 : in  std_logic;
             USER                  : in  std_logic;
@@ -122,42 +110,33 @@ begin
             MFF_LENGTH => MFF_LENGTH
         )
         port map(
-            clk                   => clk,
-            ce                    => ce,
-
-            data_dwn              => data_dwn,
-            data_dwn_ready_la     => data_dwn_ready_la,
-            data_dwn_ready_ioview => data_dwn_ready_ioview,
-            data_dwn_ready_gdb    => data_dwn_ready_gdb,
-            data_dwn_ready_wfg    => data_dwn_ready_wfg,
-
-            data_dwn_valid_la     => data_dwn_valid_la,
-            data_dwn_valid_ioview => data_dwn_valid_ioview,
-            data_dwn_valid_gdb    => data_dwn_valid_gdb,
-            data_dwn_valid_wfg    => data_dwn_valid_wfg,
-
-            data_up_ready_la      => data_up_ready_la,
-            data_up_ready_ioview  => data_up_ready_ioview,
-            data_up_ready_gdb     => data_up_ready_gdb,
-            data_up_ready_wfg     => data_up_ready_wfg,
-
-            data_up_valid_la      => data_up_valid_la,
-            data_up_valid_ioview  => data_up_valid_ioview,
-            data_up_valid_gdb     => data_up_valid_gdb,
-            data_up_valid_wfg     => data_up_valid_wfg,
-
-            data_up_la            => data_up_la,
-            data_up_ioview        => data_up_ioview,
-            data_up_gdb           => data_up_gdb,
-            data_up_wfg           => data_up_wfg,
-
-            DRCLK                 => DRCLK,
-            USER                  => USER,
-            UPDATE                => UPDATE,
-            CAPTURE               => CAPTURE,
-            SHIFT                 => SHIFT,
-            TDI                   => TDI,
-            TDO                   => TDO
+            clk            => clk,
+            ce             => ce,
+            data_dwn_ready => data_dwn_ready,
+            data_dwn_valid => data_dwn_valid,
+            data_dwn_0     => data_dwn_0,
+            data_dwn_1     => data_dwn_1,
+            data_dwn_2     => data_dwn_2,
+            data_dwn_3     => data_dwn_3,
+            data_dwn_4     => data_dwn_4,
+            data_dwn_5     => data_dwn_5,
+            data_dwn_6     => data_dwn_6,
+            data_up_ready  => data_up_ready,
+            data_up_valid  => data_up_valid,
+            data_up_0      => data_up_0,
+            data_up_1      => data_up_1,
+            data_up_2      => data_up_2,
+            data_up_3      => data_up_3,
+            data_up_4      => data_up_4,
+            data_up_5      => data_up_5,
+            data_up_6      => data_up_6,
+            DRCLK          => DRCLK,
+            USER           => USER,
+            UPDATE         => UPDATE,
+            CAPTURE        => CAPTURE,
+            SHIFT          => SHIFT,
+            TDI            => TDI,
+            TDO            => TDO
         );
 
 end architecture structure;
