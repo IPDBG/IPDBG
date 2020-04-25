@@ -33,13 +33,16 @@
 /* useful macro */
 #define CRLF_STR		"\r\n"
 
-#define IPDBG_IOVIEW_VALID_MASK 0xA00
-#define IPDBG_LA_VALID_MASK     0xC00
-#define IPDBG_GDB_VALID_MASK    0x900
-#define IPDBG_WFG_VALID_MASK    0xB00
-#define IPDBG_CHANNELS          4
+#define IPDBG_XOFF_MASK   0x0800
+#define IPDBG_VALID_MASK  0x1000
+#define IPDBG_GDB_MASK    0x0100
+#define IPDBG_IOVIEW_MASK 0x0200
+#define IPDBG_WFG_MASK    0x0300
+#define IPDBG_LA_MASK     0x0400
+#define IPDBG_INT_MASK    0x0700
+#define IPDBG_CHANNELS               4
 
-#define MIN_TRANSFERS            1
+#define MIN_TRANSFERS                1
 
 typedef struct _serv_ctx_t serv_ctx_t;
 
@@ -64,6 +67,7 @@ struct _serv_ctx_t
 
     uint8_t down_buf[BUFSIZE];
     size_t down_buf_level;
+    uint8_t down_xoff;
 
     uint8_t up_buf[BUFSIZE];
     size_t up_buf_level;
@@ -210,11 +214,12 @@ int main(int argc, const char *argv[])
         serv_ctx->channel_state = listening;
         serv_ctx->up_buf_level = 0;
         serv_ctx->down_buf_level = 0;
+        serv_ctx->down_xoff = 0;
 
-        if(ch == 0) serv_ctx->valid_mask = IPDBG_LA_VALID_MASK; ///
-        if(ch == 1) serv_ctx->valid_mask = IPDBG_IOVIEW_VALID_MASK; ///
-        if(ch == 2) serv_ctx->valid_mask = IPDBG_GDB_VALID_MASK; ///
-        if(ch == 3) serv_ctx->valid_mask = IPDBG_WFG_VALID_MASK; ///
+        if(ch == 0) serv_ctx->valid_mask = IPDBG_VALID_MASK | IPDBG_LA_MASK;
+        if(ch == 1) serv_ctx->valid_mask = IPDBG_VALID_MASK | IPDBG_IOVIEW_MASK;
+        if(ch == 2) serv_ctx->valid_mask = IPDBG_VALID_MASK | IPDBG_GDB_MASK;
+        if(ch == 3) serv_ctx->valid_mask = IPDBG_VALID_MASK | IPDBG_WFG_MASK;
 
         apr_socket_t *listening_sock = create_listen_sock(mp, ch);
         assert(listening_sock);
@@ -226,27 +231,38 @@ int main(int argc, const char *argv[])
 
     // reset JtagCDC
     uint16_t val;
-    ipdbgJTAGtransfer(chain, &val, 0xf00);
+    ipdbgJTAGtransfer(chain, &val, 0x1700);
+
+    uint16_t last_ch = 7;
 
     while (1)
     {
         size_t transfers = 0;
-        for(size_t ch = 0 ; ch < IPDBG_CHANNELS ; ++ch)
+        for(uint16_t ch = 0 ; ch < IPDBG_CHANNELS ; ++ch)
         {
-            for(size_t idx = 0 ; idx < channel_contexts[ch]->down_buf_level; ++idx)
+            for(size_t idx = 0 ; (channel_contexts[ch]->down_xoff == 0) && (idx < channel_contexts[ch]->down_buf_level) ; ++idx)
             {
                 uint16_t val;
                 ipdbgJTAGtransfer(chain, &val, channel_contexts[ch]->down_buf[idx] | channel_contexts[ch]->valid_mask);
                 transfers++;
 
+                if(val & IPDBG_XOFF_MASK)
+                    channel_contexts[last_ch]->down_xoff = 1;
+
                 distribute_to_up_buffer(val, channel_contexts);
+
+                last_ch = ch;
             }
             channel_contexts[ch]->down_buf_level = 0;
         }
         for(size_t k = transfers ; k < MIN_TRANSFERS ; ++k)
         {
             uint16_t val;
-            ipdbgJTAGtransfer(chain, &val, 0x000);
+            ipdbgJTAGtransfer(chain, &val, 0x0000);
+
+            if(val & IPDBG_XOFF_MASK)
+                channel_contexts[last_ch]->down_xoff = 1;
+
             distribute_to_up_buffer(val, channel_contexts);
         }
 
@@ -417,29 +433,35 @@ static int connection_rx_cb(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_so
 
 void distribute_to_up_buffer(uint16_t val, serv_ctx_t *channel_contexts[])
 {
-
-    if ((val & 0xf00) == IPDBG_IOVIEW_VALID_MASK)
+    if ((val & 0x1700) == (IPDBG_VALID_MASK | IPDBG_IOVIEW_MASK))
     {
         size_t index = channel_contexts[1]->up_buf_level;
         channel_contexts[1]->up_buf[index] = val & 0x00FF;
         channel_contexts[1]->up_buf_level++;
     }
-    if ((val & 0xf00) == IPDBG_LA_VALID_MASK)
+    else if ((val & 0x1700) == (IPDBG_VALID_MASK | IPDBG_LA_MASK))
     {
         size_t index = channel_contexts[0]->up_buf_level;
         channel_contexts[0]->up_buf[index] = val & 0x00FF;
         channel_contexts[0]->up_buf_level++;
     }
-    if ((val & 0xf00) == IPDBG_GDB_VALID_MASK)
+    else if ((val & 0x1700) == (IPDBG_VALID_MASK | IPDBG_GDB_MASK))
     {
         size_t index = channel_contexts[2]->up_buf_level;
         channel_contexts[2]->up_buf[index] = val & 0x00FF;
         channel_contexts[2]->up_buf_level++;
     }
-    if ((val & 0xf00) == IPDBG_WFG_VALID_MASK)
+    else if ((val & 0x1700) == (IPDBG_VALID_MASK | IPDBG_WFG_MASK))
     {
         size_t index = channel_contexts[3]->up_buf_level;
         channel_contexts[3]->up_buf[index] = val & 0x00FF;
         channel_contexts[3]->up_buf_level++;
+    }
+    else if ((val & 0x1700) == (IPDBG_VALID_MASK | IPDBG_INT_MASK))
+    {
+        if      (val & 0x0002) channel_contexts[2]->down_xoff = 0;
+        else if (val & 0x0004) channel_contexts[1]->down_xoff = 0;
+        else if (val & 0x0008) channel_contexts[3]->down_xoff = 0;
+        else if (val & 0x0010) channel_contexts[0]->down_xoff = 0;
     }
 }
