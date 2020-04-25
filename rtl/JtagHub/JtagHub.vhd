@@ -61,7 +61,7 @@ architecture structure of JtagHub is
             data_up_3             : in  std_logic_vector(7 downto 0);
             data_up_4             : in  std_logic_vector(7 downto 0);
             data_up_5             : in  std_logic_vector(7 downto 0);
-            data_up_6             : in  std_logic_vector(7 downto 0)
+            data_up_6             : in  std_logic_vector(7 downto 0);
 
             DRCLK                 : in  std_logic;
             USER                  : in  std_logic;
