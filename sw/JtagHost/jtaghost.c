@@ -156,7 +156,7 @@ int init7Series(urj_chain_t *chain)
 
 
 
-    int user1register_register_length = 12; /// length of data register
+    int user1register_register_length = 13; /// length of data register
     char *user1register_register_name = "USER1REGISTER";
 
     if(urj_part_data_register_define(part, user1register_register_name, user1register_register_length) != URJ_STATUS_OK)
@@ -209,7 +209,7 @@ int initVirtex6(urj_chain_t *chain)
 
 
 
-    int user1register_register_length = 12; /// length of data register
+    int user1register_register_length = 13; /// length of data register
     char *user1register_register_name = "USER1REGISTER";
 
     if(urj_part_data_register_define(part, user1register_register_name, user1register_register_length) != URJ_STATUS_OK)
@@ -260,7 +260,7 @@ int initEcp2(urj_chain_t *chain)
 
 
 
-    int user1register_register_length = 12; /// length of data register
+    int user1register_register_length = 13; /// length of data register
     char *user1register_register_name = "USER1REGISTER";
 
     if(urj_part_data_register_define(part, user1register_register_name, user1register_register_length) != URJ_STATUS_OK)
@@ -311,7 +311,7 @@ int initSpartan3(urj_chain_t *chain)
 
 
 
-    int user1register_register_length = 12; /// length of data register
+    int user1register_register_length = 13; /// length of data register
     char *user1register_register_name = "USER1REGISTER";
 
     if(urj_part_data_register_define(part, user1register_register_name, user1register_register_length) != URJ_STATUS_OK)
@@ -363,7 +363,7 @@ int initSpartan6(urj_chain_t *chain)
 
 
 
-    int user1register_register_length = 12; /// length of data register
+    int user1register_register_length = 13; /// length of data register
     char *user1register_register_name = "USER1REGISTER";
 
     if(urj_part_data_register_define(part, user1register_register_name, user1register_register_length) != URJ_STATUS_OK)
@@ -413,7 +413,7 @@ int initiCE40(urj_chain_t *chain)
     urj_part_instruction_length_set (part, 8);
     printf("set instruction length\n");
 
-    int user1register_register_length = 12; /// length of data register
+    int user1register_register_length = 13; /// length of data register
     char *user1register_register_name = "USER1REGISTER";
 
     if(urj_part_data_register_define(part, user1register_register_name, user1register_register_length) != URJ_STATUS_OK)
@@ -484,7 +484,7 @@ int initAltera(urj_chain_t *chain)
         return -7;
     }
 
-    int user0register_register_length = 12; /// length of data register (vir)
+    int user0register_register_length = 13; /// length of data register (vir)
     char *user0register_register_name = "USER0REGISTER";
 
     if(urj_part_data_register_define(part, user0register_register_name, user0register_register_length) != URJ_STATUS_OK)

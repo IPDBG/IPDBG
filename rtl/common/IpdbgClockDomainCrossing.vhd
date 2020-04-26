@@ -134,14 +134,14 @@ begin
                     data_dwn_valid_func <= '0';
                     data_dwn_func <= (others => '-');
                     update_synced_prev <= '-';
-                    pending <= '0'
+                    pending <= '0';
                 elsif rising_edge(clk_func) then
                     if srst_func = '1' then
                         data_out_register_enable <= '0';
                         data_dwn_valid_func <= '0';
                         data_dwn_func <= (others => '-');
                         update_synced_prev <= '-';
-                        pending <= '0'
+                        pending <= '0';
                     else
                         if ce_func = '1' then
                             data_dwn_valid_func <= '0';
@@ -150,7 +150,7 @@ begin
                                 if data_dwn_ready_func = '1' then
                                     data_out_register_enable <= '1';
                                     data_dwn_valid_func <= '1';
-                                    pending <= '0'
+                                    pending <= '0';
                                 end if;
                             else
                                 if update_synced = '1' and update_synced_prev = '0' then -- detect 0 -> 1 change
