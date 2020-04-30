@@ -34,8 +34,6 @@ end entity IurtController;
 
 
 architecture behavioral of IurtController is
-    signal RxEmpty                : std_logic;
-
     signal TxReady                : std_logic;
 
     signal arst, srst             : std_logic;
@@ -101,6 +99,7 @@ begin
                 ack_rd <= '0';
                 set_ready <= '-';
                 data_dwn_ready_local <= '1';
+                data_o_local <= (others => '-');
             end procedure rd_reset_assignment;
         begin
             if arst = '1' then
