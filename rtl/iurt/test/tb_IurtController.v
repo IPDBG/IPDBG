@@ -2,7 +2,6 @@
 
 module tb_iurtcontroller(); // Testbench has no inputs, outputs
 
-
     reg         clk = 1'b0;
     reg         rst;
     reg         ce;
@@ -24,7 +23,7 @@ module tb_iurtcontroller(); // Testbench has no inputs, outputs
     wire [7:0]  data_up;
 
 
-    IurtController dut
+    IurtController #(.ASYNC_RESET(0)) dut
     (
         // system
         .clk(clk), .rst(rst), .ce(ce),

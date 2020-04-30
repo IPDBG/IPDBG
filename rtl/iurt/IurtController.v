@@ -1,5 +1,6 @@
 
 module IurtController
+    #(parameter     ASYNC_RESET = 0)
     (
         clk, rst, ce, // system
         cyc_i, stb_i, we_i, adr_i, dat_i, dat_o, ack_o, // wishbone
@@ -7,7 +8,7 @@ module IurtController
         data_dwn_ready, data_dwn_valid, data_dwn, data_up_ready, data_up_valid, data_up
     );
 
-    parameter    ASYNC_RESET = 0;
+    // parameter     ASYNC_RESET = 0;
 
     input         clk;
     input         rst;
