@@ -240,7 +240,8 @@ int main(int argc, const char *argv[])
         size_t transfers = 0;
         for(uint16_t ch = 0 ; ch < IPDBG_CHANNELS ; ++ch)
         {
-            for(size_t idx = 0 ; (channel_contexts[ch]->down_xoff == 0) && (idx < channel_contexts[ch]->down_buf_level) ; ++idx)
+            size_t sent = 0;
+            for(size_t idx = 0 ; (channel_contexts[ch]->down_xoff == 0) && (idx < channel_contexts[ch]->down_buf_level) ; ++idx, ++sent)
             {
                 uint16_t val;
                 ipdbgJTAGtransfer(chain, &val, channel_contexts[ch]->down_buf[idx] | channel_contexts[ch]->valid_mask);
@@ -253,7 +254,14 @@ int main(int argc, const char *argv[])
 
                 last_ch = ch;
             }
-            channel_contexts[ch]->down_buf_level = 0;
+            if(sent)
+            {
+                size_t remaining = channel_contexts[ch]->down_buf_level - sent;
+                for(size_t idx = 0 ; idx < remaining ; ++idx)
+                    channel_contexts[ch]->down_buf[idx] = channel_contexts[ch]->down_buf[sent++];
+
+                channel_contexts[ch]->down_buf_level = remaining;
+            }
         }
         for(size_t k = transfers ; k < MIN_TRANSFERS ; ++k)
         {
