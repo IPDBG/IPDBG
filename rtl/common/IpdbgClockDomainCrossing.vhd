@@ -66,22 +66,22 @@ begin
         arst_func <= '0';
         srst_func <= rst_func;
     end generate sync_init_func;
-----
+
     data_dwn_block : block
-        signal data_dwn_register          : std_logic_vector(7 downto 0);
-        signal data_out_register_enable   : std_logic;
-        signal data_dwn_ready_host_n      : std_logic;
+        signal transfer_register : std_logic_vector(7 downto 0);
+        signal request           : std_logic;
+        signal acknowledge       : std_logic;
     begin
-
-        data_dwn_ready_host <= not data_dwn_ready_host_n;
-
-        jtag_clockdomain: block
-            signal data_out_register_enable_jtag : std_logic;
+        host_clock_domain : block
+            signal acknowledge_synced      : std_logic;
+            signal acknowledge_synced_prev : std_logic;
         begin
             process (clk_host, arst_host)
                 procedure assign_reset is begin
-                    data_dwn_ready_host_n <= '0';
-                    data_dwn_register <= (others => '-');
+                    request <= '0';
+					data_dwn_ready_host <= '1';
+                    acknowledge_synced_prev <= '0';
+                    transfer_register <= (others => '-');
                 end procedure assign_reset;
             begin
                 if arst_host = '1' then
@@ -91,12 +91,18 @@ begin
                         assign_reset;
                     else
                         if ce_host = '1' then
+                            acknowledge_synced_prev <= acknowledge_synced;
                             if data_dwn_valid_host = '1' then
-                                data_dwn_ready_host_n <= '1';
-                                data_dwn_register <= data_dwn_host;
-                            end if;
-                            if data_out_register_enable_jtag = '1' then
-                                data_dwn_ready_host_n <= '0';
+                                request <= '1';
+                                transfer_register <= data_dwn_host;
+								data_dwn_ready_host <= '0';
+                            else
+                                if acknowledge_synced = '1' and acknowledge_synced_prev = '0' then
+                                    request <= '0';
+                                end if;
+                                if acknowledge_synced = '0' and acknowledge_synced_prev = '1' then
+                                    data_dwn_ready_host <= '1';
+                                end if;
                             end if;
                         end if;
                     end if;
@@ -104,13 +110,10 @@ begin
             end process;
 
             ff_jtag: block
-                signal ff   : std_logic_vector(MFF_LENGTH downto 0);
+                signal ff : std_logic_vector(MFF_LENGTH downto 0);
             begin
-
-                ff(0) <= data_out_register_enable;
-
+                ff(0) <= acknowledge;
                 mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
-
                     MFF : dffpc
                         port map(
                             clk => clk_host,
@@ -119,50 +122,50 @@ begin
                             q   => ff(K+1)
                         );
                 end generate;
-                data_out_register_enable_jtag <= ff(MFF_LENGTH);
+                acknowledge_synced <= ff(MFF_LENGTH);
             end block;
         end block;
-------------------------------------------------------------------------------------------------------------
-        clk_clock_domain : block
-            signal update_synced      : std_logic;
-            signal update_synced_prev : std_logic;
-            signal pending            : std_logic;
+
+        function_clock_domain : block
+            signal request_synced      : std_logic;
+            signal request_synced_prev : std_logic;
+            signal pending             : std_logic;
         begin
-            process (clk_func, arst_func) begin
-                if arst_func = '1' then
-                    data_out_register_enable <= '0';
+            process (clk_func, arst_func)
+				procedure assign_reset is begin
+                    acknowledge <= '0';
                     data_dwn_valid_func <= '0';
                     data_dwn_func <= (others => '-');
-                    update_synced_prev <= '-';
+                    request_synced_prev <= '0';
                     pending <= '0';
+                end procedure assign_reset;
+			begin
+                if arst_func = '1' then
+					assign_reset;
                 elsif rising_edge(clk_func) then
                     if srst_func = '1' then
-                        data_out_register_enable <= '0';
-                        data_dwn_valid_func <= '0';
-                        data_dwn_func <= (others => '-');
-                        update_synced_prev <= '-';
-                        pending <= '0';
+                        assign_reset;
                     else
                         if ce_func = '1' then
                             data_dwn_valid_func <= '0';
-                            update_synced_prev <= update_synced;
+                            request_synced_prev <= request_synced;
                             if pending = '1' then
                                 if data_dwn_ready_func = '1' then
-                                    data_out_register_enable <= '1';
+                                    acknowledge <= '1';
                                     data_dwn_valid_func <= '1';
                                     pending <= '0';
                                 end if;
                             else
-                                if update_synced = '1' and update_synced_prev = '0' then -- detect 0 -> 1 change
-                                    data_dwn_func <= data_dwn_register;
+                                if request_synced = '1' and request_synced_prev = '0' then -- detect 0 -> 1 change
+                                    data_dwn_func <= transfer_register;
                                     if data_dwn_ready_func = '1' then
-                                        data_out_register_enable <= '1';
+                                        acknowledge <= '1';
                                         data_dwn_valid_func <= '1';
                                     else
                                         pending <= '1';
                                     end if;
-                                elsif update_synced = '0' and update_synced_prev = '1' then -- detect 1 -> 0 change
-                                    data_out_register_enable <= '0';
+                                elsif request_synced = '0' and request_synced_prev = '1' then -- detect 1 -> 0 change
+                                    acknowledge <= '0';
                                 end if;
                             end if;
                         end if;
@@ -173,11 +176,8 @@ begin
             ff_clk: block
                 signal ff   : std_logic_vector(MFF_LENGTH downto 0);
             begin
-
-                ff(0) <= data_dwn_ready_host_n;
-
+                ff(0) <= request;
                 mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
-
                     MFF : dffpc
                         port map(
                             clk => clk_func,
@@ -186,28 +186,25 @@ begin
                             q   => ff(K+1)
                         );
                 end generate;
-                update_synced <= ff(MFF_LENGTH);
+                request_synced <= ff(MFF_LENGTH);
             end block;
         end block;
     end block;
 
-----------------------------------------------------------------------------------------
-
     data_up_block: block
-        signal transfer_register  : std_logic_vector(7 downto 0);
-        signal pending            : std_logic;
-        signal data_transmitted   : std_logic;
-
+        signal transfer_register : std_logic_vector(7 downto 0);
+        signal request           : std_logic;
+        signal acknowledge       : std_logic;
     begin
-        clk_clockdomain : block
-            signal data_send_host       : std_logic;
-            signal data_send_host_prev  : std_logic;
+        function_clock_domain : block
+            signal acknowledge_synced      : std_logic;
+            signal acknowledge_synced_prev : std_logic;
         begin
             process (clk_func, arst_func)
                 procedure assign_reset is begin
-                    pending <= '0';
+                    request <= '0';
                     data_up_ready_func <= '1';
-                    data_send_host_prev <= '-';
+                    acknowledge_synced_prev <= '0';
                     transfer_register <= (others => '-');
                 end procedure assign_reset;
             begin
@@ -218,30 +215,29 @@ begin
                         assign_reset;
                     else
                         if ce_func = '1' then
-                            data_send_host_prev <= data_send_host;
-                            if data_up_valid_func =  '1' then
+                            acknowledge_synced_prev <= acknowledge_synced;
+                            if data_up_valid_func = '1' then
+                                request <= '1';
                                 transfer_register <= data_up_func;
                                 data_up_ready_func <= '0';
-                                pending <= '1';
-                            end if;
-                            if data_send_host = '1' and data_send_host_prev = '0'then
-                                pending <= '0';
-                            end if;
-                            if data_send_host = '0' and data_send_host_prev = '1'then
-                                data_up_ready_func <= '1';
+                            else
+                                if acknowledge_synced = '1' and acknowledge_synced_prev = '0'then
+                                    request <= '0';
+                                end if;
+                                if acknowledge_synced = '0' and acknowledge_synced_prev = '1'then
+                                    data_up_ready_func <= '1';
+                                end if;
                             end if;
                         end if;
                     end if;
                 end if;
             end process;
+
             ff_clk1: block
                 signal ff   : std_logic_vector(MFF_LENGTH downto 0);
             begin
-
-                ff(0) <= data_transmitted;
-
+                ff(0) <= acknowledge;
                 mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
-
                     MFF : dffpc
                         port map(
                             clk => clk_func,
@@ -250,22 +246,22 @@ begin
                             q   => ff(K+1)
                         );
                 end generate;
-                data_send_host <= ff(MFF_LENGTH);
-
+                acknowledge_synced <= ff(MFF_LENGTH);
             end block;
         end block;
 
-----------------------------------------------------------------------------
-        clkjtag_block: block
-            signal pending_host       : std_logic;
-            signal pending_host_prev  : std_logic;
+        host_clock_domain: block
+            signal request_synced      : std_logic;
+            signal request_synced_prev : std_logic;
+            signal pending             : std_logic;
         begin
             process(clk_host, arst_host)
                 procedure assign_reset is begin
-                    data_transmitted <= '0';
+                    acknowledge <= '0';
                     data_up_valid_host <= '0';
-                    pending_host_prev <= '-';
                     data_up_host <= (others => '-');
+                    request_synced_prev <= '0';
+                    pending <= '0';
                 end procedure assign_reset;
             begin
                 if arst_host= '1' then
@@ -276,15 +272,25 @@ begin
                     else
                         if ce_host = '1' then
                             data_up_valid_host <= '0';
-                            pending_host_prev <= pending_host;
-                            if data_up_ready_host = '1' then
-                                if pending_host = '1'  then
+                            request_synced_prev <= request_synced;
+                            if pending = '1' then
+                                if data_up_ready_host = '1' then
+                                    acknowledge <= '1';
                                     data_up_valid_host <= '1';
-                                    data_up_host <= transfer_register;
-                                    data_transmitted <= '1';
+                                    pending <= '0';
                                 end if;
-                            elsif pending_host = '0' then
-                                data_transmitted <= '0';
+                            else
+                                if request_synced = '1' and request_synced_prev = '0' then -- detect 0 -> 1 change
+                                    data_up_host <= transfer_register;
+                                    if data_up_ready_host = '1' then
+                                        acknowledge <= '1';
+                                        data_up_valid_host <= '1';
+                                    else
+                                        pending <= '1';
+                                    end if;
+                                elsif request_synced = '0' and request_synced_prev = '1' then -- detect 1 -> 0 change
+                                    acknowledge <= '0';
+                                end if;
                             end if;
                         end if;
                     end if;
@@ -294,9 +300,8 @@ begin
            ff_clkjtag: block
                 signal ff   : std_logic_vector(MFF_LENGTH downto 0);
             begin
-                ff(0) <= pending;
+                ff(0) <= request;
                 mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
-
                     MFF : dffpc
                         port map(
                             clk => clk_host,
@@ -305,8 +310,7 @@ begin
                             q   => ff(K+1)
                         );
                 end generate;
-                pending_host <= ff(MFF_LENGTH);
-
+                request_synced <= ff(MFF_LENGTH);
             end block;
         end block;
     end block;
