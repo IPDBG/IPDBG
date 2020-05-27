@@ -85,10 +85,10 @@ begin
 
                 enable_o <= (others => '0');
                 case data_pending is
-                when x"C" => if data_dwn_ready(0) = '1' then enable_o(0) <= '1'; data_pending := x"0"; end if;
-                when x"A" => if data_dwn_ready(1) = '1' then enable_o(1) <= '1'; data_pending := x"0"; end if;
-                when x"9" => if data_dwn_ready(2) = '1' then enable_o(2) <= '1'; data_pending := x"0"; end if;
-                when x"B" => if data_dwn_ready(3) = '1' then enable_o(3) <= '1'; data_pending := x"0"; end if;
+                when x"C" => if data_dwn_ready(0) = '1' and enable_o(0) = '0' then enable_o(0) <= '1'; data_pending := x"0"; end if;
+                when x"A" => if data_dwn_ready(1) = '1' and enable_o(1) = '0' then enable_o(1) <= '1'; data_pending := x"0"; end if;
+                when x"9" => if data_dwn_ready(2) = '1' and enable_o(2) = '0' then enable_o(2) <= '1'; data_pending := x"0"; end if;
+                when x"B" => if data_dwn_ready(3) = '1' and enable_o(3) = '0' then enable_o(3) <= '1'; data_pending := x"0"; end if;
                 when others => data_pending := x"0";
                 end case;
 
@@ -126,4 +126,3 @@ begin
     data_up_ready_wfg     <= data_in_ready_o(3);
 
 end architecture structure;
-
