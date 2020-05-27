@@ -20,7 +20,7 @@
 
 #include "iurtcontroller.h"
 
-#define iurtControllerRegister  ((volatile struct IurtControllerRegister_st*) 0x40002000)
+#define iurtControllerRegister  ((volatile struct IurtControllerRegister_st*) 0x60000000)
 
 #define SUPPORT_P_CMD 1
 #define SUPPORT_X_CMD 1
@@ -122,7 +122,7 @@ static char get_debug_char(void)
 static void put_debug_char(char c)
 {
     // busy wait until the next can be sent
-    //while ((iurtControllerRegister->ControlBits & TxReady) == 0);
+    while ((iurtControllerRegister->ControlBits & TxReady) == 0);
     iurtControllerRegister->TxData = (unsigned int)c; // put data into data register
 }
 
@@ -680,20 +680,6 @@ static void cmd_query(void)
  */
 void handle_exception(unsigned int *registers)
 {
-    /*
-     * make sure break is disabled.
-     * we can enter the stub with break enabled when the application calls it.
-     * there is a race condition here if the break is asserted before this line
-     * is executed, but the race window is small. to prevent it completely,
-     * applications should disable debug exceptions before jumping to debug
-     * ROM.
-     */
-
-     iurtControllerRegister->ControlBits = 0x00; // disable break (break_enable to '0')
-
-//      while (1){
-//        iurtControllerRegister->TxData = 0x34;
-//      }
     /* clear BSS there was a board reset */
 //    if (!CSR_DBG_SCRATCHPAD) {
 //        CSR_DBG_SCRATCHPAD = 1;
