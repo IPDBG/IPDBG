@@ -42,7 +42,7 @@ module IurtController
     reg           break_local;
     reg           break_enable;
     reg           data_up_valid;
-    reg           data_up;
+    reg [7:0]     data_up;
 
 
 
