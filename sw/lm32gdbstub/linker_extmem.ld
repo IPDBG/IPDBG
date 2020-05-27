@@ -41,5 +41,4 @@ SECTIONS
 	} > mem /* ram */
 }
 
-/*PROVIDE(_debug_stack = ORIGIN(ram) + LENGTH(ram) - 4);*/
 PROVIDE(_debug_stack = ORIGIN(mem) + LENGTH(mem) - 4);

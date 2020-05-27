@@ -6,7 +6,7 @@
 		<Option pch_mode="2" />
 		<Option compiler="lm32-gcc" />
 		<Build>
-			<Target title="Release">
+			<Target title="Release_extmem">
 				<Option output="bin/Release/lm32gdbstub.elf" prefix_auto="0" extension_auto="0" />
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
@@ -15,18 +15,47 @@
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
 					<Add option="-fexpensive-optimizations" />
+					<Add option="-flto" />
 					<Add option="-Os" />
 					<Add directory="../../rtl/iurt" />
 				</Compiler>
 				<Linker>
+					<Add option="-flto" />
 					<Add option="-s" />
+					<Add option="-T linker_extmem.ld" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="lm32-elf-strip $(TARGET_OUTPUT_FILE)" />
 					<Add after="lm32-elf-size $(TARGET_OUTPUT_FILE)" />
 					<Add after="lm32-elf-objcopy -O binary -j .text -j .data -j .rodata $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_FILE).bin" />
 					<Add after="srec_cat $(TARGET_OUTPUT_FILE).bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).vmem -vmem 32" />
-					<Add after="srec_cat $(TARGET_OUTPUT_FILE).bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).rom.vhd -vhdl 4 gdbstubmemory" />
+				</ExtraCommands>
+			</Target>
+			<Target title="Release_inlmem">
+				<Option output="bin/Release/lm32gdbstub.elf" prefix_auto="0" extension_auto="0" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="lm32-gcc" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-flto" />
+					<Add option="-Os" />
+					<Add directory="../../rtl/iurt" />
+				</Compiler>
+				<Linker>
+					<Add option="-flto" />
+					<Add option="-s" />
+					<Add option="-T linker_inlmem.ld" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="lm32-elf-strip $(TARGET_OUTPUT_FILE)" />
+					<Add after="lm32-elf-size $(TARGET_OUTPUT_FILE)" />
+					<Add after="lm32-elf-objcopy -O binary -j .boot -j .text $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_FILE).inli.bin" />
+					<Add after="lm32-elf-objcopy -O binary -j .data -j .rodata -j .bss $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_FILE).inld.bin" />
+					<Add after="srec_cat $(TARGET_OUTPUT_FILE).inli.bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).inli.vmem -vmem 32" />
+					<Add after="srec_cat $(TARGET_OUTPUT_FILE).inld.bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).inld.vmem -vmem 32" />
 				</ExtraCommands>
 			</Target>
 		</Build>
@@ -52,12 +81,11 @@
 			<Add option="-Wmissing-include-dirs" />
 			<Add option="-W" />
 			<Add option="-ffunction-sections" />
-			<Add option="-D_USE_LSCC_PRINTF_" />
 			<Add option="-D__lm32__" />
 		</Compiler>
 		<Linker>
 			<Add option="-s" />
-			<Add option="-T linker.ld" />
+			<Add option="-Wl,--gc-sections,-Map,$(TARGET_OUTPUT_FILE).map" />
 		</Linker>
 		<Unit filename="crt0.S">
 			<Option weight="0" />
@@ -65,7 +93,12 @@
 		<Unit filename="gdbstub.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="linker.ld" />
+		<Unit filename="linker_extmem.ld">
+			<Option target="Release_extmem" />
+		</Unit>
+		<Unit filename="linker_inlmem.ld">
+			<Option target="Release_inlmem" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
