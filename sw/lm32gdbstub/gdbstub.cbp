@@ -13,15 +13,9 @@
 				<Option compiler="lm32-gcc" />
 				<Option use_console_runner="0" />
 				<Compiler>
-					<Add option="-fomit-frame-pointer" />
-					<Add option="-fexpensive-optimizations" />
-					<Add option="-flto" />
-					<Add option="-Os" />
 					<Add directory="../../rtl/iurt" />
 				</Compiler>
 				<Linker>
-					<Add option="-flto" />
-					<Add option="-s" />
 					<Add option="-T linker_extmem.ld" />
 				</Linker>
 				<ExtraCommands>
@@ -38,15 +32,9 @@
 				<Option compiler="lm32-gcc" />
 				<Option use_console_runner="0" />
 				<Compiler>
-					<Add option="-fomit-frame-pointer" />
-					<Add option="-fexpensive-optimizations" />
-					<Add option="-flto" />
-					<Add option="-Os" />
 					<Add directory="../../rtl/iurt" />
 				</Compiler>
 				<Linker>
-					<Add option="-flto" />
-					<Add option="-s" />
 					<Add option="-T linker_inlmem.ld" />
 				</Linker>
 				<ExtraCommands>
@@ -66,6 +54,7 @@
 			<Add option="-mbarrel-shift-enabled" />
 			<Add option="-fomit-frame-pointer" />
 			<Add option="-fexpensive-optimizations" />
+			<Add option="-flto" />
 			<Add option="-Os" />
 			<Add option="-Wextra" />
 			<Add option="-Wall" />
@@ -84,6 +73,7 @@
 			<Add option="-D__lm32__" />
 		</Compiler>
 		<Linker>
+			<Add option="-flto" />
 			<Add option="-s" />
 			<Add option="-Wl,--gc-sections,-Map,$(TARGET_OUTPUT_FILE).map" />
 		</Linker>
