@@ -14,7 +14,7 @@ module tb_iurtcontroller(); // Testbench has no inputs, outputs
     wire [31:0] dat_up;
     wire        ack;
 
-    wire        break;
+    wire        break_o;
     wire        data_dwn_ready;
     reg         data_dwn_valid;
     reg  [7:0]  data_dwn;
@@ -31,7 +31,7 @@ module tb_iurtcontroller(); // Testbench has no inputs, outputs
         // wishbone
         .cyc_i(cyc), .stb_i(stb), .we_i(we), .adr_i(adr), .dat_i(dat_dn), .dat_o(dat_up), .ack_o(ack),
 
-        .break(break),
+        .break_o(break_o),
         .data_dwn_ready(data_dwn_ready), .data_dwn_valid(data_dwn_valid), .data_dwn(data_dwn),
         .data_up_ready(data_up_ready), .data_up_valid(data_up_valid), .data_up(data_up)
     );

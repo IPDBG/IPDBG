@@ -21,7 +21,7 @@ architecture test of tb_iurtController is
             dat_i          : in  std_logic_vector(31 downto 0);
             dat_o          : out std_logic_vector(31 downto 0);
             ack_o          : out std_logic;
-            break          : out std_logic;
+            break_o        : out std_logic;
             data_dwn_ready : out std_logic;
             data_dwn_valid : in  std_logic;
             data_dwn       : in  std_logic_vector(7 downto 0);
@@ -41,7 +41,7 @@ architecture test of tb_iurtController is
     signal dat_i               : std_logic_vector(31 downto 0);
     signal dat_o               : std_logic_vector(31 downto 0);
     signal ack_o               : std_logic;
-    signal break               : std_logic;
+    signal break_o             : std_logic;
     signal data_dwn_ready      : std_logic;
     signal data_dwn_valid      : std_logic;
     signal data_dwn            : std_logic_vector(7 downto 0);
@@ -172,7 +172,7 @@ begin
             dat_i          => dat_i,
             dat_o          => dat_o,
             ack_o          => ack_o,
-            break          => break,
+            break_o        => break_o,
             data_dwn_ready => data_dwn_ready,
             data_dwn_valid => data_dwn_valid,
             data_dwn       => data_dwn,

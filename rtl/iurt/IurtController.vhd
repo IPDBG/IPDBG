@@ -20,7 +20,7 @@ entity IurtController is
         dat_o                   : out std_logic_vector(31 downto 0);
         ack_o                   : out std_logic;
 
-        break                   : out std_logic;
+        break_o                 : out std_logic;
 
         -- host interface
         data_dwn_ready          : out std_logic;
@@ -53,7 +53,7 @@ begin
         signal break_enable : std_logic;
         signal break_local  : std_logic;
     begin
-        break <= break_local and break_enable;
+        break_o <= break_local and break_enable;
 
         process (clk) begin
             if rising_edge(clk) then

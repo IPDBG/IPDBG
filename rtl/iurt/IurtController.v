@@ -4,7 +4,7 @@ module IurtController
     (
         clk, rst, ce, // system
         cyc_i, stb_i, we_i, adr_i, dat_i, dat_o, ack_o, // wishbone
-        break,
+        break_o,
         data_dwn_ready, data_dwn_valid, data_dwn, data_up_ready, data_up_valid, data_up
     );
 
@@ -20,7 +20,7 @@ module IurtController
     input  [31:0] dat_i;
     output [31:0] dat_o;
     output        ack_o;
-    output        break;
+    output        break_o;
     output        data_dwn_ready;
     input         data_dwn_valid;
     input  [7:0]  data_dwn;
@@ -31,7 +31,7 @@ module IurtController
     wire          arst;
     wire          srst;
 
-    wire          break;
+    wire          break_o;
 
     wire          ack_o;
     reg           ack_wr;
@@ -55,7 +55,7 @@ module IurtController
     end
     endgenerate
 
-    assign break = break_local & break_enable;
+    assign break_o = break_local & break_enable;
 
     always @(posedge clk)
         if (ce) begin
@@ -70,7 +70,7 @@ module IurtController
                 break_enable <= 1;
             end else begin
                 if (ce) begin
-                    if (break) begin
+                    if (break_o) begin
                         break_enable <= 0; // clear after activation
                     end
                     if (cyc_i & stb_i & we_i & adr_i[2] & ~ack_wr) begin
