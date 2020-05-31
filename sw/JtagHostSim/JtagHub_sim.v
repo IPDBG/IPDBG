@@ -31,8 +31,6 @@ module JtagHub (
     data_up_gdb
 );
 
-    parameter eba_reset = 3;
-
     input        clk;
     input        rst;
     input        ce;
