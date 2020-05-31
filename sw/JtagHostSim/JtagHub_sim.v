@@ -68,11 +68,11 @@ module JtagHub (
 
 
     wire [3:0] data_dwn_ready;
-    wire [3:0] data_in_valid;
-    wire [7:0] data_in [3:0];
+    wire [3:0] data_up_valid;
+    wire [7:0] data_up [3:0];
 
-    reg  [3:0] enable_o;
-    reg  [3:0] data_in_ready_o;
+    reg  [3:0] data_dwn_valid;
+    reg  [3:0] data_up_ready;
 
     reg  [7:0] data_dwn;
     wire       data_dwn_valid_la;
@@ -85,61 +85,61 @@ module JtagHub (
     wire       data_up_ready_wfg;
 
     assign     data_dwn_ready = {data_dwn_ready_wfg, data_dwn_ready_gdb, data_dwn_ready_ioview, data_dwn_ready_la};
-    assign     data_in_valid = {data_up_valid_wfg, data_up_valid_gdb, data_up_valid_ioview, data_up_valid_la};
-    assign     data_in[0] = data_up_la;
-    assign     data_in[1] = data_up_ioview;
-    assign     data_in[2] = data_up_gdb;
-    assign     data_in[3] = data_up_wfg;
+    assign     data_up_valid = {data_up_valid_wfg, data_up_valid_gdb, data_up_valid_ioview, data_up_valid_la};
+    assign     data_up[0] = data_up_la;
+    assign     data_up[1] = data_up_ioview;
+    assign     data_up[2] = data_up_gdb;
+    assign     data_up[3] = data_up_wfg;
 
     reg [15:0] data_temp_dwn;
     reg [3:0]  data_pending = 4'h0;
 
     always @(posedge clk)
         if (ce) begin
-            if (data_pending == 4'h0 && enable_o == 4'h0) begin
+            if (data_pending == 4'h0 && data_dwn_valid == 4'h0) begin
                 $get_data_from_jtag_host(data_temp_dwn);//[15:0];
                 data_dwn <= data_temp_dwn[7:0];
                 data_pending = data_temp_dwn[11:8];
             end
 
             case (data_pending)
-            4'hC    : if (data_dwn_ready[0]) begin enable_o <= 4'h1; data_pending = 4'h0; end
-            4'hA    : if (data_dwn_ready[1]) begin enable_o <= 4'h2; data_pending = 4'h0; end
-            4'h9    : if (data_dwn_ready[2]) begin enable_o <= 4'h4; data_pending = 4'h0; end
-            4'hB    : if (data_dwn_ready[3]) begin enable_o <= 4'h8; data_pending = 4'h0; end
-            default : begin enable_o <= 4'h0; data_pending = 4'h0; end
+            4'hC    : if (data_dwn_ready[0]) begin data_dwn_valid <= 4'h1; data_pending = 4'h0; end
+            4'hA    : if (data_dwn_ready[1]) begin data_dwn_valid <= 4'h2; data_pending = 4'h0; end
+            4'h9    : if (data_dwn_ready[2]) begin data_dwn_valid <= 4'h4; data_pending = 4'h0; end
+            4'hB    : if (data_dwn_ready[3]) begin data_dwn_valid <= 4'h8; data_pending = 4'h0; end
+            default : begin data_dwn_valid <= 4'h0; data_pending = 4'h0; end
             endcase
         end
 
     always @(posedge clk)
         if (ce) begin
-            data_in_ready_o <= 4'hf;
-            if (data_in_valid[0] & data_in_ready_o[0]) begin
-                data_in_ready_o[0] <= 1'b0;
-                $set_data_to_jtag_host({7'h0C, data_in[0]});
+            data_up_ready <= 4'hf;
+            if (data_up_valid[0] & data_up_ready[0]) begin
+                data_up_ready[0] <= 1'b0;
+                $set_data_to_jtag_host({7'h0C, data_up[0]});
             end
-            if (data_in_valid[1] & data_in_ready_o[1]) begin
-                data_in_ready_o[1] <= 1'b0;
-                $set_data_to_jtag_host({7'h0A, data_in[1]});
+            if (data_up_valid[1] & data_up_ready[1]) begin
+                data_up_ready[1] <= 1'b0;
+                $set_data_to_jtag_host({7'h0A, data_up[1]});
             end
-            if (data_in_valid[2] & data_in_ready_o[2]) begin
-                data_in_ready_o[2] <= 1'b0;
-                $set_data_to_jtag_host({7'h09, data_in[2]});
+            if (data_up_valid[2] & data_up_ready[2]) begin
+                data_up_ready[2] <= 1'b0;
+                $set_data_to_jtag_host({7'h09, data_up[2]});
             end
-            if (data_in_valid[3] & data_in_ready_o[3]) begin
-                data_in_ready_o[3] <= 1'b0;
-                $set_data_to_jtag_host({7'h0B, data_in[3]});
+            if (data_up_valid[3] & data_up_ready[3]) begin
+                data_up_ready[3] <= 1'b0;
+                $set_data_to_jtag_host({7'h0B, data_up[3]});
             end
         end
 
-    assign data_dwn_valid_la     = enable_o[0];
-    assign data_dwn_valid_ioview = enable_o[1];
-    assign data_dwn_valid_gdb    = enable_o[2];
-    assign data_dwn_valid_wfg    = enable_o[3];
-    assign data_up_ready_la     = data_in_ready_o[0];
-    assign data_up_ready_ioview = data_in_ready_o[1];
-    assign data_up_ready_gdb    = data_in_ready_o[2];
-    assign data_up_ready_wfg    = data_in_ready_o[3];
+    assign data_dwn_valid_la     = data_dwn_valid[0];
+    assign data_dwn_valid_ioview = data_dwn_valid[1];
+    assign data_dwn_valid_gdb    = data_dwn_valid[2];
+    assign data_dwn_valid_wfg    = data_dwn_valid[3];
+    assign data_up_ready_la      = data_up_ready[0];
+    assign data_up_ready_ioview  = data_up_ready[1];
+    assign data_up_ready_gdb     = data_up_ready[2];
+    assign data_up_ready_wfg     = data_up_ready[3];
 
 endmodule
 

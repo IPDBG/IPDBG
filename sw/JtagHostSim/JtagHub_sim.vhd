@@ -54,17 +54,17 @@ architecture structure of JtagHub is
         assert false severity failure;
     end set_data_to_jtag_host;
 
-    signal data_dwn_ready  : std_logic_vector(3 downto 0);
-    signal enable_o        : std_logic_vector(3 downto 0);
-    signal data_in_ready_o : std_logic_vector(3 downto 0);
-    signal data_in_valid   : std_logic_vector(3 downto 0);
-    type data_in_t         is array (3 downto 0) of std_logic_vector(7 downto 0);
-    signal data_in         : data_in_t;
+    signal data_dwn_ready : std_logic_vector(3 downto 0);
+    signal data_dwn_valid : std_logic_vector(3 downto 0);
+    signal data_up_ready  : std_logic_vector(3 downto 0);
+    signal data_up_valid  : std_logic_vector(3 downto 0);
+    type data_up_t        is array (3 downto 0) of std_logic_vector(7 downto 0);
+    signal data_up        : data_up_t;
 
 begin
     data_dwn_ready <= data_dwn_ready_wfg & data_dwn_ready_gdb & data_dwn_ready_ioview & data_dwn_ready_la;
-    data_in_valid <= data_up_valid_wfg & data_up_valid_gdb & data_up_valid_ioview & data_up_valid_la;
-    data_in <= (3 => data_up_wfg, 2 => data_up_gdb, 1 => data_up_ioview, 0 => data_up_la);
+    data_up_valid <= data_up_valid_wfg & data_up_valid_gdb & data_up_valid_ioview & data_up_valid_la;
+    data_up <= (3 => data_up_wfg, 2 => data_up_gdb, 1 => data_up_ioview, 0 => data_up_la);
     process(clk)
         variable data_temp_dwn : std_logic_vector(15 downto 0);
         variable data_temp_up  : std_logic_vector(15 downto 0);
@@ -83,46 +83,46 @@ begin
                     data_pending := data_temp_dwn(11 downto 8);
                 end if;
 
-                enable_o <= (others => '0');
+                data_dwn_valid <= (others => '0');
                 case data_pending is
-                when x"C" => if data_dwn_ready(0) = '1' and enable_o(0) = '0' then enable_o(0) <= '1'; data_pending := x"0"; end if;
-                when x"A" => if data_dwn_ready(1) = '1' and enable_o(1) = '0' then enable_o(1) <= '1'; data_pending := x"0"; end if;
-                when x"9" => if data_dwn_ready(2) = '1' and enable_o(2) = '0' then enable_o(2) <= '1'; data_pending := x"0"; end if;
-                when x"B" => if data_dwn_ready(3) = '1' and enable_o(3) = '0' then enable_o(3) <= '1'; data_pending := x"0"; end if;
+                when x"C" => if data_dwn_ready(0) = '1' and data_dwn_valid(0) = '0' then data_dwn_valid(0) <= '1'; data_pending := x"0"; end if;
+                when x"A" => if data_dwn_ready(1) = '1' and data_dwn_valid(1) = '0' then data_dwn_valid(1) <= '1'; data_pending := x"0"; end if;
+                when x"9" => if data_dwn_ready(2) = '1' and data_dwn_valid(2) = '0' then data_dwn_valid(2) <= '1'; data_pending := x"0"; end if;
+                when x"B" => if data_dwn_ready(3) = '1' and data_dwn_valid(3) = '0' then data_dwn_valid(3) <= '1'; data_pending := x"0"; end if;
                 when others => data_pending := x"0";
                 end case;
 
-                data_in_ready_o <= (others => '1');
-                if data_in_valid(0) = '1' and data_in_ready_o(0) = '1' then
-                    data_in_ready_o(0) <= '0';
-                    data_temp_up := x"0C" & data_in(0);
+                data_up_ready <= (others => '1');
+                if data_up_valid(0) = '1' and data_up_ready(0) = '1' then
+                    data_up_ready(0) <= '0';
+                    data_temp_up := x"0C" & data_up(0);
                     set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
                 end if;
-                if data_in_valid(1) = '1' and data_in_ready_o(1) = '1' then
-                    data_in_ready_o(1) <= '0';
-                    data_temp_up := x"0A" & data_in(1);
+                if data_up_valid(1) = '1' and data_up_ready(1) = '1' then
+                    data_up_ready(1) <= '0';
+                    data_temp_up := x"0A" & data_up(1);
                     set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
                 end if;
-                if data_in_valid(2) = '1' and data_in_ready_o(2) = '1' then
-                    data_in_ready_o(2) <= '0';
-                    data_temp_up := x"09" & data_in(2);
+                if data_up_valid(2) = '1' and data_up_ready(2) = '1' then
+                    data_up_ready(2) <= '0';
+                    data_temp_up := x"09" & data_up(2);
                     set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
                 end if;
-                if data_in_valid(3) = '1' and data_in_ready_o(3) = '1' then
-                    data_in_ready_o(3) <= '0';
-                    data_temp_up := x"0B" & data_in(3);
+                if data_up_valid(3) = '1' and data_up_ready(3) = '1' then
+                    data_up_ready(3) <= '0';
+                    data_temp_up := x"0B" & data_up(3);
                     set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
                 end if;
             end if;
         end if;
     end process;
-    data_dwn_valid_la     <= enable_o(0);
-    data_dwn_valid_ioview <= enable_o(1);
-    data_dwn_valid_gdb    <= enable_o(2);
-    data_dwn_valid_wfg    <= enable_o(3);
-    data_up_ready_la      <= data_in_ready_o(0);
-    data_up_ready_ioview  <= data_in_ready_o(1);
-    data_up_ready_gdb     <= data_in_ready_o(2);
-    data_up_ready_wfg     <= data_in_ready_o(3);
+    data_dwn_valid_la     <= data_dwn_valid(0);
+    data_dwn_valid_ioview <= data_dwn_valid(1);
+    data_dwn_valid_gdb    <= data_dwn_valid(2);
+    data_dwn_valid_wfg    <= data_dwn_valid(3);
+    data_up_ready_la      <= data_up_ready(0);
+    data_up_ready_ioview  <= data_up_ready(1);
+    data_up_ready_gdb     <= data_up_ready(2);
+    data_up_ready_wfg     <= data_up_ready(3);
 
 end architecture structure;
