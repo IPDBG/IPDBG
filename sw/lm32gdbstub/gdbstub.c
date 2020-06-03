@@ -767,5 +767,5 @@ out:
 //    CSR_DBG_CTRL = dbg_ctrl;
 
     /* reenable break */
-    iurtControllerRegister->ControlBits = BreakEn; // enable break (break_enable to '1')
+    //iurtControllerRegister->ControlBits = BreakEn; // enable break (break_enable to '1')
 }
