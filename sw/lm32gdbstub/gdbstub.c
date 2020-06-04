@@ -680,6 +680,7 @@ static void cmd_query(void)
  */
 void handle_exception(unsigned int *registers)
 {
+    iurtControllerRegister->ControlBits = 0; // disable break (break_enable to '0')
     /* clear BSS there was a board reset */
 //    if (!CSR_DBG_SCRATCHPAD) {
 //        CSR_DBG_SCRATCHPAD = 1;
@@ -767,5 +768,5 @@ out:
 //    CSR_DBG_CTRL = dbg_ctrl;
 
     /* reenable break */
-    //iurtControllerRegister->ControlBits = BreakEn; // enable break (break_enable to '1')
+    iurtControllerRegister->ControlBits = BreakEn; // enable break (break_enable to '1')
 }
