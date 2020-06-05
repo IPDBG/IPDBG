@@ -22,7 +22,7 @@
 					<Add after="lm32-elf-strip $(TARGET_OUTPUT_FILE)" />
 					<Add after="lm32-elf-size $(TARGET_OUTPUT_FILE)" />
 					<Add after="lm32-elf-objcopy -O binary -j .text -j .data -j .rodata $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_FILE).bin" />
-					<Add after="srec_cat $(TARGET_OUTPUT_FILE).bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).vmem -vmem 32" />
+					<Add after="srec_cat $(TARGET_OUTPUT_FILE).bin -Binary  -fill 0x00 0x00 0x2000  -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).vmem -vmem 32" />
 				</ExtraCommands>
 			</Target>
 			<Target title="Release_inlmem">
@@ -42,8 +42,8 @@
 					<Add after="lm32-elf-size $(TARGET_OUTPUT_FILE)" />
 					<Add after="lm32-elf-objcopy -O binary -j .boot -j .text $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_FILE).inli.bin" />
 					<Add after="lm32-elf-objcopy -O binary -j .data -j .rodata -j .bss $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_FILE).inld.bin" />
-					<Add after="srec_cat $(TARGET_OUTPUT_FILE).inli.bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).inli.vmem -vmem 32" />
-					<Add after="srec_cat $(TARGET_OUTPUT_FILE).inld.bin -Binary -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).inld.vmem -vmem 32" />
+					<Add after="srec_cat $(TARGET_OUTPUT_FILE).inli.bin -Binary  -fill 0x00 0x00 0x1000  -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).inli.vmem -vmem 32" />
+					<Add after="srec_cat $(TARGET_OUTPUT_FILE).inld.bin -Binary  -fill 0x00 0x00 0x0800  -o $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).inld.vmem -vmem 32" />
 				</ExtraCommands>
 			</Target>
 		</Build>
