@@ -471,7 +471,7 @@ begin
             end process;
 
             arbiter: block
-                constant handshake_needed : boolean := HANDSHAKE_ENABLE /= "000000";
+                constant handshake_needed : boolean := HANDSHAKE_ENABLE /= "0000000";
                 signal state              : unsigned(FUNCTION_LENGTH-1 downto 0);
                 type transfer_t           is (is_active, is_idle);
                 signal transfer           : transfer_t;
