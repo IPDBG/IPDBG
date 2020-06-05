@@ -36,7 +36,7 @@ module IurtController
     wire          ack_o;
     reg           ack_wr;
     reg           ack_rd;
-    wire          dat_o;
+    wire [31:0]   dat_o;
     wire          data_dwn_ready;
     wire          TxReady;
     reg           break_local;
