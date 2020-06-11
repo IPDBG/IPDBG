@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
+use ieee.math_real.all;
 
 entity IoViewController is
     generic(
@@ -28,40 +28,50 @@ end entity;
 
 architecture behavioral of IoViewController is
 
-    constant HOST_WORD_SIZE     : natural := 8;
-    constant OUTPUT_WIDTH       : natural := output'length;
-    constant INPUT_WIDTH        : natural := input'length;
+    constant HOST_WORD_SIZE        : natural := 8;
+    constant OUTPUT_WIDTH          : natural := output'length;
+    constant INPUT_WIDTH           : natural := input'length;
 
-    constant INPUT_WIDTH_BYTES  : natural := (INPUT_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;
-    constant OUTPUT_WIDTH_BYTES : natural := (OUTPUT_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;
-    constant INPUT_WIDTH_slv    : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(INPUT_WIDTH, 32));
-    constant OUTPUT_WIDTH_slv   : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(OUTPUT_WIDTH, 32));
+    constant INPUT_WIDTH_BYTES     : natural := (INPUT_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;
+    constant OUTPUT_WIDTH_BYTES    : natural := (OUTPUT_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;
+    constant INPUT_WIDTH_slv       : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(INPUT_WIDTH, 32));
+    constant OUTPUT_WIDTH_slv      : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(OUTPUT_WIDTH, 32));
 
-    constant read_widths_cmd    : std_logic_vector := x"AB";
-    constant write_output_cmd   : std_logic_vector := x"BB";
-    constant read_input_cmd     : std_logic_vector := x"AA";
+    constant read_widths_cmd       : std_logic_vector := x"AB";
+    constant write_output_cmd      : std_logic_vector := x"BB";
+    constant read_input_cmd        : std_logic_vector := x"AA";
 
     -- State machines
-    type states_t                     is(init, read_width, set_output, read_input);
-    signal state                      : states_t;
+    type states_t                  is (init, read_width, set_output, read_input);
+    signal state                   : states_t;
 
-    type output_handshake_states_t    is(start, mem, shift, next_data);
-    signal output_handshake_state     : output_handshake_states_t;
+    type output_handshake_states_t is(start, mem, shift, next_data);
+    signal output_handshake_state  : output_handshake_states_t;
 
-    signal width_bytes_sent_counter   : natural range 0 to OUTPUT_WIDTH_BYTES;
+    signal bytes_received          : unsigned(integer(ceil(log2(real(OUTPUT_WIDTH_BYTES+1)))) -1 downto 0);
 
-    signal data_in_reg                : std_logic_vector(HOST_WORD_SIZE-1 downto 0);
-    signal data_in_reg_valid          : std_logic;
-    signal data_in_reg_last           : std_logic;
+    signal data_in_reg             : std_logic_vector(HOST_WORD_SIZE-1 downto 0);
+    signal data_in_reg_valid       : std_logic;
+    signal data_in_reg_last        : std_logic;
 
-    signal counter                    : unsigned(INPUT_WIDTH-1 downto 0):= (others => '0');
-    signal import_ADDR                : std_logic;
-    signal width_temporary_reg        : std_logic_vector(31 downto 0);
-    signal data_out_temporary         : std_logic_vector(INPUT'length-1 downto 0);
-    signal data_out_temporary_next    : std_logic_vector(INPUT'length-1 downto 0);
-    signal data_up_next               : std_logic_vector(data_up'range);
+    pure function bytes_transmitted_width return natural is
+        variable res       : natural := integer(ceil(log2(real(INPUT_WIDTH_BYTES+1))));
+        constant min_width : natural := 3 ;-- must be able to tx at least 4 bytes for the widths
+    begin
+        if res < min_width then
+            res := min_width;
+        end if;
+        return res;
+    end bytes_transmitted_width;
 
-    signal arst, srst                 : std_logic;
+    signal bytes_transmitted       : unsigned(bytes_transmitted_width-1 downto 0) := (others => '0');
+    signal import_ADDR             : std_logic;
+    signal width_temporary_reg     : std_logic_vector(31 downto 0);
+    signal data_out_temporary      : std_logic_vector(INPUT'length-1 downto 0);
+    signal data_out_temporary_next : std_logic_vector(INPUT'length-1 downto 0);
+    signal data_up_next            : std_logic_vector(data_up'range);
+
+    signal arst, srst              : std_logic;
 begin
     async_init: if ASYNC_RESET generate begin
         arst <= rst;
@@ -74,18 +84,18 @@ begin
 
     process (clk, arst)
         procedure fsm_reset_assignment is begin
-            state                    <= init;
-            output_handshake_state   <= start;
-            data_in_reg              <= (others => '-');
-            data_in_reg_valid        <= '0';
-            data_in_reg_last         <= '0';
-            data_up_valid            <= '0';
-            data_up                  <= (others => '-');
-            data_out_temporary       <= (others => '-');
-            width_temporary_reg      <= (others => '-');
-            width_bytes_sent_counter <= 0;
-            counter                  <= (others => '-');
-            import_ADDR              <= '-';
+            state                  <= init;
+            output_handshake_state <= start;
+            data_in_reg            <= (others => '-');
+            data_in_reg_valid      <= '0';
+            data_in_reg_last       <= '0';
+            data_up_valid          <= '0';
+            data_up                <= (others => '-');
+            data_out_temporary     <= (others => '-');
+            width_temporary_reg    <= (others => '-');
+            bytes_received         <= (others => '-');
+            bytes_transmitted      <= (others => '-');
+            import_ADDR            <= '-';
         end procedure fsm_reset_assignment;
     begin
         if arst = '1' then
@@ -111,9 +121,9 @@ begin
                                 state <= read_input;
                                 data_out_temporary <= input;
                             end if;
-                            width_bytes_sent_counter <= 0;
-                            counter <= (others => '0');
                         end if;
+                        bytes_received <= (others => '0');
+                        bytes_transmitted <= (others => '0');
 
                     when read_width =>
                         case output_handshake_state is
@@ -121,7 +131,7 @@ begin
                             if data_up_ready = '1' then
                                 width_temporary_reg <= OUTPUT_WIDTH_slv;
                                 output_handshake_state <= mem;
-                                counter <= (others => '0');
+                                bytes_transmitted <= (others => '0');
                                 import_ADDR <= '0';
                             end if;
 
@@ -130,7 +140,7 @@ begin
                                 data_up <= width_temporary_reg(data_up'range);
                                 data_up_valid <= '1';
                                 width_temporary_reg <= x"00" & width_temporary_reg(width_temporary_reg'left downto data_up'length);
-                                counter <= counter + 1;
+                                bytes_transmitted <= bytes_transmitted + 1;
                                 output_handshake_state <= shift;
                             end if;
 
@@ -141,7 +151,7 @@ begin
                                 output_handshake_state <= mem;
                             end if;
 
-                            if counter = to_unsigned(4, counter'length) then
+                            if bytes_transmitted = to_unsigned(4, bytes_transmitted'length) then
                                 if import_ADDR = '0' then
                                     output_handshake_state <= next_data;
                                 else -- import_ADDR = '1' then
@@ -152,20 +162,20 @@ begin
 
                         when next_data =>
                             if data_up_ready = '1' then
-                                counter <= (others => '0');
+                                bytes_transmitted <= (others => '0');
                                 import_ADDR <= '1';
                                 width_temporary_reg <= INPUT_WIDTH_slv;
                                 output_handshake_state <= mem;
                             end if;
-                       end case;
+                        end case;
 
                     when set_output =>
                         if data_dwn_valid = '1' then
-                            width_bytes_sent_counter <= width_bytes_sent_counter + 1;
+                            bytes_received <= bytes_received + 1;
                             data_in_reg <= data_dwn;
                             data_in_reg_valid <= '1';
 
-                            if width_bytes_sent_counter + 1 = OUTPUT_WIDTH_BYTES then
+                            if bytes_received = OUTPUT_WIDTH_BYTES-1 then
                                 state <= init;
                                 data_in_reg_last <= '1';
                             end if;
@@ -180,13 +190,13 @@ begin
                                 data_up_valid <= '1';
                                 data_up <= data_up_next;
                                 output_handshake_state <= shift;
-                                counter <= counter + 1;
+                                bytes_transmitted <= bytes_transmitted + 1;
                             end if;
 
                         when shift =>
                             data_up_valid <= '0';
                             if data_up_ready = '0' then
-                                if counter = INPUT_WIDTH_BYTES then
+                                if bytes_transmitted = INPUT_WIDTH_BYTES then
                                     output_handshake_state <= next_data;
                                 else
                                     output_handshake_state <= mem;
@@ -195,7 +205,7 @@ begin
                             end if ;
 
                         when next_data =>
-                            counter <= (others => '0');
+                            bytes_transmitted <= (others => '0');
                             output_handshake_state <= start;
                             state <= init;
                         end case;
