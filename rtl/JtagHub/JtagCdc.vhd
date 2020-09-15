@@ -205,7 +205,7 @@ begin
         down: block
             signal data_dwn                 : data_port_arr;
             signal data_out_register_enable : std_logic;
-            signal near_full                : std_logic_vector(DATA_LENGTH-1 downto 0);
+            signal near_full                : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
         begin
             process (clk) begin
                 if rising_edge(clk) then
@@ -217,28 +217,31 @@ begin
             end process;
 
             xoff_mux: block
-                signal sel : unsigned(FUNCTION_LENGTH-1 downto 0);
+                signal sel_next : unsigned(FUNCTION_LENGTH-1 downto 0);
+                signal sel      : unsigned(FUNCTION_LENGTH-1 downto 0);
             begin
-                process (clk) begin
-                    if rising_edge(clk) then
-                        if clear = '1' then
-                            sel <= "111";
-                        else
-                            if data_out_register_enable = '1' then
-                                if dwn_transfer_register_valid = '1' then
-                                    sel <= to_01(unsigned(dwn_transfer_function_number));
-                                else
-                                    sel <= "111"; -- internal function never xoff'ed
-                                end if;
+                process (sel, clear, data_out_register_enable, dwn_transfer_register_valid, dwn_transfer_function_number ) begin
+                    sel_next <= sel;
+                    if clear = '1' then
+                        sel_next <= "111";
+                    else
+                        if data_out_register_enable = '1' then
+                            if dwn_transfer_register_valid = '1' then
+                                sel_next <= to_01(unsigned(dwn_transfer_function_number));
+                            else
+                                sel_next <= "111"; -- internal function never xoff'ed
                             end if;
                         end if;
                     end if;
                 end process;
 
-                xoff <= near_full(to_integer(sel));
+                process (clk) begin
+                    if rising_edge(clk) then
+                        xoff <= near_full(to_integer(sel_next));
+                        sel <= sel_next;
+                    end if;
+                end process;
             end block;
-
-
 
 --    capture  shift  update    capture  shift  update    capture  shift  update           capture  shift  update    capture  shift  update
 --                      w1                        w2                        w3                               w4                        w5
@@ -246,9 +249,6 @@ begin
 -- xoff clk                                       x1                        x2                               x3                        x4
 --
 --                                                0                         1
-
-
-
 
             dwn_handshake_control: block
                 signal xoff_state       : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
@@ -319,68 +319,85 @@ begin
 
             outputs_stages: for I in 0 to NUM_FUNCTIONS-1 generate begin
                 w_hs: if HANDSHAKE_ENABLE(I) = '1' generate
-                    type buffer_t    is array(2 downto 0) of std_logic_vector(DATA_LENGTH-1 downto 0);
-                    signal valid     : std_logic;
-                    signal buf       : buffer_t;
-                    signal occupied  : std_logic_vector(2 downto 0);
-                    signal can_write : std_logic;
+                    type buffer_t         is array(2 downto 0) of std_logic_vector(DATA_LENGTH-1 downto 0);
+                    signal valid          : std_logic;
+                    signal buf            : buffer_t;
+                    signal occupied       : std_logic_vector(2 downto 0);
+                    signal can_write      : std_logic;
+                    signal valid_next     : std_logic;
+                    signal buf_next       : buffer_t;
+                    signal occupied_next  : std_logic_vector(2 downto 0);
+                    signal data_dwn_local : std_logic_vector(DATA_LENGTH-1 downto 0);
+                    signal data_dwn_next  : std_logic_vector(DATA_LENGTH-1 downto 0);
                 begin
 
                     can_write <= data_dwn_ready(I) and (not valid);
 
-                    near_full(I) <= occupied(0);
-
-                    fifo: process (clk) begin
+                    near_full(I) <= occupied_next(0);
+                    data_dwn(I) <= data_dwn_local;
+                    process (clk) begin
                         if rising_edge (clk) then
-                            if clear = '1' then
-                                valid <= '0';
-                                data_dwn(I) <= (others => '-');
-                                occupied <= (others => '0');
-                                buf <= (others => (others => '-'));
-                            else
-                                valid <= '0';
-                                if can_write = '1' then
-                                    data_dwn(I) <= buf(0);
-                                    buf(0)      <= buf(1);
-                                    buf(1)      <= buf(2);
-                                    buf(2)      <= (others => '-');
-                                    valid       <= occupied(0);
-                                    occupied(0) <= occupied(1);
-                                    occupied(1) <= occupied(2);
-                                    occupied(2) <= '0';
-                                end if;
+                            valid <= valid_next;
+                            data_dwn_local <= data_dwn_next;
+                            occupied <= occupied_next;
+                            buf <= buf_next;
+                        end if;
+                    end process;
 
-                                if data_out_register_enable = '1' then
-                                    if dwn_transfer_register_valid = '1' and I = to_integer(to_01(unsigned(dwn_transfer_function_number), '1')) then
-                                        if occupied(0) = '0' then
-                                            if can_write = '1' then
-                                                data_dwn(I) <= dwn_transfer_data;
-                                                valid <= '1';
-                                            else
-                                                buf(0)      <= dwn_transfer_data;
-                                                occupied(0) <= '1';
-                                            end if;
-                                        elsif occupied(1) = '0' then
-                                            if can_write = '1' then
-                                                buf(0)      <= dwn_transfer_data;
-                                                occupied(0) <= '1';
-                                            else
-                                                buf(1)      <= dwn_transfer_data;
-                                                occupied(1) <= '1';
-                                            end if;
-                                        else -- occupied(2) is '0'
-                                            if can_write = '1' then
-                                                buf(1)      <= dwn_transfer_data;
-                                                occupied(1) <= '1';
-                                            else
-                                                buf(2)      <= dwn_transfer_data;
-                                                occupied(2) <= '1';
-                                            end if;
+                    fifo: process (valid, data_dwn_local, occupied, buf, clear, can_write, data_out_register_enable, dwn_transfer_register_valid, dwn_transfer_function_number, dwn_transfer_data ) begin
+                        valid_next <= valid;
+                        data_dwn_next <= data_dwn_local;
+                        occupied_next <= occupied;
+                        buf_next <= buf;
+                        if clear = '1' then
+                            valid_next <= '0';
+                            data_dwn_next <= (others => '-');
+                            occupied_next <= (others => '0');
+                            buf_next <= (others => (others => '-'));
+                        else
+                            valid_next <= '0';
+                            if can_write = '1' then
+                                data_dwn_next    <= buf(0);
+                                buf_next(0)      <= buf(1);
+                                buf_next(1)      <= buf(2);
+                                buf_next(2)      <= (others => '-');
+                                valid_next       <= occupied(0);
+                                occupied_next(0) <= occupied(1);
+                                occupied_next(1) <= occupied(2);
+                                occupied_next(2) <= '0';
+                            end if;
+
+                            if data_out_register_enable = '1' then
+                                if dwn_transfer_register_valid = '1' and I = to_integer(to_01(unsigned(dwn_transfer_function_number), '1')) then
+                                    if occupied(0) = '0' then
+                                        if can_write = '1' then
+                                            data_dwn_next    <= dwn_transfer_data;
+                                            valid_next       <= '1';
+                                        else
+                                            buf_next(0)      <= dwn_transfer_data;
+                                            occupied_next(0) <= '1';
+                                        end if;
+                                    elsif occupied(1) = '0' then
+                                        if can_write = '1' then
+                                            buf_next(0)      <= dwn_transfer_data;
+                                            occupied_next(0) <= '1';
+                                        else
+                                            buf_next(1)      <= dwn_transfer_data;
+                                            occupied_next(1) <= '1';
+                                        end if;
+                                    else -- occupied(2) is '0'
+                                        if can_write = '1' then
+                                            buf_next(1)      <= dwn_transfer_data;
+                                            occupied_next(1) <= '1';
+                                        else
+                                            buf_next(2)      <= dwn_transfer_data;
+                                            occupied_next(2) <= '1';
                                         end if;
                                     end if;
                                 end if;
                             end if;
                         end if;
+
                     end process;
                     data_dwn_valid(I) <= valid;
                 end generate;
@@ -411,7 +428,6 @@ begin
                     end if;
                 end if;
             end process;
-            near_full(NUM_FUNCTIONS) <= '0';
 
             data_dwn_0 <= data_dwn(0);
             data_dwn_1 <= data_dwn(1);
