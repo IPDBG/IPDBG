@@ -27,15 +27,19 @@ foreach reg [get_cells -hier {FF} ] {
         foreach dst $dsts src $srcs {
             var fromCell $hier
             append fromCell $src
-            lappend fromCells $fromCell
+            var numNewFromCells [llength [get_cells $fromCell]]
 
             var toCell $hier
             append toCell $dst
-            lappend toCells $toCell
+            var numNewToCells [llength [get_cells $toCell]]
+            if { $numNewToCells > 0 && $numNewFromCells > 0 } {
+                lappend fromCells $fromCell
+                lappend toCells $toCell
 
-            append fromCell "/C"
-            append toCell "/D"
-            set_max_delay -datapath_only -from [get_pins $fromCell] -to [get_pins $toCell] [expr $dstPeriod / 2]
+                append fromCell "/C"
+                append toCell "/D"
+                set_max_delay -datapath_only -from [get_pins $fromCell] -to [get_pins $toCell] [expr $dstPeriod / 2]
+            }
         }
         set_bus_skew -from [get_cells $fromCells] -to [get_cells $toCells] [expr $dstPeriod / 2]
     }
@@ -44,8 +48,8 @@ foreach reg [get_cells -hier {FF} ] {
 
 # function-clock to host-clock
 
-set srcs { data_dwn_block.function_clock_domain.acknowledge_reg        
-           data_up_block.function_clock_domain.request_reg             
+set srcs { data_dwn_block.function_clock_domain.acknowledge_reg
+           data_up_block.function_clock_domain.request_reg
            data_up_block.function_clock_domain.transfer_register_reg[*]
 }
 set dsts { data_dwn_block.host_clock_domain.ff_jtag.mff_flops[0].MFF/FF
@@ -63,22 +67,26 @@ foreach reg [get_cells -hier {FF} ] {
         append dstCkPin "/C"
         set dstPeriod [get_property PERIOD [get_clocks -of_objects [ get_pins $dstCkPin ]]]
         #puts $dstPeriod
-		
+
         set toCells {}
         set fromCells {}
-		
+
         foreach dst $dsts src $srcs {
             var fromCell $hier
             append fromCell $src
-            lappend fromCells $fromCell
-		
+            var numNewFromCells [llength [get_cells $fromCell]]
+
             var toCell $hier
             append toCell $dst
-            lappend toCells $toCell
-		
-            append fromCell "/C"
-            append toCell "/D"
-            set_max_delay -datapath_only -from [get_pins $fromCell] -to [get_pins $toCell] [expr $dstPeriod / 2]
+            var numNewToCells [llength [get_cells $toCell]]
+            if { $numNewToCells > 0 && $numNewFromCells > 0 } {
+                lappend toCells $toCell
+                lappend fromCells $fromCell
+
+                append fromCell "/C"
+                append toCell "/D"
+                set_max_delay -datapath_only -from [get_pins $fromCell] -to [get_pins $toCell] [expr $dstPeriod / 2]
+            }
         }
         set_bus_skew -from [get_cells $fromCells] -to [get_cells $toCells] [expr $dstPeriod / 2]
     }
