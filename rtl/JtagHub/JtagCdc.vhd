@@ -6,8 +6,7 @@ use ieee.numeric_std.all;
 entity JtagCdc is
     generic(
         MFF_LENGTH       : natural := 3;
-        --PORT_ENABLE : std_logic_vector(6 downto 0) := "0000010" -- only iurt has handshaking enabled
-        HANDSHAKE_ENABLE : std_logic_vector(6 downto 0) := "0000010" -- only iurt has handshaking enabled
+        HANDSHAKE_ENABLE : std_logic_vector(6 downto 0)
     );
     port(
         clk                   : in  std_logic;
@@ -76,12 +75,12 @@ architecture behavioral of JtagCdc is
     constant NUM_FUNCTIONS                 : natural := 2**FUNCTION_LENGTH-INTERNAL_FUNCTIONS;
 
     -- from DR to controller:
-    signal update_req                      : std_logic;
-    signal xoff_sent                       : std_logic;
-    signal up_transfer_register_valid_sent : std_logic;
-    signal dwn_transfer_data               : std_logic_vector(DATA_LENGTH-1 downto 0);
-    signal dwn_transfer_function_number    : std_logic_vector(FUNCTION_LENGTH-1 downto 0);
-    signal dwn_transfer_register_valid     : std_logic;
+    signal update_req                        : std_logic;
+    signal xoff_sent_x                       : std_logic;
+    signal up_transfer_register_valid_sent_x : std_logic;
+    signal dwn_transfer_data_x               : std_logic_vector(DATA_LENGTH-1 downto 0);
+    signal dwn_transfer_function_number_x    : std_logic_vector(FUNCTION_LENGTH-1 downto 0);
+    signal dwn_transfer_register_valid_x     : std_logic;
 
     -- from controller to DR
     -- make sure delay of up_transfer_data and up_transfer_function_number is shorter than
@@ -91,40 +90,36 @@ architecture behavioral of JtagCdc is
     signal up_transfer_data            : std_logic_vector(DATA_LENGTH-1 downto 0);
     signal up_transfer_function_number : std_logic_vector(FUNCTION_LENGTH-1 downto 0);
     signal up_transfer_register_valid  : std_logic;
-    signal xoff                        : std_logic;
+    signal up_xoff                     : std_logic;
 
-    -- signals from handshake controller to arbiter:
-    signal xon_pending                 : std_logic;
-    signal xon_data                    : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
-    -- arbiter to handshake controller
-    signal xon_pending_ack             : std_logic;--_vector(NUM_FUNCTIONS-1 downto 0);
 begin
 
-
---    process begin
---        report "NUM_FUNCTIONS = " & integer'image(NUM_FUNCTIONS);
---    end process;
-
     jtag_dr: block
-        signal capture_en                        : std_logic;
-        signal shift_en                          : std_logic;
-        signal update_en                         : std_logic;
-        signal dr                                : std_logic_vector(DR_LENGTH downto 0);
-        signal dr_in                             : std_logic_vector(DR_LENGTH-1 downto 0);
+        signal capture_en                          : std_logic;
+        signal shift_en                            : std_logic;
+        signal update_en                           : std_logic;
+        signal dr                                  : std_logic_vector(DR_LENGTH downto 0);
+        signal dr_in                               : std_logic_vector(DR_LENGTH-1 downto 0);
 
-        signal shift_counter                  : natural range 0 to DR_LENGTH;
+        signal shift_counter                       : natural range 0 to DR_LENGTH;
+
+        signal xoff_sent_ce                        : std_logic;
+        signal up_transfer_register_valid_sent_ce  : std_logic;
     begin
         capture_en <= CAPTURE and USER;
         shift_en <= SHIFT and USER;
         update_en <= UPDATE and USER;
 
         update_req <= update_en;
-        dwn_transfer_data            <= dr(DATA_LENGTH-1 downto 0);
-        dwn_transfer_function_number <= dr(DATA_LENGTH+FUNCTION_LENGTH-1  downto DATA_LENGTH);
-        dwn_transfer_register_valid  <= dr(DATA_LENGTH+FUNCTION_LENGTH+XOFF_LENGTH);
+        dwn_transfer_data_x            <= dr(DATA_LENGTH-1 downto 0);
+        dwn_transfer_function_number_x <= dr(DATA_LENGTH+FUNCTION_LENGTH-1  downto DATA_LENGTH);
+        dwn_transfer_register_valid_x  <= dr(DATA_LENGTH+FUNCTION_LENGTH+XOFF_LENGTH);
 
         process(DRCLK)begin
             if rising_edge(DRCLK) then
+                xoff_sent_ce <= '0';
+                up_transfer_register_valid_sent_ce <= '0';
+
                 if capture_en = '1' then
                     shift_counter <= DR_LENGTH;
                 elsif shift_en = '1' then
@@ -132,22 +127,36 @@ begin
                         shift_counter <= shift_counter - 1;
                     end if;
 
-                    if shift_counter = 1 then
-                        up_transfer_register_valid_sent <= dr(0);
+                    if shift_counter = 2 then
+                        up_transfer_register_valid_sent_ce <= '1';
                     end if;
 
-                    if shift_counter = 2 then
-                        xoff_sent <= dr(0);
+                    if shift_counter = 3 then
+                        xoff_sent_ce <= '1';
                     end if;
-                elsif update_en = '1' then
                 end if;
             end if;
         end process;
 
+        xoff_sent_ff : dffpc -- these flops are also used for cdc of up_transfer_register_valid
+            port map(
+                clk => DRCLK,
+                ce  => xoff_sent_ce,
+                d   => dr(0),
+                q   => xoff_sent_x
+            );
+        up_transfer_register_valid_sent_ff : dffpc -- these flops are also used for cdc of up_transfer_register_valid
+            port map(
+                clk => DRCLK,
+                ce  => up_transfer_register_valid_sent_ce,
+                d   => dr(0),
+                q   => up_transfer_register_valid_sent_x
+            );
+
         dr(DR_LENGTH) <= TDI;
         TDO <= dr(0);
 
-        dr_in <= up_transfer_register_valid & xoff & up_transfer_function_number & up_transfer_data;
+        dr_in <= up_transfer_register_valid & up_xoff & up_transfer_function_number & up_transfer_data;
         shift_register: block
             signal clock_enable : std_logic;
         begin
@@ -157,7 +166,6 @@ begin
                 signal d            : std_logic;
             begin
                 d <= dr(I+1) when (capture_en = '0') else dr_in(I);
-
 
                 dr_ffs : dffpc -- these flops are also used for cdc of up_transfer_register_valid
                     port map(
@@ -173,261 +181,280 @@ begin
 
     function_clk: block
         type data_port_arr is array(NUM_FUNCTIONS-1 downto 0) of std_logic_vector(DATA_LENGTH-1 downto 0);
-        signal clear             : std_logic;
-        signal do_update         : std_logic;
+
+        signal clear                           : std_logic;
+
+        signal dwn_do_update                   : std_logic;
+        signal dwn_transfer_data               : std_logic_vector(DATA_LENGTH-1 downto 0);
+        signal dwn_transfer_function_number    : std_logic_vector(FUNCTION_LENGTH-1 downto 0);
+        signal dwn_transfer_register_valid     : std_logic;
+
+        signal xoff_sent                       : std_logic;
+        signal up_transfer_register_valid_sent : std_logic;
+
+        signal near_full                       : std_logic_vector(NUM_FUNCTIONS downto 0);
+        signal clear_xoff_bits_valid           : std_logic;
+        signal clear_xoff_bits                 : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
+        signal xoff_state_host                 : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
     begin
 
         cdc: block
-            signal x                      : std_logic_vector(MFF_LENGTH downto 0);
+            signal mff                    : std_logic_vector(MFF_LENGTH downto 0);
             signal update_req_synced      : std_logic;
             signal update_req_synced_prev : std_logic;
+            signal dwn_enable             : std_logic;
+            signal dff_ce                 : std_logic;
         begin
-            x(0) <= update_req;
+            mff(0) <= update_req;
             mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
-                MFF : dffpc
+                dff_i : dffpc
                     port map(
                         clk => clk,
                         ce  => ce,
-                        d   => x(K),
-                        q   => x(K+1)
+                        d   => mff(K),
+                        q   => mff(K+1)
                     );
             end generate;
-            update_req_synced <= x(MFF_LENGTH);
+            update_req_synced <= mff(MFF_LENGTH);
             process (clk) begin
                 if rising_edge(clk) then
-                    update_req_synced_prev <= update_req_synced;
+                    if ce = '1' then
+                        update_req_synced_prev <= update_req_synced;
+                        dwn_enable <= update_req_synced and (not update_req_synced_prev); -- detect 0 -> 1 change
+                        dwn_do_update <= dwn_enable;
+                    end if;
                 end if;
             end process;
-            do_update <= update_req_synced and (not update_req_synced_prev); -- detect 0 -> 1 change
+            dff_ce <= dwn_enable and ce;
+
+            dwn_data_ffs: for I in dwn_transfer_data'range generate
+                dd_ffs : dffpc
+                    port map(
+                        clk => clk,
+                        ce  => dff_ce,
+                        d   => dwn_transfer_data_x(I),
+                        q   => dwn_transfer_data(I)
+                    );
+            end generate;
+            dwn_functions_ffs: for I in dwn_transfer_function_number'range generate
+                df_ffs : dffpc
+                    port map(
+                        clk => clk,
+                        ce  => dff_ce,
+                        d   => dwn_transfer_function_number_x(I),
+                        q   => dwn_transfer_function_number(I)
+                    );
+            end generate;
+            dv_ffs : dffpc
+                port map(
+                    clk => clk,
+                    ce  => dff_ce,
+                    d   => dwn_transfer_register_valid_x,
+                    q   => dwn_transfer_register_valid
+                );
+            xoff_sent_ffs : dffpc
+                port map(
+                    clk => clk,
+                    ce  => dff_ce,
+                    d   => xoff_sent_x,
+                    q   => xoff_sent
+                );
+            up_dv_sent_ffs : dffpc
+                port map(
+                    clk => clk,
+                    ce  => dff_ce,
+                    d   => up_transfer_register_valid_sent_x,
+                    q   => up_transfer_register_valid_sent
+                );
         end block;
 
 
         down: block
-            signal data_dwn                 : data_port_arr;
-            signal data_out_register_enable : std_logic;
-            signal near_full                : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
+            signal data_dwn  : data_port_arr;
         begin
-            process (clk) begin
+
+            internal_output: process (clk) begin
                 if rising_edge(clk) then
-                    data_out_register_enable <= '0';
-                    if do_update = '1' then
-                        data_out_register_enable <= '1';
+                    if ce = '1' then
+                        clear <= '0';
+                        if dwn_do_update = '1' then
+                            if dwn_transfer_register_valid = '1' and dwn_transfer_function_number = "111" then
+                                clear <= '1';
+                            end if;
+                        end if;
                     end if;
                 end if;
             end process;
 
-            xoff_mux: block
-                signal sel_next : unsigned(FUNCTION_LENGTH-1 downto 0);
-                signal sel      : unsigned(FUNCTION_LENGTH-1 downto 0);
+            outputs_stages: for I in 0 to NUM_FUNCTIONS-1 generate begin
+                w_hs: if HANDSHAKE_ENABLE(I) = '1' generate
+                    type buffer_t           is array(2 downto 0) of std_logic_vector(DATA_LENGTH-1 downto 0);
+                    signal valid            : std_logic;
+                    signal buf              : buffer_t;
+                    signal occupied         : std_logic_vector(2 downto 0);
+                    signal can_write        : std_logic;
+                    signal data_dwn_local   : std_logic_vector(DATA_LENGTH-1 downto 0);
+                    signal channel_selected : std_logic; -- break combinatorial logic dwn_transfer_data is still valid in the next cycle
+                begin
+                    can_write <= data_dwn_ready(I) and (not valid);
+                    near_full(I) <= occupied(0);
+                    process(clk)begin
+                        if rising_edge(clk) then
+                            if ce = '1' then
+                                channel_selected <= '0';
+                                if clear = '1' then
+                                    valid <= '0';
+                                    data_dwn_local <= (others => '-');
+                                    occupied <= (others => '0');
+                                    buf <= (others => (others => '-'));
+                                else
+                                    if dwn_do_update = '1' and dwn_transfer_register_valid = '1' and I = to_integer(to_01(unsigned(dwn_transfer_function_number), '1')) then
+                                        channel_selected <= '1';
+                                    end if;
+
+                                    valid <= '0';
+                                    if can_write = '1' then
+                                        data_dwn_local <= buf(0);
+                                        buf(0)         <= buf(1);
+                                        buf(1)         <= buf(2);
+                                        buf(2)         <= (others => '-');
+                                        valid          <= occupied(0);
+                                        occupied(0)    <= occupied(1);
+                                        occupied(1)    <= occupied(2);
+                                        occupied(2)    <= '0';
+                                    end if;
+                                    if channel_selected = '1' then
+                                        if occupied(0) = '0' and can_write = '1' then                               data_dwn_local <= dwn_transfer_data;
+                                                                                                                    valid          <= '1';
+                                        elsif occupied(0) = '0' or (occupied(1) = '0' and can_write = '1') then     buf(0)         <= dwn_transfer_data;
+                                                                                                                    occupied(0)    <= '1';
+                                        elsif occupied(1) = '0' or (occupied(2) = '0' and can_write = '1') then     buf(1)         <= dwn_transfer_data;
+                                                                                                                    occupied(1)    <= '1';
+                                        elsif occupied(2) = '0' or can_write = '1' then                             buf(2)         <= dwn_transfer_data;
+                                                                                                                    occupied(2)    <= '1';
+                                        --else
+                                        --     null; -- host did not act on xoff -> data is lost
+                                        end if;
+                                    end if;
+                                end if;
+                            end if;
+                        end if;
+                    end process;
+                    data_dwn_valid(I) <= valid;
+                    data_dwn(I) <= data_dwn_local;
+                end generate;
+
+                wo_hs: if HANDSHAKE_ENABLE(I) = '0' generate begin
+                    near_full(I) <= '0';
+                    process (clk) begin
+                        if rising_edge(clk) then
+                            if ce = '1' then
+                                data_dwn_valid(I) <= '0';
+                                if dwn_do_update = '1' then
+                                    data_dwn(I) <= dwn_transfer_data;
+                                    if dwn_transfer_register_valid = '1' and I = to_integer(to_01(unsigned(dwn_transfer_function_number), '1')) then
+                                        data_dwn_valid(I) <= '1';
+                                    end if;
+                                end if;
+                            end if;
+                        end if;
+                    end process;
+                end generate;
+            end generate;
+            near_full(NUM_FUNCTIONS) <= '0';
+
+            xoff_mux: if HANDSHAKE_ENABLE /= "0000000" generate
+                signal sel  : unsigned(FUNCTION_LENGTH-1 downto 0);
+                signal xoff : std_logic;
             begin
-                process (sel, clear, data_out_register_enable, dwn_transfer_register_valid, dwn_transfer_function_number ) begin
-                    sel_next <= sel;
-                    if clear = '1' then
-                        sel_next <= "111";
-                    else
-                        if data_out_register_enable = '1' then
-                            if dwn_transfer_register_valid = '1' then
-                                sel_next <= to_01(unsigned(dwn_transfer_function_number));
+                process (clk) begin
+                    if rising_edge(clk) then
+                        if ce = '1' then
+                            if clear = '1' then
+                                sel <= "111";
                             else
-                                sel_next <= "111"; -- internal function never xoff'ed
+                                if dwn_do_update = '1' then
+                                    if dwn_transfer_register_valid = '1' then
+                                        sel <= to_01(unsigned(dwn_transfer_function_number));
+                                    else
+                                        sel <= "111"; -- internal function never xoff'ed
+                                    end if;
+                                end if;
                             end if;
                         end if;
                     end if;
                 end process;
 
-                process (clk) begin
-                    if rising_edge(clk) then
-                        xoff <= near_full(to_integer(sel_next));
-                        sel <= sel_next;
-                    end if;
-                end process;
-            end block;
+                assert near_full'length = 2**sel'length severity failure;
 
---    capture  shift  update    capture  shift  update    capture  shift  update           capture  shift  update    capture  shift  update
---                      w1                        w2                        w3                               w4                        w5
---xoff drclk                       x1                        x2                               x3                       x4
--- xoff clk                                       x1                        x2                               x3                        x4
---
---                                                0                         1
+                xoff <= near_full(to_integer(sel));
+
+                up_xoff_ffs : dffpc
+                    port map(
+                        clk => clk,
+                        ce  => ce,
+                        d   => xoff,
+                        q   => up_xoff
+                    );
+            end generate;
+            no_xoff_mux: if HANDSHAKE_ENABLE = "0000000" generate begin
+                up_xoff <= '0';
+            end generate;
 
             dwn_handshake_control: block
-                signal xoff_state       : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
-                signal clear_xoff_state : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
+                signal last_dwn_transfer_function_number : std_logic_vector(dwn_transfer_function_number'range);
+                signal update_xoff_state                 : std_logic; -- timing: reduce inputs to xoff_state; dwn_transfer_function_number is still valid one cycle later
             begin
-                functions: for I in 0 to NUM_FUNCTIONS-1 generate begin
-                    w_hs_xoffstate: if HANDSHAKE_ENABLE(I) = '1' generate
-                        signal update_xoff_state : std_logic; -- timing: reduce inputs to xoff_state
-                    begin
-                        process(clk)begin
-                            if rising_edge(clk) then
-                                if clear = '1' then
-                                    xoff_state(I) <= '0';
-                                else
-                                    update_xoff_state <= '0';
-                                    if data_out_register_enable = '1' then
+
+                no_hs_at_all: if HANDSHAKE_ENABLE = "0000000" generate begin
+                    update_xoff_state <= '0';
+                    last_dwn_transfer_function_number <= (others => '1');
+                end generate;
+                some_hs: if HANDSHAKE_ENABLE /= "0000000" generate begin
+                    process(clk)begin
+                        if rising_edge(clk) then
+                            if ce = '1' then
+                                update_xoff_state <= '0';
+                                if clear = '0' then
+                                    if dwn_do_update = '1' then
                                         if dwn_transfer_register_valid = '1' then -- xoff sent to host is only valid when dwn transfer had valid data
                                             if xoff_sent = '1' then
                                                 update_xoff_state <= '1';
                                             end if;
                                         end if;
                                     end if;
-                                    if update_xoff_state = '1' and I = to_integer(to_01(unsigned(dwn_transfer_function_number), '1')) then
-                                        xoff_state(I) <= '1';
-                                    elsif xon_pending_ack = '1' and clear_xoff_state(I) = '1' then
-                                        xoff_state(I) <= '0';
+                                end if;
+                                if update_xoff_state = '1' then
+                                    last_dwn_transfer_function_number <= dwn_transfer_function_number;
+                                end if;
+                            end if;
+                        end if;
+                    end process;
+                end generate;
+
+                functions: for I in 0 to NUM_FUNCTIONS-1 generate begin
+                    w_hs_xoffstate: if HANDSHAKE_ENABLE(I) = '1' generate begin
+                        process(clk)begin
+                            if rising_edge(clk) then
+                                if ce = '1' then
+                                    if clear = '1' then
+                                        xoff_state_host(I) <= '0';
+                                    else
+                                        if update_xoff_state = '1' and I = to_integer(to_01(unsigned(last_dwn_transfer_function_number), '1')) then
+                                            xoff_state_host(I) <= '1';
+                                        elsif clear_xoff_bits_valid = '1' and clear_xoff_bits(I) = '1' then
+                                            xoff_state_host(I) <= '0';
+                                        end if;
                                     end if;
                                 end if;
                             end if;
                         end process;
                     end generate;
                     wo_hs_xoffstate: if HANDSHAKE_ENABLE(I) = '0' generate begin
-                        xoff_state(I) <= '0';
+                        xoff_state_host(I) <= '0';
                     end generate;
                 end generate;
-
-
-                ctrl: block
-                begin
-                    process(clk)begin
-                        if rising_edge(clk) then
-                            if clear = '1' then
-                                xon_pending <= '0';
-                                xon_data <= (others => '-');
-                                clear_xoff_state <= (others => '0');
-                                -- xon_pending_ack
-                            else
-                                clear_xoff_state <= xon_data;
-                                if do_update = '1' and up_transfer_register_valid_sent = '1' then
-                                    xon_pending <= '0';
-                                else
-                                    xon_data <= (others => '0');
-
-                                    for I in 0 to NUM_FUNCTIONS-1 loop
-                                        if HANDSHAKE_ENABLE(I) = '1' then
-                                            if xoff_state(I) = '1' and near_full(I) = '0' then
-                                                xon_data(I) <= '1';
-                                                xon_pending <= '1';
-                                            end if;
-                                        end if;
-                                    end loop;
-                                end if;
-                            end if;
-                        end if;
-                    end process;
-                end block;
             end block;
-
-            outputs_stages: for I in 0 to NUM_FUNCTIONS-1 generate begin
-                w_hs: if HANDSHAKE_ENABLE(I) = '1' generate
-                    type buffer_t         is array(2 downto 0) of std_logic_vector(DATA_LENGTH-1 downto 0);
-                    signal valid          : std_logic;
-                    signal buf            : buffer_t;
-                    signal occupied       : std_logic_vector(2 downto 0);
-                    signal can_write      : std_logic;
-                    signal valid_next     : std_logic;
-                    signal buf_next       : buffer_t;
-                    signal occupied_next  : std_logic_vector(2 downto 0);
-                    signal data_dwn_local : std_logic_vector(DATA_LENGTH-1 downto 0);
-                    signal data_dwn_next  : std_logic_vector(DATA_LENGTH-1 downto 0);
-                begin
-
-                    can_write <= data_dwn_ready(I) and (not valid);
-
-                    near_full(I) <= occupied_next(0);
-                    data_dwn(I) <= data_dwn_local;
-                    process (clk) begin
-                        if rising_edge (clk) then
-                            valid <= valid_next;
-                            data_dwn_local <= data_dwn_next;
-                            occupied <= occupied_next;
-                            buf <= buf_next;
-                        end if;
-                    end process;
-
-                    fifo: process (valid, data_dwn_local, occupied, buf, clear, can_write, data_out_register_enable, dwn_transfer_register_valid, dwn_transfer_function_number, dwn_transfer_data ) begin
-                        valid_next <= valid;
-                        data_dwn_next <= data_dwn_local;
-                        occupied_next <= occupied;
-                        buf_next <= buf;
-                        if clear = '1' then
-                            valid_next <= '0';
-                            data_dwn_next <= (others => '-');
-                            occupied_next <= (others => '0');
-                            buf_next <= (others => (others => '-'));
-                        else
-                            valid_next <= '0';
-                            if can_write = '1' then
-                                data_dwn_next    <= buf(0);
-                                buf_next(0)      <= buf(1);
-                                buf_next(1)      <= buf(2);
-                                buf_next(2)      <= (others => '-');
-                                valid_next       <= occupied(0);
-                                occupied_next(0) <= occupied(1);
-                                occupied_next(1) <= occupied(2);
-                                occupied_next(2) <= '0';
-                            end if;
-
-                            if data_out_register_enable = '1' then
-                                if dwn_transfer_register_valid = '1' and I = to_integer(to_01(unsigned(dwn_transfer_function_number), '1')) then
-                                    if occupied(0) = '0' then
-                                        if can_write = '1' then
-                                            data_dwn_next    <= dwn_transfer_data;
-                                            valid_next       <= '1';
-                                        else
-                                            buf_next(0)      <= dwn_transfer_data;
-                                            occupied_next(0) <= '1';
-                                        end if;
-                                    elsif occupied(1) = '0' then
-                                        if can_write = '1' then
-                                            buf_next(0)      <= dwn_transfer_data;
-                                            occupied_next(0) <= '1';
-                                        else
-                                            buf_next(1)      <= dwn_transfer_data;
-                                            occupied_next(1) <= '1';
-                                        end if;
-                                    else -- occupied(2) is '0'
-                                        if can_write = '1' then
-                                            buf_next(1)      <= dwn_transfer_data;
-                                            occupied_next(1) <= '1';
-                                        else
-                                            buf_next(2)      <= dwn_transfer_data;
-                                            occupied_next(2) <= '1';
-                                        end if;
-                                    end if;
-                                end if;
-                            end if;
-                        end if;
-
-                    end process;
-                    data_dwn_valid(I) <= valid;
-                end generate;
-
-                wo_hs: if HANDSHAKE_ENABLE(I) = '0' generate begin
-                    near_full(I) <= '0';
-                    process (clk) begin
-                        if rising_edge (clk) then
-                            data_dwn_valid(I) <= '0';
-                            if data_out_register_enable = '1' then
-                                data_dwn(I) <= dwn_transfer_data;
-                                if dwn_transfer_register_valid = '1' and I = to_integer(to_01(unsigned(dwn_transfer_function_number), '1')) then
-                                    data_dwn_valid(I) <= '1';
-                                end if;
-                            end if;
-                        end if;
-                    end process;
-                end generate;
-            end generate;
-
-            internal_output: process (clk) begin
-                if rising_edge (clk) then
-                    clear <= '0';
-                    if data_out_register_enable = '1' then
-                        if dwn_transfer_register_valid = '1' and dwn_transfer_function_number = "111" then
-                            clear <= '1';
-                        end if;
-                    end if;
-                end if;
-            end process;
 
             data_dwn_0 <= data_dwn(0);
             data_dwn_1 <= data_dwn(1);
@@ -439,10 +466,9 @@ begin
         end block down;
 
         up: block
-            signal set_up_transfer_register_valid : std_logic;
-            signal data_up_buffer_empty           : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
-            signal data_up_buffer                 : data_port_arr;
-            signal data_up                        : data_port_arr;
+            signal data_up_buffer_empty : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
+            signal data_up_buffer       : data_port_arr;
+            signal data_up              : data_port_arr;
         begin
             data_up_ready <= data_up_buffer_empty;
 
@@ -456,31 +482,25 @@ begin
 
             input_buffering: process (clk) begin
                 if rising_edge(clk) then
-                    if clear = '1' then
-                        up_transfer_register_valid <= '0';
-                        data_up_buffer_empty <= (others => '1');
-                        data_up_buffer <= (others => (others => '-'));
-                    else
-                        if set_up_transfer_register_valid = '1' then
-                            up_transfer_register_valid <= '1';
-                        end if;
+                    if ce = '1' then
+                        if clear = '1' then
+                            data_up_buffer_empty <= (others => '1');
+                            data_up_buffer <= (others => (others => '-'));
+                        else
+                            for I in 0 to NUM_FUNCTIONS-1 loop
+                                if data_up_buffer_empty(I) = '1' and data_up_valid(I) = '1' then
+                                    data_up_buffer_empty(I) <= '0';
+                                    data_up_buffer(I) <= data_up(I);
+                                end if;
 
-                        for I in 0 to NUM_FUNCTIONS-1 loop
-                            if data_up_buffer_empty(I) = '1' and data_up_valid(I) = '1' then
-                                data_up_buffer_empty(I) <= '0';
-                                data_up_buffer(I) <= data_up(I);
-                            end if;
-                        end loop;
-                        if do_update = '1' then
-                            if up_transfer_register_valid_sent = '1' then
-                                up_transfer_register_valid <= '0';
-                                -- data has been transmitted so the up_transfer_data is empty again
-                                for I in 0 to NUM_FUNCTIONS-1 loop
-                                    if I = to_integer(to_01(unsigned(up_transfer_function_number), '1')) then
-                                        data_up_buffer_empty(I) <= '1';
+                                if dwn_do_update = '1' then
+                                    if up_transfer_register_valid_sent = '1' then
+                                        if I = to_integer(to_01(unsigned(up_transfer_function_number), '1')) then -- data has been transmitted so the up_transfer_data is empty again
+                                            data_up_buffer_empty(I) <= '1';
+                                        end if;
                                     end if;
-                                end loop;
-                            end if;
+                                end if;
+                            end loop;
                         end if;
                     end if;
                 end if;
@@ -489,55 +509,105 @@ begin
             arbiter: block
                 constant handshake_needed : boolean := HANDSHAKE_ENABLE /= "0000000";
                 signal state              : unsigned(FUNCTION_LENGTH-1 downto 0);
-                type transfer_t           is (is_active, is_idle);
-                signal transfer           : transfer_t;
             begin
-                process (clk) begin
-                    if rising_edge(clk) then
-                        if clear = '1' then
-                            set_up_transfer_register_valid <= '0';
-                            state <= "000";
-                            transfer <= is_idle;
-                            up_transfer_function_number <= "---";
-                            up_transfer_data <= "--------";
-                            xon_pending_ack <= '0';
-                        else
-                            xon_pending_ack <= '0';
-                            set_up_transfer_register_valid <= '0';
-                            if handshake_needed and state = "111" then
-                                if xon_pending = '0' then
+                no_hs: if not handshake_needed generate begin
+                    process (clk) begin
+                        if rising_edge(clk) then
+                            if ce = '1' then
+                                if clear = '1' then
                                     state <= "000";
-                                    transfer <= is_idle;
+                                    up_transfer_function_number <= "---";
+                                    up_transfer_data <= "--------";
+                                    up_transfer_register_valid <= '0';
                                 else
-                                    xon_pending_ack             <= '1';
-                                    up_transfer_function_number <= std_logic_vector(to_01(state));
-                                    if transfer = is_idle then
-                                        up_transfer_data            <= '0' & xon_data;
-                                        set_up_transfer_register_valid <= '1';
-                                        transfer <= is_active;
-                                    end if;
-                                end if;
-                            else
-                                if data_up_buffer_empty(to_integer(to_01(state))) = '1' then
-                                    if (not handshake_needed and state = "110") or state = "111" then
-                                        state <= "000";
+                                    if up_transfer_register_valid = '1' then
+                                        if dwn_do_update = '1' then
+                                            if up_transfer_register_valid_sent = '1' then
+                                                up_transfer_register_valid <= '0';
+                                            end if;
+                                        end if;
                                     else
-                                        state <= to_01(state) + 1;
-                                    end if;
-                                    transfer <= is_idle;
-                                else
-                                    up_transfer_data            <= data_up_buffer(to_integer(to_01(state)));
-                                    up_transfer_function_number <= std_logic_vector(to_01(state));
-                                    if transfer = is_idle then
-                                        set_up_transfer_register_valid <= '1';
-                                        transfer <= is_active;
+                                        if state = "110" then
+                                            state <= "000";
+                                        else
+                                            state <= to_01(state) + 1;
+                                        end if;
+                                        if data_up_buffer_empty(to_integer(to_01(state))) = '0' then
+                                            up_transfer_data            <= data_up_buffer(to_integer(to_01(state)));
+                                            up_transfer_function_number <= std_logic_vector(to_01(state));
+                                            up_transfer_register_valid  <= '1';
+                                        end if;
                                     end if;
                                 end if;
                             end if;
                         end if;
-                    end if;
-                end process;
+                    end process;
+                    clear_xoff_bits_valid <= '0';
+                    clear_xoff_bits <= (others => '-');
+                end generate;
+                w_hs: if handshake_needed generate
+                    --signal xon_pending : std_logic;
+                    signal xon_data    : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
+                begin
+                    process (clk) begin
+                        if rising_edge(clk) then
+                            if ce = '1' then
+                                clear_xoff_bits_valid <= '0';
+                                if clear = '1' then
+                                    state <= "000";
+                                    up_transfer_function_number <= "---";
+                                    up_transfer_data <= "--------";
+                                    up_transfer_register_valid <= '0';
+                                    clear_xoff_bits <= (others => '-');
+                                    xon_data    <= (others => '0');
+                                    --xon_pending <= '0';
+                                else
+                                    if up_transfer_register_valid = '1' then
+                                        if dwn_do_update = '1' then
+                                            if up_transfer_register_valid_sent = '1' then
+                                                up_transfer_register_valid <= '0';
+                                                if up_transfer_function_number = "111" then
+                                                    clear_xoff_bits_valid <= '1';
+                                                    clear_xoff_bits <= up_transfer_data(clear_xoff_bits'range);
+                                                    --xon_pending <= '0';
+                                                    xon_data <= (others => '0');
+                                                end if;
+                                            end if;
+                                        end if;
+                                    else
+                                        if state = "111" then
+                                            state <= "000";
+                                            --if xon_pending = '1' then
+                                            if xon_data /= "0000000" then
+                                                up_transfer_data            <= '0' & xon_data;
+                                                up_transfer_function_number <= "111";
+                                                up_transfer_register_valid  <= '1';
+                                            end if;
+                                        else
+                                            state <= to_01(state) + 1;
+                                            if data_up_buffer_empty(to_integer(to_01(state))) = '0' then
+                                                up_transfer_data            <= data_up_buffer(to_integer(to_01(state)));
+                                                up_transfer_function_number <= std_logic_vector(to_01(state));
+                                                up_transfer_register_valid  <= '1';
+                                            end if;
+                                            for I in 0 to NUM_FUNCTIONS-1 loop
+                                                if HANDSHAKE_ENABLE(I) = '1' and xoff_state_host(I) = '1' and clear_xoff_bits_valid = '0' and near_full(I) = '0' then
+                                                    xon_data(I) <= '1';
+                                                    --xon_pending <= '1';
+                                                end if;
+                                            end loop;
+                                        end if;
+                                    end if;
+                                end if;
+                            end if;
+                        end if;
+                    end process;
+                end generate;
             end block;
-        end block up;
+        end block;
     end block;
 end architecture;
+
+
+
+

@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity JtagHub is
     generic(
         MFF_LENGTH       : natural := 3;
-        HANDSHAKE_ENABLE : std_logic_vector(6 downto 0) := "0000010"
+        HANDSHAKE_ENABLE : std_logic_vector(6 downto 0)
     );
     port(
         clk                   : in  std_logic;
@@ -37,7 +37,8 @@ end entity JtagHub;
 architecture structure of JtagHub is
     component JtagCdc is
         generic(
-            MFF_LENGTH : natural
+            MFF_LENGTH       : natural;
+            HANDSHAKE_ENABLE : std_logic_vector(6 downto 0)
         );
         port(
             clk                   : in  std_logic;
@@ -107,7 +108,8 @@ begin
 
     CDC : component JtagCdc
         generic map(
-            MFF_LENGTH => MFF_LENGTH
+            MFF_LENGTH       => MFF_LENGTH,
+            HANDSHAKE_ENABLE => HANDSHAKE_ENABLE
         )
         port map(
             clk            => clk,
