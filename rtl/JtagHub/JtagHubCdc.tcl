@@ -25,7 +25,7 @@ set srcs { CDC/function_clk.up.arbiter.*.up_transfer_data_reg[0]
            CDC/function_clk.up.arbiter.*.up_transfer_function_number_reg[0]
            CDC/function_clk.up.arbiter.*.up_transfer_function_number_reg[1]
            CDC/function_clk.up.arbiter.*.up_transfer_function_number_reg[2]
-           CDC/function_clk.down.xoff_mux.up_xoff_ffs/FF
+           CDC/function_clk.down.fc_gen.xoff_mux.up_xoff_ffs/FF
            CDC/function_clk.up.arbiter.*.up_transfer_register_valid_reg }
 
 foreach reg [get_cells -hier {FF} ] {
