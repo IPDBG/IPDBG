@@ -287,13 +287,13 @@ begin
                 end if;
             end process;
 
-                process (clk) begin
-                    if rising_edge(clk) then
-                        if ce = '1' then
-                            common_data_dwn <= dwn_transfer_data;
-                        end if;
+            process (clk) begin
+                if rising_edge(clk) then
+                    if ce = '1' then
+                        common_data_dwn <= dwn_transfer_data;
                     end if;
-                end process;
+                end if;
+            end process;
 
             outputs_stages: for I in 0 to NUM_FUNCTIONS-1 generate begin
                 w_fc: if FLOW_CONTROL_ENABLE(I) = '1' generate
