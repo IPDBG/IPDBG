@@ -118,7 +118,9 @@ int ipdbgJtagInit(urj_chain_t *chain, int apart)
                 strcmp(part->part, "xc7a100t") == 0 ||
                 strcmp(part->part, "xc7a200t") == 0 ||
 
-                strcmp(part->part, "xc7k325t") == 0 )
+                strcmp(part->part, "xc7k325t") == 0  ||
+
+                strcmp(part->part,"xc7s25") == 0)
             return init7Series(chain);
         else if(strcmp(part->part, "xc6vlx240t") == 0)
             return initVirtex6(chain);
