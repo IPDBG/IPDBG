@@ -9,42 +9,40 @@ entity JtagCdc is
         FLOW_CONTROL_ENABLE : std_logic_vector(6 downto 0)
     );
     port(
-        clk                   : in  std_logic;
-        ce                    : in  std_logic;
-
+        clk            : in  std_logic;
+        ce             : in  std_logic;
 
         --data_clk              : in  std_logic_vector(6 downto 0);
 -------------------------- to function
-        data_dwn_0            : out std_logic_vector(7 downto 0);
-        data_dwn_1            : out std_logic_vector(7 downto 0);
-        data_dwn_2            : out std_logic_vector(7 downto 0);
-        data_dwn_3            : out std_logic_vector(7 downto 0);
-        data_dwn_4            : out std_logic_vector(7 downto 0);
-        data_dwn_5            : out std_logic_vector(7 downto 0);
-        data_dwn_6            : out std_logic_vector(7 downto 0);
+        data_dwn_0     : out std_logic_vector(7 downto 0);
+        data_dwn_1     : out std_logic_vector(7 downto 0);
+        data_dwn_2     : out std_logic_vector(7 downto 0);
+        data_dwn_3     : out std_logic_vector(7 downto 0);
+        data_dwn_4     : out std_logic_vector(7 downto 0);
+        data_dwn_5     : out std_logic_vector(7 downto 0);
+        data_dwn_6     : out std_logic_vector(7 downto 0);
         data_dwn_valid        : out std_logic_vector(6 downto 0);
         data_dwn_ready        : in  std_logic_vector(6 downto 0);
 
 -------------------------- from function
-        data_up_ready         : out std_logic_vector(6 downto 0);
-        data_up_valid         : in  std_logic_vector(6 downto 0);
-
-        data_up_0             : in  std_logic_vector(7 downto 0);
-        data_up_1             : in  std_logic_vector(7 downto 0);
-        data_up_2             : in  std_logic_vector(7 downto 0);
-        data_up_3             : in  std_logic_vector(7 downto 0);
-        data_up_4             : in  std_logic_vector(7 downto 0);
-        data_up_5             : in  std_logic_vector(7 downto 0);
-        data_up_6             : in  std_logic_vector(7 downto 0);
+        data_up_ready  : out std_logic_vector(6 downto 0);
+        data_up_valid  : in  std_logic_vector(6 downto 0);
+        data_up_0      : in  std_logic_vector(7 downto 0);
+        data_up_1      : in  std_logic_vector(7 downto 0);
+        data_up_2      : in  std_logic_vector(7 downto 0);
+        data_up_3      : in  std_logic_vector(7 downto 0);
+        data_up_4      : in  std_logic_vector(7 downto 0);
+        data_up_5      : in  std_logic_vector(7 downto 0);
+        data_up_6      : in  std_logic_vector(7 downto 0);
 
 -------------------------- BSCAN-Component
-        DRCLK                : in  std_logic;
-        USER                 : in  std_logic;
-        UPDATE               : in  std_logic;
-        CAPTURE              : in  std_logic;
-        SHIFT                : in  std_logic;
-        TDI                  : in  std_logic;
-        TDO                  : out std_logic
+        DRCLK          : in  std_logic;
+        USER           : in  std_logic;
+        UPDATE         : in  std_logic;
+        CAPTURE        : in  std_logic;
+        SHIFT          : in  std_logic;
+        TDI            : in  std_logic;
+        TDO            : out std_logic
     );
 end entity;
 
@@ -272,7 +270,8 @@ begin
 
 
         down: block
-            signal data_dwn : data_port_arr;
+            signal data_dwn        : data_port_arr;
+            signal common_data_dwn : std_logic_vector(7 downto 0);
         begin
 
             internal_output: process (clk) begin
@@ -288,6 +287,14 @@ begin
                 end if;
             end process;
 
+                process (clk) begin
+                    if rising_edge(clk) then
+                        if ce = '1' then
+                            common_data_dwn <= dwn_transfer_data;
+                        end if;
+                    end if;
+                end process;
+
             outputs_stages: for I in 0 to NUM_FUNCTIONS-1 generate begin
                 w_fc: if FLOW_CONTROL_ENABLE(I) = '1' generate
                     type buffer_t           is array(2 downto 0) of std_logic_vector(DATA_LENGTH-1 downto 0);
@@ -296,7 +303,7 @@ begin
                     signal occupied         : std_logic_vector(2 downto 0);
                     signal can_write        : std_logic;
                     signal data_dwn_local   : std_logic_vector(DATA_LENGTH-1 downto 0);
-                    signal channel_selected : std_logic; -- break combinatorial logic dwn_transfer_data is still valid in the next cycle
+                    signal channel_selected : std_logic;
                 begin
                     can_write <= data_dwn_ready(I) and (not valid);
                     near_full(I) <= occupied(0);
@@ -326,13 +333,13 @@ begin
                                         occupied(2)    <= '0';
                                     end if;
                                     if channel_selected = '1' then
-                                        if occupied(0) = '0' and can_write = '1' then                               data_dwn_local <= dwn_transfer_data;
+                                        if occupied(0) = '0' and can_write = '1' then                               data_dwn_local <= common_data_dwn;
                                                                                                                     valid          <= '1';
-                                        elsif occupied(0) = '0' or (occupied(1) = '0' and can_write = '1') then     buf(0)         <= dwn_transfer_data;
+                                        elsif occupied(0) = '0' or (occupied(1) = '0' and can_write = '1') then     buf(0)         <= common_data_dwn;
                                                                                                                     occupied(0)    <= '1';
-                                        elsif occupied(1) = '0' or (occupied(2) = '0' and can_write = '1') then     buf(1)         <= dwn_transfer_data;
+                                        elsif occupied(1) = '0' or (occupied(2) = '0' and can_write = '1') then     buf(1)         <= common_data_dwn;
                                                                                                                     occupied(1)    <= '1';
-                                        elsif occupied(2) = '0' or can_write = '1' then                             buf(2)         <= dwn_transfer_data;
+                                        elsif occupied(2) = '0' or can_write = '1' then                             buf(2)         <= common_data_dwn;
                                                                                                                     occupied(2)    <= '1';
                                         --else
                                         --    -- host did not act on xoff -> data is lost
@@ -348,12 +355,12 @@ begin
 
                 wo_fc: if FLOW_CONTROL_ENABLE(I) = '0' generate begin
                     near_full(I) <= '0';
+                    data_dwn(I) <= common_data_dwn;
                     process (clk) begin
                         if rising_edge(clk) then
                             if ce = '1' then
                                 data_dwn_valid(I) <= '0';
                                 if dwn_do_update = '1' then
-                                    data_dwn(I) <= dwn_transfer_data;
                                     if dwn_transfer_register_valid = '1' and I = to_integer(to_01(unsigned(dwn_transfer_function_number), '1')) then
                                         data_dwn_valid(I) <= '1';
                                     end if;
