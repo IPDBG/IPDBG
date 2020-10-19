@@ -2,21 +2,23 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.ipdbg_interface_pkg.all;
+
 entity IpdbgEscaping is
     generic(
-         ASYNC_RESET : boolean := true
+         ASYNC_RESET  : boolean := true;
+         DO_HANDSHAKE : boolean := false
     );
     port(
-        clk            : in  std_logic;
-        rst            : in  std_logic;
-        ce             : in  std_logic;
-
-        data_in_valid  : in  std_logic;
-        data_in        : in  std_logic_vector(7 downto 0);
-        data_out_valid : out std_logic;
-        data_out       : out std_logic_vector(7 downto 0);
-
-        reset          : out std_logic
+        clk          : in  std_logic;
+        rst          : in  std_logic;
+        ce           : in  std_logic;
+        dn_lines_in  : in  ipdbg_dn_lines;
+        dn_lines_out : out ipdbg_dn_lines;
+        up_lines_out : out ipdbg_up_lines;
+        up_lines_in  : in  ipdbg_up_lines;
+        reset        : out std_logic
     );
 end entity IpdbgEscaping;
 
@@ -37,11 +39,16 @@ begin
         srst <= rst;
     end generate sync_init;
 
+    assert DO_HANDSHAKE = false severity failure;
+
+    up_lines_out <= up_lines_in;
+    dn_lines_out.uplink_ready <= dn_lines_in.uplink_ready;
+
     process (clk, arst)
         procedure rst_assignments is begin
             reset <= '1';
-            data_out_valid <= '0';
-            data_out <= (others => '-');
+            dn_lines_out.dnlink_valid <= '0';
+            dn_lines_out.dnlink_data <= (others => '-');
             state <= normal_s;
         end procedure rst_assignments;
     begin
@@ -52,22 +59,22 @@ begin
                 rst_assignments;
             else
                 if ce = '1' then
-                    data_out_valid <= '0';
+                    dn_lines_out.dnlink_valid <= '0';
                     reset <= '0';
-                    data_out <= data_in;
-                    if data_in_valid = '1' then
+                    dn_lines_out.dnlink_data <= dn_lines_in.dnlink_data;
+                    if dn_lines_in.dnlink_valid = '1' then
                         case state is
                         when normal_s =>
-                            if data_in = escape_symbol then
+                            if dn_lines_in.dnlink_data = escape_symbol then
                                 state <= escaping_s;
-                            elsif data_in = reset_symbol  then
+                            elsif dn_lines_in.dnlink_data = reset_symbol  then
                                 reset <= '1';
                             else
-                                data_out_valid <= '1';
+                                dn_lines_out.dnlink_valid <= '1';
                             end if;
                         when escaping_s =>
                             state <= normal_s;
-                            data_out_valid <= '1';
+                            dn_lines_out.dnlink_valid <= '1';
                         end case;
                     end if;
                 end if;

@@ -2,6 +2,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.ipdbg_interface_pkg.all;
+
 entity IoViewTop is
     generic(
         ASYNC_RESET : boolean := true
@@ -12,12 +15,8 @@ entity IoViewTop is
         ce                   : in  std_logic;
 
         -- host interface (JtagHub or UART or ....)
-        data_dwn_ready       : out std_logic;
-        data_dwn_valid       : in  std_logic;
-        data_dwn             : in  std_logic_vector(7 downto 0);
-        data_up_ready        : in  std_logic;
-        data_up_valid        : out std_logic;
-        data_up              : out std_logic_vector(7 downto 0);
+        dn_lines             : in  ipdbg_dn_lines;
+        up_lines             : out ipdbg_up_lines;
 
         --- Input & Ouput--------
         probe_inputs         : in  std_logic_vector;
@@ -33,74 +32,68 @@ architecture struct of IoViewTop is
             ASYNC_RESET : boolean
         );
         port(
-            clk            : in  std_logic;
-            rst            : in  std_logic;
-            ce             : in  std_logic;
-            data_dwn_valid : in  std_logic;
-            data_dwn       : in  std_logic_vector(7 downto 0);
-            data_up_ready  : in  std_logic;
-            data_up_valid  : out std_logic;
-            data_up        : out std_logic_vector(7 downto 0);
-            input          : in  std_logic_vector;
-            output         : out std_logic_vector;
-            output_update  : out std_logic
+            clk           : in  std_logic;
+            rst           : in  std_logic;
+            ce            : in  std_logic;
+            dn_lines      : in  ipdbg_dn_lines;
+            up_lines      : out ipdbg_up_lines;
+            input         : in  std_logic_vector;
+            output        : out std_logic_vector;
+            output_update : out std_logic
         );
     end component IoViewController;
 
     component IpdbgEscaping is
         generic(
-            ASYNC_RESET : boolean
+            ASYNC_RESET  : boolean;
+            DO_HANDSHAKE : boolean
         );
         port(
-            clk            : in  std_logic;
-            rst            : in  std_logic;
-            ce             : in  std_logic;
-            data_in_valid  : in  std_logic;
-            data_in        : in  std_logic_vector(7 downto 0);
-            data_out_valid : out std_logic;
-            data_out       : out std_logic_vector(7 downto 0);
-            reset          : out std_logic
+            clk          : in  std_logic;
+            rst          : in  std_logic;
+            ce           : in  std_logic;
+            dn_lines_in  : in  ipdbg_dn_lines;
+            dn_lines_out : out ipdbg_dn_lines;
+            up_lines_out : out ipdbg_up_lines;
+            up_lines_in  : in  ipdbg_up_lines;
+            reset        : out std_logic
         );
     end component IpdbgEscaping;
 
-    signal data_in_unescaped       : std_logic_vector(7 downto 0);
-    signal data_in_valid_unescaped : std_logic;
-    signal reset                   : std_logic;
+    signal dn_lines_unescaped : ipdbg_dn_lines;
+    signal up_lines_unescaped : ipdbg_up_lines;
+    signal reset              : std_logic;
 begin
-
-    data_dwn_ready <= '1';
 
     controller : component IoViewController
         generic map(
             ASYNC_RESET => ASYNC_RESET
         )
         port map(
-            clk            => clk,
-            rst            => reset,
-            ce             => ce,
-            data_dwn_valid => data_in_valid_unescaped,
-            data_dwn       => data_in_unescaped,
-            data_up_ready  => data_up_ready,
-            data_up_valid  => data_up_valid,
-            data_up        => data_up,
-            input          => probe_inputs,
-            output         => probe_outputs,
-            output_update  => probe_outputs_update
+            clk           => clk,
+            rst           => reset,
+            ce            => ce,
+            dn_lines      => dn_lines_unescaped,
+            up_lines      => up_lines_unescaped,
+            input         => probe_inputs,
+            output        => probe_outputs,
+            output_update => probe_outputs_update
         );
 
     escaping : component IpdbgEscaping
         generic map(
-            ASYNC_RESET => ASYNC_RESET
+            ASYNC_RESET  => ASYNC_RESET,
+            DO_HANDSHAKE => false
         )
         port map(
-            clk            => clk,
-            rst            => rst,
-            ce             => ce,
-            data_in_valid  => data_dwn_valid,
-            data_in        => data_dwn,
-            data_out_valid => data_in_valid_unescaped,
-            data_out       => data_in_unescaped,
-            reset          => reset
+            clk          => clk,
+            rst          => rst,
+            ce           => ce,
+            dn_lines_in  => dn_lines,
+            dn_lines_out => dn_lines_unescaped,
+            up_lines_out => up_lines,
+            up_lines_in  => up_lines_unescaped,
+            reset        => reset
         );
 
 end architecture struct;

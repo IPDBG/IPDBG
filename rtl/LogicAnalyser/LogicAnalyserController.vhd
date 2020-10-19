@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.ipdbg_interface_pkg.all;
 
 entity LogicAnalyserController is
     generic(
@@ -15,11 +17,8 @@ entity LogicAnalyserController is
         ce                : in  std_logic;
 
         --      host interface (UART or ....)
-        data_dwn_valid    : in  std_logic;
-        data_dwn          : in  std_logic_vector(7 downto 0);
-        data_up_ready     : in  std_logic;
-        data_up_valid     : out std_logic;
-        data_up           : out std_logic_vector(7 downto 0);
+        dn_lines          : in  ipdbg_dn_lines;
+        up_lines          : out ipdbg_up_lines;
 
         --      Trigger
         mask_curr         : out std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -112,7 +111,7 @@ architecture tab of LogicAnalyserController is
     signal set_value_last_next_byte : std_logic;
     signal set_mask_edge_next_byte  : std_logic;
 
-    signal data_up_from_la_data     : std_logic_vector(data_up'range);
+    signal data_up_from_la_data     : std_logic_vector(7 downto 0);
 
     signal data_dwn_valid_reg       : std_logic;
     signal data_dwn_reg             : std_logic_vector(7 downto 0);
@@ -143,6 +142,7 @@ begin
         srst <= rst;
     end generate sync_init;
 
+    up_lines.dnlink_ready <= '1';
 
     data_dwn_registers: process(clk, arst)
         procedure reset_assignments is begin
@@ -157,8 +157,8 @@ begin
                 reset_assignments;
             else
                 if ce = '1' then
-                    data_dwn_valid_reg <= data_dwn_valid;
-                    data_dwn_reg       <= data_dwn;
+                    data_dwn_valid_reg <= dn_lines.dnlink_valid;
+                    data_dwn_reg       <= dn_lines.dnlink_data;
                 end if;
             end if;
         end if;
@@ -183,54 +183,54 @@ begin
                 set_value_last_active <= '0';
                 set_edge_mask_active <= '0';
 
-                if data_dwn_valid = '1' then
-                    if data_dwn = get_id_command then
+                if dn_lines.dnlink_valid = '1' then
+                    if dn_lines.dnlink_data = get_id_command then
                         get_id_active <= '1';
                     end if;
-                    if data_dwn = get_sizes_command then
+                    if dn_lines.dnlink_data = get_sizes_command then
                         get_sizes_active <= '1';
                     end if;
-                    if data_dwn = activate_trigger_command then
+                    if dn_lines.dnlink_data = activate_trigger_command then
                         activate_trigger_active <= '1';
                     end if;
-                    if data_dwn = fire_trigger_command then
+                    if dn_lines.dnlink_data = fire_trigger_command then
                         fire_trigger_active <= '1';
                     end if;
-                    if data_dwn = config_trigger_command then
+                    if dn_lines.dnlink_data = config_trigger_command then
                         config_trigger_active <= '1';
                     end if;
-                    if data_dwn = logic_analyser_c then
+                    if dn_lines.dnlink_data = logic_analyser_c then
                         logic_analyser_a <= '1';
                     end if;
-                    if data_dwn = set_delay_command then
+                    if dn_lines.dnlink_data = set_delay_command then
                         set_delay_active <= '1';
                     end if;
 
-                    if data_dwn = select_curr_command then
+                    if dn_lines.dnlink_data = select_curr_command then
                         select_curr_active <= '1';
                     end if;
-                    if data_dwn = select_last_command then
+                    if dn_lines.dnlink_data = select_last_command then
                         select_last_active <= '1';
                     end if;
-                    if data_dwn = select_edge_command then
+                    if dn_lines.dnlink_data = select_edge_command then
                         select_edge_active <= '1';
                     end if;
 
-                    if data_dwn = set_mask_curr_command then
+                    if dn_lines.dnlink_data = set_mask_curr_command then
                         set_mask_curr_active <= '1';
                     end if;
-                    if data_dwn = set_value_curr_command then
+                    if dn_lines.dnlink_data = set_value_curr_command then
                         set_value_curr_active <= '1';
                     end if;
 
-                    if data_dwn = set_mask_last_command then
+                    if dn_lines.dnlink_data = set_mask_last_command then
                         set_mask_last_active <= '1';
                     end if;
-                    if data_dwn = set_value_last_command then
+                    if dn_lines.dnlink_data = set_value_last_command then
                         set_value_last_active <= '1';
                     end if;
 
-                    if data_dwn = set_edge_mask_command then
+                    if dn_lines.dnlink_data = set_edge_mask_command then
                         set_edge_mask_active <= '1';
                     end if;
 
@@ -249,8 +249,8 @@ begin
 
             data_dwn_delayed         <= (others => '-');
 
-            data_up_valid            <= '0';
-            data_up                  <= (others => '-');
+            up_lines.uplink_valid    <= '0';
+            up_lines.uplink_data     <= (others => '-');
             trigger_active           <= '0';
             fire_trigger             <= '0';
             data_request_next        <= '0';
@@ -283,7 +283,7 @@ begin
                     set_value_last_next_byte <= '0';
                     set_mask_edge_next_byte  <= '0';
                     data_dwn_delayed         <= data_dwn_reg;
-                    data_up_valid            <= '0';
+                    up_lines.uplink_valid    <= '0';
                     case state is
                     when init =>
                         counter <= (others => '0');
@@ -325,21 +325,21 @@ begin
 
                         case init_Output is
                         when init =>
-                            if data_up_ready = '1' then
+                            if dn_lines.uplink_ready = '1' then
                                 init_Output <= Zwischenspeicher;
                                 send <= I;
                                 counter <= (others => '0');
                             end if;
 
                         when Zwischenspeicher =>
-                            if data_up_ready = '1' then
-                                data_up <= send;
-                                data_up_valid <= '1';
+                            if dn_lines.uplink_ready = '1' then
+                                up_lines.uplink_data <= send;
+                                up_lines.uplink_valid <= '1';
                                 counter <= counter + 1;
                                 init_Output <= shift;
                             end if;
                          when shift =>
-                            data_up_valid <= '0';
+                            up_lines.uplink_valid <= '0';
                             init_Output <= get_next_data;
 
                         when get_next_data =>
@@ -368,24 +368,24 @@ begin
 
                         case init_Output is
                         when init =>
-                            if data_up_ready = '1' then
+                            if dn_lines.uplink_ready = '1' then
                                 sizes_temporary <= DATA_WIDTH_slv;
                                 init_Output <= Zwischenspeicher;
                             end if;
 
                         when Zwischenspeicher =>
-                            if data_up_ready = '1' then
-                                data_up <= sizes_temporary(data_up'range);
-                                data_up_valid <= '1';
-                                sizes_temporary <= x"00" & sizes_temporary( sizes_temporary'left downto data_up'length);
+                            if dn_lines.uplink_ready = '1' then
+                                up_lines.uplink_data <= sizes_temporary(up_lines.uplink_data'range);
+                                up_lines.uplink_valid <= '1';
+                                sizes_temporary <= x"00" & sizes_temporary(sizes_temporary'left downto up_lines.uplink_data'length);
                                 counter <= counter + 1;
                                 init_Output <= shift;
                             end if;
 
                         when shift =>
-                            data_up_valid <= '0';
+                            up_lines.uplink_valid <= '0';
 
-                            if data_up_ready = '0' then
+                            if dn_lines.uplink_ready = '0' then
                                 init_Output <= Zwischenspeicher;
                             end if;
 
@@ -403,7 +403,7 @@ begin
                             end if;
 
                         when get_next_data =>
-                            if data_up_ready = '1' then
+                            if dn_lines.uplink_ready = '1' then
                                 counter <= (others => '0');
                                 import_ADDR <= '1';
                                 sizes_temporary <= ADDR_WIDTH_slv;
@@ -535,9 +535,9 @@ begin
 
                         when Zwischenspeicher =>
                             data_request_next <= '0';
-                            if data_up_ready = '1' then
-                                data_up_valid <= '1';
-                                data_up <= data_up_from_la_data;
+                            if dn_lines.uplink_ready = '1' then
+                                up_lines.uplink_valid <= '1';
+                                up_lines.uplink_data <= data_up_from_la_data;
                                 la_data_temporary <= la_data_temporary_next;
 
                                 counter <= counter + 1;
@@ -545,8 +545,8 @@ begin
                             end if;
 
                         when shift =>
-                            data_up_valid <= '0';
-                            if data_up_ready = '0' then
+                            up_lines.uplink_valid <= '0';
+                            if dn_lines.uplink_ready = '0' then
                                 init_Output <= Zwischenspeicher;
                             end if;
 
@@ -604,8 +604,8 @@ begin
     end generate;
 
     prepare_from_wide_data: if DATA_WIDTH > HOST_WORD_SIZE generate begin
-        data_up_from_la_data <= la_data_temporary(data_up'range);
-        la_data_temporary_next <= x"00" & la_data_temporary(la_data_temporary'left downto data_up'length);
+        data_up_from_la_data <= la_data_temporary(up_lines.uplink_data'range);
+        la_data_temporary_next <= x"00" & la_data_temporary(la_data_temporary'left downto up_lines.uplink_data'length);
     end generate;
 
     set_trigger_narrow: if DATA_WIDTH <= HOST_WORD_SIZE generate begin

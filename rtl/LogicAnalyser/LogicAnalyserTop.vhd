@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.ipdbg_interface_pkg.all;
 
 entity LogicAnalyserTop is
     generic(
@@ -15,12 +17,8 @@ entity LogicAnalyserTop is
         ce             : in  std_logic;
 
         --      host interface (UART or ....)
-        data_dwn_ready : out std_logic;
-        data_dwn_valid : in  std_logic;
-        data_dwn       : in  std_logic_vector(7 downto 0);
-        data_up_ready  : in  std_logic;
-        data_up_valid  : out std_logic;
-        data_up        : out std_logic_vector(7 downto 0);
+        dn_lines       : in  ipdbg_dn_lines;
+        up_lines       : out ipdbg_up_lines;
 
         -- LA interface
         sample_enable  : in  std_logic;
@@ -86,11 +84,8 @@ architecture structure of LogicAnalyserTop is
             clk               : in  std_logic;
             rst               : in  std_logic;
             ce                : in  std_logic;
-            data_dwn_valid    : in  std_logic;
-            data_dwn          : in  std_logic_vector(7 downto 0);
-            data_up_ready     : in  std_logic;
-            data_up_valid     : out std_logic;
-            data_up           : out std_logic_vector(7 downto 0);
+            dn_lines          : in  ipdbg_dn_lines;
+            up_lines          : out ipdbg_up_lines;
             mask_curr         : out std_logic_vector(DATA_WIDTH-1 downto 0);
             value_curr        : out std_logic_vector(DATA_WIDTH-1 downto 0);
             mask_last         : out std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -109,17 +104,18 @@ architecture structure of LogicAnalyserTop is
 
     component IpdbgEscaping is
         generic(
-            ASYNC_RESET : boolean
+            ASYNC_RESET  : boolean;
+            DO_HANDSHAKE : boolean
         );
         port(
-            clk            : in  std_logic;
-            rst            : in  std_logic;
-            ce             : in  std_logic;
-            data_in_valid  : in  std_logic;
-            data_in        : in  std_logic_vector(7 downto 0);
-            data_out_valid : out std_logic;
-            data_out       : out std_logic_vector(7 downto 0);
-            reset          : out std_logic
+            clk          : in  std_logic;
+            rst          : in  std_logic;
+            ce           : in  std_logic;
+            dn_lines_in  : in  ipdbg_dn_lines;
+            dn_lines_out : out ipdbg_dn_lines;
+            up_lines_out : out ipdbg_up_lines;
+            up_lines_in  : in  ipdbg_up_lines;
+            reset        : out std_logic
         );
     end component IpdbgEscaping;
 
@@ -139,8 +135,8 @@ architecture structure of LogicAnalyserTop is
     signal fire_trigger_cltrl : std_logic;
     signal trigger_logic      : std_logic;
 
-    signal data_in_valid_uesc : std_logic;
-    signal data_in_uesc       : std_logic_vector(7 downto 0);
+    signal dn_lines_unescaped : ipdbg_dn_lines;
+    signal up_lines_unescaped : ipdbg_up_lines;
     signal reset              : std_logic;
 
     signal sample             : std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -228,11 +224,8 @@ begin
             clk               => clk,
             rst               => reset,
             ce                => ce,
-            data_dwn_valid    => data_in_valid_uesc,
-            data_dwn          => data_in_uesc,
-            data_up_ready     => data_up_ready,
-            data_up_valid     => data_up_valid,
-            data_up           => data_up,
+            dn_lines          => dn_lines_unescaped,
+            up_lines          => up_lines_unescaped,
             mask_curr         => mask_curr,
             value_curr        => value_curr,
             mask_last         => mask_last,
@@ -248,21 +241,20 @@ begin
             finish            => finish
         );
 
-    data_dwn_ready <= '1';
-
     Escaping : component IpdbgEscaping
         generic map(
-            ASYNC_RESET => ASYNC_RESET
+            ASYNC_RESET  => ASYNC_RESET,
+            DO_HANDSHAKE => false
         )
         port map(
-            clk            => clk,
-            rst            => rst,
-            ce             => ce,
-            data_in_valid  => data_dwn_valid,
-            data_in        => data_dwn,
-            data_out_valid => data_in_valid_uesc,
-            data_out       => data_in_uesc,
-            reset          => reset
+            clk          => clk,
+            rst          => rst,
+            ce           => ce,
+            dn_lines_in  => dn_lines,
+            dn_lines_out => dn_lines_unescaped,
+            up_lines_out => up_lines,
+            up_lines_in  => up_lines_unescaped,
+            reset        => reset
         );
 
 end architecture structure;

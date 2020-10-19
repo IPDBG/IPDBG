@@ -2,35 +2,27 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.ipdbg_interface_pkg.all;
+
 entity IpdbgClockDomainCrossing is
     generic(
         ASYNC_RESET: boolean := false;
         MFF_LENGTH : natural := 3
     );
     port(
-        clk_func            : in  std_logic;
-        rst_func            : in  std_logic;
-        ce_func             : in  std_logic;
-        clk_host            : in  std_logic;
-        rst_host            : in  std_logic;
-        ce_host             : in  std_logic;
+        clk_func      : in  std_logic;
+        rst_func      : in  std_logic;
+        ce_func       : in  std_logic;
 
-        data_dwn_valid_host : in  std_logic;
-        data_dwn_host       : in  std_logic_vector(7 downto 0);
-        data_dwn_ready_host : out std_logic;
+        clk_host      : in  std_logic;
+        rst_host      : in  std_logic;
+        ce_host       : in  std_logic;
 
-        data_dwn_valid_func : out std_logic;
-        data_dwn_ready_func : in  std_logic;
-        data_dwn_func       : out std_logic_vector(7 downto 0);
-
-        data_up_ready_host  : in  std_logic;
-        data_up_valid_host  : out std_logic;
-        data_up_host        : out std_logic_vector(7 downto 0);
-
-        data_up_ready_func  : out std_logic;
-        data_up_valid_func  : in  std_logic;
-        data_up_func        : in  std_logic_vector(7 downto 0)
-
+        dn_lines_host : in  ipdbg_dn_lines;
+        up_lines_host : out ipdbg_up_lines;
+        dn_lines_func : out ipdbg_dn_lines;
+        up_lines_func : in  ipdbg_up_lines
     );
 end entity IpdbgClockDomainCrossing;
 
@@ -79,7 +71,7 @@ begin
             process (clk_host, arst_host)
                 procedure assign_reset is begin
                     request <= '0';
-					data_dwn_ready_host <= '1';
+					up_lines_host.dnlink_ready <= '1';
                     acknowledge_synced_prev <= '0';
                     transfer_register <= (others => '-');
                 end procedure assign_reset;
@@ -92,16 +84,16 @@ begin
                     else
                         if ce_host = '1' then
                             acknowledge_synced_prev <= acknowledge_synced;
-                            if data_dwn_valid_host = '1' then
+                            if dn_lines_host.dnlink_valid = '1' then
                                 request <= '1';
-                                transfer_register <= data_dwn_host;
-								data_dwn_ready_host <= '0';
+                                transfer_register <= dn_lines_host.dnlink_data;
+								up_lines_host.dnlink_ready <= '0';
                             else
                                 if acknowledge_synced = '1' and acknowledge_synced_prev = '0' then
                                     request <= '0';
                                 end if;
                                 if acknowledge_synced = '0' and acknowledge_synced_prev = '1' then
-                                    data_dwn_ready_host <= '1';
+                                    up_lines_host.dnlink_ready <= '1';
                                 end if;
                             end if;
                         end if;
@@ -134,8 +126,8 @@ begin
             process (clk_func, arst_func)
 				procedure assign_reset is begin
                     acknowledge <= '0';
-                    data_dwn_valid_func <= '0';
-                    data_dwn_func <= (others => '-');
+                    dn_lines_func.dnlink_valid <= '0';
+                    dn_lines_func.dnlink_data <= (others => '-');
                     request_synced_prev <= '0';
                     pending <= '0';
                 end procedure assign_reset;
@@ -147,20 +139,20 @@ begin
                         assign_reset;
                     else
                         if ce_func = '1' then
-                            data_dwn_valid_func <= '0';
+                            dn_lines_func.dnlink_valid <= '0';
                             request_synced_prev <= request_synced;
                             if pending = '1' then
-                                if data_dwn_ready_func = '1' then
+                                if up_lines_func.dnlink_ready = '1' then
                                     acknowledge <= '1';
-                                    data_dwn_valid_func <= '1';
+                                    dn_lines_func.dnlink_valid <= '1';
                                     pending <= '0';
                                 end if;
                             else
                                 if request_synced = '1' and request_synced_prev = '0' then -- detect 0 -> 1 change
-                                    data_dwn_func <= transfer_register;
-                                    if data_dwn_ready_func = '1' then
+                                    dn_lines_func.dnlink_data <= transfer_register;
+                                    if up_lines_func.dnlink_ready = '1' then
                                         acknowledge <= '1';
-                                        data_dwn_valid_func <= '1';
+                                        dn_lines_func.dnlink_valid <= '1';
                                     else
                                         pending <= '1';
                                     end if;
@@ -203,7 +195,7 @@ begin
             process (clk_func, arst_func)
                 procedure assign_reset is begin
                     request <= '0';
-                    data_up_ready_func <= '1';
+                    dn_lines_func.uplink_ready <= '1';
                     acknowledge_synced_prev <= '0';
                     transfer_register <= (others => '-');
                 end procedure assign_reset;
@@ -216,16 +208,16 @@ begin
                     else
                         if ce_func = '1' then
                             acknowledge_synced_prev <= acknowledge_synced;
-                            if data_up_valid_func = '1' then
+                            if up_lines_func.uplink_valid = '1' then
                                 request <= '1';
-                                transfer_register <= data_up_func;
-                                data_up_ready_func <= '0';
+                                transfer_register <= up_lines_func.uplink_data;
+                                dn_lines_func.uplink_ready <= '0';
                             else
                                 if acknowledge_synced = '1' and acknowledge_synced_prev = '0'then
                                     request <= '0';
                                 end if;
                                 if acknowledge_synced = '0' and acknowledge_synced_prev = '1'then
-                                    data_up_ready_func <= '1';
+                                    dn_lines_func.uplink_ready <= '1';
                                 end if;
                             end if;
                         end if;
@@ -258,8 +250,8 @@ begin
             process(clk_host, arst_host)
                 procedure assign_reset is begin
                     acknowledge <= '0';
-                    data_up_valid_host <= '0';
-                    data_up_host <= (others => '-');
+                    up_lines_host.uplink_valid <= '0';
+                    up_lines_host.uplink_data <= (others => '-');
                     request_synced_prev <= '0';
                     pending <= '0';
                 end procedure assign_reset;
@@ -271,20 +263,20 @@ begin
                          assign_reset;
                     else
                         if ce_host = '1' then
-                            data_up_valid_host <= '0';
+                            up_lines_host.uplink_valid <= '0';
                             request_synced_prev <= request_synced;
                             if pending = '1' then
-                                if data_up_ready_host = '1' then
+                                if dn_lines_host.uplink_ready = '1' then
                                     acknowledge <= '1';
-                                    data_up_valid_host <= '1';
+                                    up_lines_host.uplink_valid <= '1';
                                     pending <= '0';
                                 end if;
                             else
                                 if request_synced = '1' and request_synced_prev = '0' then -- detect 0 -> 1 change
-                                    data_up_host <= transfer_register;
-                                    if data_up_ready_host = '1' then
+                                    up_lines_host.uplink_data <= transfer_register;
+                                    if dn_lines_host.uplink_ready = '1' then
                                         acknowledge <= '1';
-                                        data_up_valid_host <= '1';
+                                        up_lines_host.uplink_valid <= '1';
                                     else
                                         pending <= '1';
                                     end if;

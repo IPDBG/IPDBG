@@ -2,32 +2,31 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.ipdbg_interface_pkg.all;
 
 entity WaveformGeneratorController is
     generic(
-        DATA_WIDTH           : natural := 8;
-        ADDR_WIDTH           : natural := 8;
-        ASYNC_RESET          : boolean := true
+        DATA_WIDTH  : natural := 8;
+        ADDR_WIDTH  : natural := 8;
+        ASYNC_RESET : boolean := true
     );
     port(
-        clk                     : in  std_logic;
-        rst                     : in  std_logic;
-        ce                      : in  std_logic;
+        clk                   : in  std_logic;
+        rst                   : in  std_logic;
+        ce                    : in  std_logic;
 
         ----------------HOST INTERFACE-----------------------
-        data_dwn_valid          : in  std_logic;
-        data_dwn                : in  std_logic_vector(7 downto 0);
-        data_up_ready           : in  std_logic;
-        data_up_valid           : out std_logic;
-        data_up                 : out std_logic_vector(7 downto 0);
+        dn_lines              : in  ipdbg_dn_lines;
+        up_lines              : out ipdbg_up_lines;
 
         ---------------Signals to the memory --------------
-        data_samples            : out std_logic_vector(DATA_WIDTH-1 downto 0);
-        data_samples_valid      : out std_logic;
-        data_samples_if_reset   : out std_logic;
-        data_samples_last       : out std_logic;
-        start                   : out std_logic;
-        stop                    : out std_logic
+        data_samples          : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        data_samples_valid    : out std_logic;
+        data_samples_if_reset : out std_logic;
+        data_samples_last     : out std_logic;
+        start                 : out std_logic;
+        stop                  : out std_logic
     );
 end entity WaveformGeneratorController;
 
@@ -81,6 +80,8 @@ begin
         srst <= rst;
     end generate sync_init;
 
+    up_lines.dnlink_ready <= '1';
+
     process (clk, arst)
         procedure reset_assignments is begin
             data_size_s                     <= 0;
@@ -89,8 +90,8 @@ begin
             sizes_temporary                 <= (others => '-');
             counter                         <= (others => '-');
             import_ADDR                     <= '0';
-            data_up                         <= (others => '-');
-            data_up_valid                   <= '0';
+            up_lines.uplink_data            <= (others => '-');
+            up_lines.uplink_valid           <= '0';
             sample_counter                  <= (others => '-');
             data_samples_valid              <= '0';
             data_samples_last               <= '0';
@@ -113,7 +114,7 @@ begin
                 if ce = '1' then
                     start <= '0';
                     stop  <= '0';
-                    data_dwn_delayed <= data_dwn;
+                    data_dwn_delayed <= dn_lines.dnlink_data;
                     data_samples_valid_early <= '0';
                     data_samples_last_early <= '0';
                     data_samples_if_reset <= '0';
@@ -122,26 +123,26 @@ begin
                     addr_of_last_sample_stb_early <= '0';
                     case state is
                     when init =>
-                        if data_dwn_valid = '1' then
-                            if data_dwn = start_command then
+                        if dn_lines.dnlink_valid = '1' then
+                            if dn_lines.dnlink_data = start_command then
                                 start <= '1';
                             end if ;
-                            if data_dwn = stop_command then
+                            if dn_lines.dnlink_data = stop_command then
                                 stop <= '1';
                             end if ;
-                            if data_dwn = return_sizes_command then
+                            if dn_lines.dnlink_data = return_sizes_command then
                                 counter <= (others => '0');
                                 sizes_temporary <= (others => '0');
                                 import_ADDR <= '0';
                                 state <= return_sizes;
                                 init_Output <= init;
                             end if ;
-                            if data_dwn = write_samples_command then
+                            if dn_lines.dnlink_data = write_samples_command then
                                 data_samples_if_reset <= '1';
                                 sample_counter <= (others => '0');
                                 state <= write_samples;
                             end if ;
-                            if data_dwn = set_numberofsamples_command then
+                            if dn_lines.dnlink_data = set_numberofsamples_command then
                                 state <= set_numberofsamples;
                             end if ;
                             addr_size_s <= 0;
@@ -151,22 +152,22 @@ begin
                     when return_sizes =>
                         case init_Output is
                         when init =>
-                            if data_up_ready = '1' then
+                            if dn_lines.uplink_ready = '1' then
                                 sizes_temporary <= DATA_WIDTH_slv;
                                 init_Output <= Zwischenspeicher;
                             end if;
                         when Zwischenspeicher =>
-                            if data_up_ready = '1' then
-                                data_up <= sizes_temporary(data_up'range);
-                                data_up_valid <= '1';
-                                sizes_temporary <= x"00" & sizes_temporary( sizes_temporary'left downto data_up'length);
+                            if dn_lines.uplink_ready = '1' then
+                                up_lines.uplink_data <= sizes_temporary(up_lines.uplink_data'range);
+                                up_lines.uplink_valid <= '1';
+                                sizes_temporary <= x"00" & sizes_temporary( sizes_temporary'left downto up_lines.uplink_data'length);
                                 counter <= counter + 1;
                                 init_Output <= shift;
                             end if;
                         when shift =>
-                            data_up_valid <= '0';
+                            up_lines.uplink_valid <= '0';
 
-                            if data_up_ready = '0' then
+                            if dn_lines.uplink_ready = '0' then
                                 init_Output <= Zwischenspeicher;
                             end if;
 
@@ -180,7 +181,7 @@ begin
                             end if;
 
                         when get_next_data =>
-                            if data_up_ready = '1' then
+                            if dn_lines.uplink_ready = '1' then
                                 counter <= (others => '0');
                                 import_ADDR <= '1';
                                 sizes_temporary <= ADDR_WIDTH_slv;
@@ -189,7 +190,7 @@ begin
                         end case;
 
                     when write_samples =>
-                        if data_dwn_valid = '1' then
+                        if dn_lines.dnlink_valid = '1' then
                             set_dataouts_next_byte <= '1';
                             if (data_size_s + 1 = data_size) then
                                 data_samples_valid_early <= '1';
@@ -204,7 +205,7 @@ begin
                             end if;
                         end if;
                     when set_numberofsamples =>
-                        if data_dwn_valid = '1' then
+                        if dn_lines.dnlink_valid = '1' then
                             if (addr_size_s + 1 = addr_size) then
                                 state <= init;
                                 addr_of_last_sample_stb_early <= '1';

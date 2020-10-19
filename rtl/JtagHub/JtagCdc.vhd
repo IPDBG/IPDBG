@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.ipdbg_interface_pkg.all;
 
 entity JtagCdc is
     generic(
@@ -9,40 +11,32 @@ entity JtagCdc is
         FLOW_CONTROL_ENABLE : std_logic_vector(6 downto 0)
     );
     port(
-        clk            : in  std_logic;
-        ce             : in  std_logic;
+        clk        : in  std_logic;
+        ce         : in  std_logic;
 
-        --data_clk              : in  std_logic_vector(6 downto 0);
--------------------------- to function
-        data_dwn_0     : out std_logic_vector(7 downto 0);
-        data_dwn_1     : out std_logic_vector(7 downto 0);
-        data_dwn_2     : out std_logic_vector(7 downto 0);
-        data_dwn_3     : out std_logic_vector(7 downto 0);
-        data_dwn_4     : out std_logic_vector(7 downto 0);
-        data_dwn_5     : out std_logic_vector(7 downto 0);
-        data_dwn_6     : out std_logic_vector(7 downto 0);
-        data_dwn_valid        : out std_logic_vector(6 downto 0);
-        data_dwn_ready        : in  std_logic_vector(6 downto 0);
+        dn_lines_0 : out ipdbg_dn_lines;
+        dn_lines_1 : out ipdbg_dn_lines;
+        dn_lines_2 : out ipdbg_dn_lines;
+        dn_lines_3 : out ipdbg_dn_lines;
+        dn_lines_4 : out ipdbg_dn_lines;
+        dn_lines_5 : out ipdbg_dn_lines;
+        dn_lines_6 : out ipdbg_dn_lines;
 
--------------------------- from function
-        data_up_ready  : out std_logic_vector(6 downto 0);
-        data_up_valid  : in  std_logic_vector(6 downto 0);
-        data_up_0      : in  std_logic_vector(7 downto 0);
-        data_up_1      : in  std_logic_vector(7 downto 0);
-        data_up_2      : in  std_logic_vector(7 downto 0);
-        data_up_3      : in  std_logic_vector(7 downto 0);
-        data_up_4      : in  std_logic_vector(7 downto 0);
-        data_up_5      : in  std_logic_vector(7 downto 0);
-        data_up_6      : in  std_logic_vector(7 downto 0);
-
+        up_lines_0 : in  ipdbg_up_lines;
+        up_lines_1 : in  ipdbg_up_lines;
+        up_lines_2 : in  ipdbg_up_lines;
+        up_lines_3 : in  ipdbg_up_lines;
+        up_lines_4 : in  ipdbg_up_lines;
+        up_lines_5 : in  ipdbg_up_lines;
+        up_lines_6 : in  ipdbg_up_lines;
 -------------------------- BSCAN-Component
-        DRCLK          : in  std_logic;
-        USER           : in  std_logic;
-        UPDATE         : in  std_logic;
-        CAPTURE        : in  std_logic;
-        SHIFT          : in  std_logic;
-        TDI            : in  std_logic;
-        TDO            : out std_logic
+        DRCLK      : in  std_logic;
+        USER       : in  std_logic;
+        UPDATE     : in  std_logic;
+        CAPTURE    : in  std_logic;
+        SHIFT      : in  std_logic;
+        TDI        : in  std_logic;
+        TDO        : out std_logic
     );
 end entity;
 
@@ -271,7 +265,9 @@ begin
 
         down: block
             signal data_dwn        : data_port_arr;
+            signal data_dwn_valid  : std_logic_vector(6 downto 0);
             signal common_data_dwn : std_logic_vector(7 downto 0);
+   			signal data_dwn_ready  : std_logic_vector(6 downto 0);
         begin
 
             internal_output: process (clk) begin
@@ -456,29 +452,57 @@ begin
                 end generate;
             end generate;
 
-            data_dwn_0 <= data_dwn(0);
-            data_dwn_1 <= data_dwn(1);
-            data_dwn_2 <= data_dwn(2);
-            data_dwn_3 <= data_dwn(3);
-            data_dwn_4 <= data_dwn(4);
-            data_dwn_5 <= data_dwn(5);
-            data_dwn_6 <= data_dwn(6);
+            dn_lines_0.dnlink_data <= data_dwn(0);
+            dn_lines_1.dnlink_data <= data_dwn(1);
+            dn_lines_2.dnlink_data <= data_dwn(2);
+            dn_lines_3.dnlink_data <= data_dwn(3);
+            dn_lines_4.dnlink_data <= data_dwn(4);
+            dn_lines_5.dnlink_data <= data_dwn(5);
+            dn_lines_6.dnlink_data <= data_dwn(6);
+            dn_lines_0.dnlink_valid <= data_dwn_valid(0);
+            dn_lines_1.dnlink_valid <= data_dwn_valid(1);
+            dn_lines_2.dnlink_valid <= data_dwn_valid(2);
+            dn_lines_3.dnlink_valid <= data_dwn_valid(3);
+            dn_lines_4.dnlink_valid <= data_dwn_valid(4);
+            dn_lines_5.dnlink_valid <= data_dwn_valid(5);
+            dn_lines_6.dnlink_valid <= data_dwn_valid(6);
+            data_dwn_ready(0) <= up_lines_0.dnlink_ready;
+            data_dwn_ready(1) <= up_lines_1.dnlink_ready;
+            data_dwn_ready(2) <= up_lines_2.dnlink_ready;
+            data_dwn_ready(3) <= up_lines_3.dnlink_ready;
+            data_dwn_ready(4) <= up_lines_4.dnlink_ready;
+            data_dwn_ready(5) <= up_lines_5.dnlink_ready;
+            data_dwn_ready(6) <= up_lines_6.dnlink_ready;
         end block down;
 
         up: block
             signal data_up_buffer_empty : std_logic_vector(NUM_FUNCTIONS-1 downto 0);
             signal data_up_buffer       : data_port_arr;
             signal data_up              : data_port_arr;
+            signal data_up_valid        : std_logic_vector(6 downto 0);
         begin
-            data_up_ready <= data_up_buffer_empty;
+            data_up(0)       <= up_lines_0.uplink_data;
+            data_up(1)       <= up_lines_1.uplink_data;
+            data_up(2)       <= up_lines_2.uplink_data;
+            data_up(3)       <= up_lines_3.uplink_data;
+            data_up(4)       <= up_lines_4.uplink_data;
+            data_up(5)       <= up_lines_5.uplink_data;
+            data_up(6)       <= up_lines_6.uplink_data;
+            data_up_valid(0) <= up_lines_0.uplink_valid;
+            data_up_valid(1) <= up_lines_1.uplink_valid;
+            data_up_valid(2) <= up_lines_2.uplink_valid;
+            data_up_valid(3) <= up_lines_3.uplink_valid;
+            data_up_valid(4) <= up_lines_4.uplink_valid;
+            data_up_valid(5) <= up_lines_5.uplink_valid;
+            data_up_valid(6) <= up_lines_6.uplink_valid;
 
-            data_up(0) <= data_up_0;
-            data_up(1) <= data_up_1;
-            data_up(2) <= data_up_2;
-            data_up(3) <= data_up_3;
-            data_up(4) <= data_up_4;
-            data_up(5) <= data_up_5;
-            data_up(6) <= data_up_6;
+            dn_lines_0.uplink_ready <= data_up_buffer_empty(0);
+            dn_lines_1.uplink_ready <= data_up_buffer_empty(1);
+            dn_lines_2.uplink_ready <= data_up_buffer_empty(2);
+            dn_lines_3.uplink_ready <= data_up_buffer_empty(3);
+            dn_lines_4.uplink_ready <= data_up_buffer_empty(4);
+            dn_lines_5.uplink_ready <= data_up_buffer_empty(5);
+            dn_lines_6.uplink_ready <= data_up_buffer_empty(6);
 
             input_buffering: process (clk) begin
                 if rising_edge(clk) then

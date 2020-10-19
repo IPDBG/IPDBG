@@ -3,26 +3,26 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
 
+library work;
+use work.ipdbg_interface_pkg.all;
+
 entity IoViewController is
     generic(
         ASYNC_RESET : boolean := true
     );
     port(
-        clk            : in  std_logic;
-        rst            : in  std_logic;
-        ce             : in  std_logic;
+        clk           : in  std_logic;
+        rst           : in  std_logic;
+        ce            : in  std_logic;
 
         -- host interface (JTAG-HUB or UART or ....)
-        data_dwn_valid : in  std_logic;
-        data_dwn       : in  std_logic_vector(7 downto 0);
-        data_up_ready  : in  std_logic;
-        data_up_valid  : out std_logic;
-        data_up        : out std_logic_vector(7 downto 0);
+        dn_lines      : in  ipdbg_dn_lines;
+        up_lines      : out ipdbg_up_lines;
 
         --- Input & Ouput--------
-        input          : in  std_logic_vector;
-        output         : out std_logic_vector;
-        output_update  : out std_logic
+        input         : in  std_logic_vector;
+        output        : out std_logic_vector;
+        output_update : out std_logic
     );
 end entity;
 
@@ -69,7 +69,7 @@ architecture behavioral of IoViewController is
     signal width_temporary_reg     : std_logic_vector(31 downto 0);
     signal data_out_temporary      : std_logic_vector(INPUT'length-1 downto 0);
     signal data_out_temporary_next : std_logic_vector(INPUT'length-1 downto 0);
-    signal data_up_next            : std_logic_vector(data_up'range);
+    signal data_up_next            : std_logic_vector(up_lines.uplink_data'range);
 
     signal arst, srst              : std_logic;
 begin
@@ -82,6 +82,8 @@ begin
         srst <= rst;
     end generate sync_init;
 
+    up_lines.dnlink_ready <= '1';
+
     process (clk, arst)
         procedure fsm_reset_assignment is begin
             state                  <= init;
@@ -89,8 +91,8 @@ begin
             data_in_reg            <= (others => '-');
             data_in_reg_valid      <= '0';
             data_in_reg_last       <= '0';
-            data_up_valid          <= '0';
-            data_up                <= (others => '-');
+            up_lines.uplink_valid  <= '0';
+            up_lines.uplink_data   <= (others => '-');
             data_out_temporary     <= (others => '-');
             width_temporary_reg    <= (others => '-');
             bytes_received         <= (others => '-');
@@ -107,17 +109,17 @@ begin
                 if ce = '1' then
                     data_in_reg_valid <= '0';
                     data_in_reg_last  <= '0';
-                    data_up_valid    <= '0';
+                    up_lines.uplink_valid    <= '0';
                     case state is
                     when init =>
-                        if data_dwn_valid = '1' then
-                            if data_dwn = read_widths_cmd then
+                        if dn_lines.dnlink_valid = '1' then
+                            if dn_lines.dnlink_data = read_widths_cmd then
                                 state <= read_width;
                             end if;
-                            if data_dwn = write_output_cmd then
+                            if dn_lines.dnlink_data = write_output_cmd then
                                 state <= set_output;
                             end if;
-                            if data_dwn = read_input_cmd then
+                            if dn_lines.dnlink_data = read_input_cmd then
                                 state <= read_input;
                                 data_out_temporary <= input;
                             end if;
@@ -128,7 +130,7 @@ begin
                     when read_width =>
                         case output_handshake_state is
                         when start =>
-                            if data_up_ready = '1' then
+                            if dn_lines.uplink_ready = '1' then
                                 width_temporary_reg <= OUTPUT_WIDTH_slv;
                                 output_handshake_state <= mem;
                                 bytes_transmitted <= (others => '0');
@@ -136,18 +138,18 @@ begin
                             end if;
 
                         when mem =>
-                            if data_up_ready = '1' then
-                                data_up <= width_temporary_reg(data_up'range);
-                                data_up_valid <= '1';
-                                width_temporary_reg <= x"00" & width_temporary_reg(width_temporary_reg'left downto data_up'length);
+                            if dn_lines.uplink_ready = '1' then
+                                up_lines.uplink_data <= width_temporary_reg(up_lines.uplink_data'range);
+                                up_lines.uplink_valid <= '1';
+                                width_temporary_reg <= x"00" & width_temporary_reg(width_temporary_reg'left downto up_lines.uplink_data'length);
                                 bytes_transmitted <= bytes_transmitted + 1;
                                 output_handshake_state <= shift;
                             end if;
 
                         when shift =>
-                            data_up_valid <= '0';
+                            up_lines.uplink_valid <= '0';
 
-                            if data_up_ready = '0' then
+                            if dn_lines.uplink_ready = '0' then
                                 output_handshake_state <= mem;
                             end if;
 
@@ -161,7 +163,7 @@ begin
                             end if;
 
                         when next_data =>
-                            if data_up_ready = '1' then
+                            if dn_lines.uplink_ready = '1' then
                                 bytes_transmitted <= (others => '0');
                                 import_ADDR <= '1';
                                 width_temporary_reg <= INPUT_WIDTH_slv;
@@ -170,9 +172,9 @@ begin
                         end case;
 
                     when set_output =>
-                        if data_dwn_valid = '1' then
+                        if dn_lines.dnlink_valid = '1' then
                             bytes_received <= bytes_received + 1;
-                            data_in_reg <= data_dwn;
+                            data_in_reg <= dn_lines.dnlink_data;
                             data_in_reg_valid <= '1';
 
                             if bytes_received = OUTPUT_WIDTH_BYTES-1 then
@@ -186,16 +188,16 @@ begin
                         when start =>
                             output_handshake_state <= mem;
                         when mem =>
-                            if data_up_ready = '1' then
-                                data_up_valid <= '1';
-                                data_up <= data_up_next;
+                            if dn_lines.uplink_ready = '1' then
+                                up_lines.uplink_valid <= '1';
+                                up_lines.uplink_data <= data_up_next;
                                 output_handshake_state <= shift;
                                 bytes_transmitted <= bytes_transmitted + 1;
                             end if;
 
                         when shift =>
-                            data_up_valid <= '0';
-                            if data_up_ready = '0' then
+                            up_lines.uplink_valid <= '0';
+                            if dn_lines.uplink_ready = '0' then
                                 if bytes_transmitted = INPUT_WIDTH_BYTES then
                                     output_handshake_state <= next_data;
                                 else
@@ -216,7 +218,7 @@ begin
     end process ;
 
     inputGe8:if INPUT_WIDTH >= HOST_WORD_SIZE generate begin
-        data_up_next <= data_out_temporary(data_up'range);
+        data_up_next <= data_out_temporary(up_lines.uplink_data'range);
         data_out_temporary_next <= x"00" & data_out_temporary(data_out_temporary'left downto HOST_WORD_SIZE);
     end generate;
     inputLess8:if INPUT_WIDTH < HOST_WORD_SIZE generate begin
