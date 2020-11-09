@@ -7,7 +7,7 @@ set srcs { data_dwn_block.host_clock_domain.request_reg
            data_up_block.host_clock_domain.acknowledge_reg }
 
 set dsts { data_dwn_block.function_clock_domain.ff_clk.mff_flops[0].MFF/FF
-           data_dwn_block.function_clock_domain.data_dwn_func_reg[*]
+           data_dwn_block.function_clock_domain.dn_lines_func_reg[dnlink_data][*]
            data_up_block.function_clock_domain.ff_clk1.mff_flops[0].MFF/FF }
 
 foreach reg [get_cells -hier {FF} ] {
@@ -54,7 +54,7 @@ set srcs { data_dwn_block.function_clock_domain.acknowledge_reg
 }
 set dsts { data_dwn_block.host_clock_domain.ff_jtag.mff_flops[0].MFF/FF
            data_up_block.host_clock_domain.ff_clkjtag.mff_flops[0].MFF/FF
-           data_up_block.host_clock_domain.data_up_host_reg[*]
+           data_up_block.host_clock_domain.up_lines_host_reg[uplink_data][*]
 }
 
 foreach reg [get_cells -hier {FF} ] {
