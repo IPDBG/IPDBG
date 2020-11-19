@@ -19,7 +19,7 @@ foreach reg [get_cells -hier {FF} ] {
         var dstCkPin $reg
         append dstCkPin "/C"
         set dstPeriod [get_property PERIOD [get_clocks -of_objects [ get_pins $dstCkPin ]]]
-        puts $dstPeriod
+        #puts $dstPeriod
 
         set toCells {}
         set fromCells {}
