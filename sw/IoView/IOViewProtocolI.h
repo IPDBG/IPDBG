@@ -19,4 +19,4 @@ public:
 };
 
 
-#endif // IOVIEWPROTOCOL_H_INCLUDED
+#endif

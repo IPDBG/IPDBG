@@ -4,8 +4,6 @@
 #include "IOViewPanel.h"
 #include "led.h"
 
-
-
 BEGIN_EVENT_TABLE(IOViewPanel, wxPanel)
     EVT_CHECKBOX(wxID_ANY, IOViewPanel::onCheckBox)
 END_EVENT_TABLE()
@@ -34,10 +32,6 @@ IOViewPanel::IOViewPanel( wxWindow* parent, IOViewPanelObserver *obs ):
 
     this->SetSizer( mainSizer_ );
     this->Layout();
-}
-
-IOViewPanel::~IOViewPanel()
-{
 }
 
 void IOViewPanel::onCheckBox(wxCommandEvent& event)

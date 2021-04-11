@@ -47,4 +47,4 @@ private:
 };
 
 
-#endif // IOVIEWPROTOCOLI_H_INCLUDED
+#endif

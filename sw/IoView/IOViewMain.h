@@ -1,12 +1,3 @@
-/***************************************************************
- * Name:      IOViewMain.h
- * Purpose:   Defines Application Frame
- * Author:     ()
- * Created:   2016-04-12
- * Copyright:  ()
- * License:
- **************************************************************/
-
 #ifndef IOVIEWMAIN_H
 #define IOVIEWMAIN_H
 
@@ -49,4 +40,4 @@ private:
 };
 
 
-#endif // IOVIEWMAIN_H
+#endif

@@ -9,9 +9,9 @@
 #include "ConnectionDialog.h"
 
 IOViewProtocol::IOViewProtocol(IOViewProtocolObserver *obs):
-client(nullptr),
-protocolObserver(obs),
-config("IO-View")
+    client(nullptr),
+    protocolObserver(obs),
+    config("IO-View")
 {
 
 }
@@ -63,7 +63,6 @@ void IOViewProtocol::open()
     uint8_t buffer[8];
     buffer[0] = IOViewIPCommands::Reset;
     client->Write(buffer, 1);
-
 
     buffer[0] = IOViewIPCommands::ReadPortWidths;
     client->Write(buffer, 1);
@@ -130,7 +129,7 @@ void IOViewProtocol::setOutput(uint8_t *buffer, size_t len)
 
 void IOViewProtocol::writeEscaping(uint8_t *buffer, size_t len)
 {
-    for (size_t i = 0 ; i< len ; ++i)
+    for (size_t i = 0 ; i < len ; ++i)
     {
         if(buffer[i] == IOViewIPCommands::Reset || buffer[i] == IOViewIPCommands::Escape)
         {

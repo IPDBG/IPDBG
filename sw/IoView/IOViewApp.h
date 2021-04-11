@@ -1,12 +1,3 @@
-/***************************************************************
- * Name:      IOViewApp.h
- * Purpose:   Defines Application Class
- * Author:     ()
- * Created:   2016-04-12
- * Copyright:  ()
- * License:
- **************************************************************/
-
 #ifndef IOVIEWAPP_H
 #define IOVIEWAPP_H
 
@@ -18,4 +9,4 @@ public:
     virtual bool OnInit();
 };
 
-#endif // IOVIEWAPP_H
+#endif

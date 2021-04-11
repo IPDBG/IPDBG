@@ -1,20 +1,3 @@
-/***************************************************************
- * Name:      IOViewMain.cpp
- * Purpose:   Code for Application Frame
- * Author:     ()
- * Created:   2016-04-12
- * Copyright:  ()
- * License:
- **************************************************************/
-
-#ifdef WX_PRECOMP
-#include "wx_pch.h"
-#endif
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif //__BORLANDC__
-
 #include "IOViewMain.h"
 #include "IOViewPanel.h"
 #include "IOViewProtocol.h"
@@ -38,8 +21,8 @@ BEGIN_EVENT_TABLE(IOViewFrame, wxFrame)
 END_EVENT_TABLE()
 
 
-IOViewFrame::IOViewFrame(wxFrame *frame, const wxString& title)
-    : wxFrame(frame, -1, title)
+IOViewFrame::IOViewFrame(wxFrame *frame, const wxString& title):
+    wxFrame(frame, -1, title)
 {
     // create a menu bar
     wxMenuBar* mbar = new wxMenuBar();
@@ -114,14 +97,9 @@ void IOViewFrame::setOutput(uint8_t *buffer, size_t len)
 void IOViewFrame::OnConnect(wxCommandEvent &event)
 {
     if(!protocol->isOpen())
-    {
         protocol->open();
-    }
     if(protocol->isOpen())
-    {
         SetStatusText(_("Connected"), 1);
-    }
-
 }
 
 void IOViewFrame::OnUpdateConnect(wxUpdateUIEvent &event)
@@ -132,14 +110,9 @@ void IOViewFrame::OnUpdateConnect(wxUpdateUIEvent &event)
 void IOViewFrame::OnDisconnect(wxCommandEvent &event)
 {
     if(protocol->isOpen())
-    {
         protocol->close();
-    }
     if(!protocol->isOpen())
-    {
         SetStatusText(_("Disconnected"), 1);
-    }
-
 }
 
 void IOViewFrame::OnUpdateDisconnect(wxUpdateUIEvent &event)
