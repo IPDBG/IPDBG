@@ -11,4 +11,4 @@ public:
 };
 
 
-#endif // IOVIEWOBSERVER_H_INCLUDED
+#endif

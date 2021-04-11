@@ -25,12 +25,7 @@
 #include "IOViewObserver.h"
 
 #include <cstdint>
-///////////////////////////////////////////////////////////////////////////
 #include <vector>
-
-///////////////////////////////////////////////////////////////////////////////
-/// Class IOViewPanel
-///////////////////////////////////////////////////////////////////////////////
 
 class awxLed;
 
@@ -39,7 +34,7 @@ class IOViewPanel : public wxPanel
 public:
 
     IOViewPanel( wxWindow* parent, IOViewPanelObserver *obs);
-    ~IOViewPanel();
+    ~IOViewPanel() = default;
 
     void setLeds(uint8_t *buffer, size_t len);
     void initOutputs(unsigned int numberOfOutputs);
@@ -67,4 +62,4 @@ protected:
 
 };
 
-#endif //__NONAME_H__
+#endif
