@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.ipdbg_interface_pkg.all;
 
 entity tb_top is
 
@@ -16,19 +18,14 @@ architecture structure of tb_top is
             USE_EXT_TRIGGER : boolean
         );
         port(
-            clk            : in  std_logic;
-            rst            : in  std_logic;
-            ce             : in  std_logic;
-            data_dwn_ready : out std_logic;
-            data_dwn_valid : in  std_logic;
-            data_dwn       : in  std_logic_vector(7 downto 0);
-            data_up_ready  : in  std_logic;
-            data_up_valid  : out std_logic;
-            data_up        : out std_logic_vector(7 downto 0);
-
-            sample_enable  : in  std_logic;
-            probe          : in  std_logic_vector;
-            ext_trigger    : in  std_logic
+            clk           : in  std_logic;
+            rst           : in  std_logic;
+            ce            : in  std_logic;
+            dn_lines      : in  ipdbg_dn_lines;
+            up_lines      : out ipdbg_up_lines;
+            sample_enable : in  std_logic;
+            probe         : in  std_logic_vector;
+            ext_trigger   : in  std_logic
         );
     end component LogicAnalyserTop;
 
@@ -39,19 +36,15 @@ architecture structure of tb_top is
             DOUBLE_BUFFER : boolean
         );
         port(
-            clk            : in  std_logic;
-            rst            : in  std_logic;
-            ce             : in  std_logic;
-            data_dwn_ready : out std_logic;
-            data_dwn_valid : in  std_logic;
-            data_dwn       : in  std_logic_vector(7 downto 0);
-            data_up_ready  : in  std_logic;
-            data_up_valid  : out std_logic;
-            data_up        : out std_logic_vector(7 downto 0);
-            data_out       : out std_logic_vector;
-            first_sample   : out std_logic;
-            sample_enable  : in  std_logic;
-            output_active  : out std_logic
+            clk           : in  std_logic;
+            rst           : in  std_logic;
+            ce            : in  std_logic;
+            dn_lines      : in  ipdbg_dn_lines;
+            up_lines      : out ipdbg_up_lines;
+            data_out      : out std_logic_vector;
+            first_sample  : out std_logic;
+            sample_enable : in  std_logic;
+            output_active : out std_logic
         );
     end component WaveformGeneratorTop;
 
@@ -60,32 +53,24 @@ architecture structure of tb_top is
             MFF_LENGTH : natural
         );
         port(
-            clk                  : in  std_logic;
-            ce                   : in  std_logic;
-            data_dwn             : out std_logic_vector(7 downto 0);
-            data_dwn_ready_la    : in  std_logic;
-            data_dwn_ready_ioview: in  std_logic;
-            data_dwn_ready_gdb   : in  std_logic;
-            data_dwn_ready_wfg   : in  std_logic;
-            data_dwn_valid_la    : out std_logic;
-            data_dwn_valid_ioview: out std_logic;
-            data_dwn_valid_gdb   : out std_logic;
-            data_dwn_valid_wfg   : out std_logic;
-            data_up_ready_la     : out std_logic;
-            data_up_ready_ioview : out std_logic;
-            data_up_ready_gdb    : out std_logic;
-            data_up_ready_wfg    : out std_logic;
-            data_up_valid_la     : in  std_logic;
-            data_up_valid_ioview : in  std_logic;
-            data_up_valid_gdb    : in  std_logic;
-            data_up_valid_wfg    : in  std_logic;
-            data_up_la           : in  std_logic_vector(7 downto 0);
-            data_up_ioview       : in  std_logic_vector(7 downto 0);
-            data_up_gdb          : in  std_logic_vector(7 downto 0);
-            data_up_wfg          : in  std_logic_vector(7 downto 0)
+            clk        : in  std_logic;
+            ce         : in  std_logic;
+            dn_lines_0 : out ipdbg_dn_lines;
+            dn_lines_1 : out ipdbg_dn_lines;
+            dn_lines_2 : out ipdbg_dn_lines;
+            dn_lines_3 : out ipdbg_dn_lines;
+            dn_lines_4 : out ipdbg_dn_lines;
+            dn_lines_5 : out ipdbg_dn_lines;
+            dn_lines_6 : out ipdbg_dn_lines;
+            up_lines_0 : in  ipdbg_up_lines := unused_up_lines;
+            up_lines_1 : in  ipdbg_up_lines := unused_up_lines;
+            up_lines_2 : in  ipdbg_up_lines := unused_up_lines;
+            up_lines_3 : in  ipdbg_up_lines := unused_up_lines;
+            up_lines_4 : in  ipdbg_up_lines := unused_up_lines;
+            up_lines_5 : in  ipdbg_up_lines := unused_up_lines;
+            up_lines_6 : in  ipdbg_up_lines := unused_up_lines
         );
     end component JtagHub;
-
 
     component IoViewTop is
         generic(
@@ -95,55 +80,36 @@ architecture structure of tb_top is
             clk                  : in  std_logic;
             rst                  : in  std_logic;
             ce                   : in  std_logic;
-            data_dwn_ready       : out std_logic;
-            data_dwn_valid       : in  std_logic;
-            data_dwn             : in  std_logic_vector(7 downto 0);
-            data_up_ready        : in  std_logic;
-            data_up_valid        : out std_logic;
-            data_up              : out std_logic_vector(7 downto 0);
+            dn_lines             : in  ipdbg_dn_lines;
+            up_lines             : out ipdbg_up_lines;
             probe_inputs         : in  std_logic_vector;
             probe_outputs        : out std_logic_vector;
             probe_outputs_update : out std_logic
         );
     end component IoViewTop;
 
-    signal clk, rst, ce  : std_logic;
+    signal clk, rst, ce   : std_logic;
 
+    constant DATA_WIDTH   : natural := 12;
+    constant ASYNC_RESET  : boolean := true;
 
-    constant DATA_WIDTH       : natural := 12;
-    constant ASYNC_RESET      : boolean := true;
+    signal dn_lines_la    : ipdbg_dn_lines;
+    signal up_lines_la    : ipdbg_up_lines;
+    signal dn_lines_wfg   : ipdbg_dn_lines;
+    signal up_lines_wfg   : ipdbg_up_lines;
+    signal dn_lines_iov   : ipdbg_dn_lines;
+    signal up_lines_iov   : ipdbg_up_lines;
 
-    signal data_dwn           : std_logic_vector(7 downto 0);
-    signal data_dwn_ready_la  : std_logic;
-    signal data_dwn_valid_la  : std_logic;
-    signal data_up_ready_la   : std_logic;
-    signal data_up_valid_la   : std_logic;
-    signal data_up_la         : std_logic_vector(7 downto 0);
-    signal data_dwn_ready_wfg : std_logic;
-    signal data_dwn_valid_wfg : std_logic;
-    signal data_up_ready_wfg  : std_logic;
-    signal data_up_valid_wfg  : std_logic;
-    signal data_up_wfg        : std_logic_vector(7 downto 0);
-    signal data_dwn_ready_iov : std_logic;
-    signal data_dwn_valid_iov : std_logic;
-    signal data_up_ready_iov  : std_logic;
-    signal data_up_valid_iov  : std_logic;
-    signal data_up_iov        : std_logic_vector(7 downto 0);
+    constant T            : time := 10 ns;
 
-    constant T                : time := 10 ns;
+    signal first_sample   : std_logic;
+    signal data_out_wfg   : std_logic_vector(15 downto 0);
+    signal data_in_la     : std_logic_vector(15 downto 0);
 
-    signal count              : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal count_max          : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '1');
+    signal sample_enable  : std_logic;
+    signal output_active  : std_logic;
 
-    signal first_sample       : std_logic;
-    signal data_out_wfg       : std_logic_vector(31 downto 0);
-    signal data_in_la         : std_logic_vector(7 downto 0);
-
-    signal sample_enable      : std_logic;
-    signal output_active      : std_logic;
-
-    signal ext_trigger        : std_logic;
-
+    signal ext_trigger    : std_logic;
 begin
 
     process begin
@@ -178,50 +144,35 @@ begin
             MFF_LENGTH => 3
         )
         port map(
-            clk                   => clk,
-            ce                    => ce,
-            data_dwn              => data_dwn,
-            data_dwn_ready_la     => data_dwn_ready_la,
-            data_dwn_ready_ioview => data_dwn_ready_iov,
-            data_dwn_ready_gdb    => '0',
-            data_dwn_ready_wfg    => data_dwn_ready_wfg,
-            data_dwn_valid_la     => data_dwn_valid_la,
-            data_dwn_valid_ioview => data_dwn_valid_iov,
-            data_dwn_valid_gdb    => open,
-            data_dwn_valid_wfg    => data_dwn_valid_wfg,
-            data_up_ready_la      => data_up_ready_la,
-            data_up_ready_ioview  => data_up_ready_iov,
-            data_up_ready_gdb     => open,
-            data_up_ready_wfg     => data_up_ready_wfg,
-            data_up_valid_la      => data_up_valid_la,
-            data_up_valid_ioview  => data_up_valid_iov,
-            data_up_valid_gdb     => '0',
-            data_up_valid_wfg     => data_up_valid_wfg,
-            data_up_la            => data_up_la,
-            data_up_ioview        => data_up_iov,
-            data_up_gdb           => (others => '-'),
-            data_up_wfg           => data_up_wfg
+            clk        => clk,
+            ce         => ce,
+            dn_lines_0 => dn_lines_la,
+            dn_lines_1 => dn_lines_wfg,
+            dn_lines_2 => dn_lines_iov,
+            dn_lines_3 => open,
+            dn_lines_4 => open,
+            dn_lines_5 => open,
+            dn_lines_6 => open,
+            up_lines_0 => up_lines_la,
+            up_lines_1 => up_lines_wfg,
+            up_lines_2 => up_lines_iov
         );
 
     la: component LogicAnalyserTop
         generic map(
-            ADDR_WIDTH      => 4,
+            ADDR_WIDTH      => 10,
             ASYNC_RESET     => ASYNC_RESET,
-            USE_EXT_TRIGGER => true
+            USE_EXT_TRIGGER => false
         )
         port map(
-            clk            => clk,
-            rst            => rst,
-            ce             => ce,
-            data_dwn_ready => data_dwn_ready_la,
-            data_dwn_valid => data_dwn_valid_la,
-            data_dwn       => data_dwn,
-            data_up_ready  => data_up_ready_la,
-            data_up_valid  => data_up_valid_la,
-            data_up        => data_up_la,
-            sample_enable  => sample_enable,
-            probe          => data_in_la,
-            ext_trigger    => ext_trigger
+            clk           => clk,
+            rst           => rst,
+            ce            => ce,
+            dn_lines      => dn_lines_la,
+            up_lines      => up_lines_la,
+            sample_enable => sample_enable,
+            probe         => data_in_la,
+            ext_trigger   => ext_trigger
         );
     process(clk)begin
         if rising_Edge(clk)then
@@ -234,38 +185,26 @@ begin
         end if;
     end process;
 
+--    process begin
+--        --sample_enable <= '0';
+--        data_in_la <= x"0000";
+--        wait until rst = '0';
+--        wait until rising_edge(clk);
+--        wait for T/5;
+--
+--        while true loop
+--            --sample_enable <= '0';
+--            --wait for T;
+--            --sample_enable <= '1';
+--            data_in_la <= std_logic_vector(unsigned(data_in_la)+1);
+--            wait for T;
+--        end loop;
+--
+--        wait;
+--    end process;
 
-    process begin
-        sample_enable <= '0';
-        data_in_la <= x"00";
-        wait until rst = '0';
-        wait until rising_edge(clk);
-        wait for T/5;
-
-        while true loop
-            sample_enable <= '0';
-            --data_in_la <= x"00";
-            wait for T;
-
-            sample_enable <= '1';
-            data_in_la <= std_logic_vector(unsigned(data_in_la)+3);
-            wait for T;
-
-
-        end loop;
-
-        wait;
-    end process;
-
-
-
-
-    --data_in_la <= data_out_wfg(7 downto 0);
-
-
-
-
-
+    sample_enable <= '1';
+    data_in_la <= data_out_wfg;
 
     wfg: component WaveformGeneratorTop
         generic map(
@@ -274,19 +213,15 @@ begin
             DOUBLE_BUFFER => false
         )
         port map(
-            clk            => clk,
-            rst            => rst,
-            ce             => ce,
-            data_dwn_ready => data_dwn_ready_wfg,
-            data_dwn_valid => data_dwn_valid_wfg,
-            data_dwn       => data_dwn,
-            data_up_ready  => data_up_ready_wfg,
-            data_up_valid  => data_up_valid_wfg,
-            data_up        => data_up_wfg,
-            data_out       => data_out_wfg,
-            first_sample   => first_sample,
-            sample_enable  => '1',
-            output_active  => output_active
+            clk           => clk,
+            rst           => rst,
+            ce            => ce,
+            dn_lines      => dn_lines_wfg,
+            up_lines      => up_lines_wfg,
+            data_out      => data_out_wfg,
+            first_sample  => first_sample,
+            sample_enable => '1',
+            output_active => output_active
         );
     test_iov: block
         signal probe_inputs_iov   : std_logic_vector(17 downto 0);
@@ -300,12 +235,8 @@ begin
                 clk                  => clk,
                 rst                  => rst,
                 ce                   => ce,
-                data_dwn_ready       => data_dwn_ready_iov,
-                data_dwn_valid       => data_dwn_valid_iov,
-                data_dwn             => data_dwn,
-                data_up_ready        => data_up_ready_iov,
-                data_up_valid        => data_up_valid_iov,
-                data_up              => data_up_iov,
+                dn_lines             => dn_lines_iov,
+                up_lines             => up_lines_iov,
                 probe_inputs         => probe_inputs_iov,
                 probe_outputs        => probe_outputs_iov,
                 probe_outputs_update => open
