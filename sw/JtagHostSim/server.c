@@ -31,11 +31,12 @@
 /* useful macro */
 #define CRLF_STR		"\r\n"
 
-#define IPDBG_IOVIEW_VALID_MASK 0xA00
-#define IPDBG_LA_VALID_MASK     0xC00
-#define IPDBG_GDB_VALID_MASK    0x900
-#define IPDBG_WFG_VALID_MASK    0xB00
-#define IPDBG_CHANNELS          4
+#define IPDBG_VALID_MASK 0x800
+//#define IPDBG_IOVIEW_VALID_MASK 0xA00
+//#define IPDBG_LA_VALID_MASK     0xC00
+//#define IPDBG_GDB_VALID_MASK    0x900
+//#define IPDBG_WFG_VALID_MASK    0xB00
+#define IPDBG_CHANNELS          7
 
 #define MIN_TRANSFERS            1
 
@@ -57,7 +58,6 @@ struct _serv_ctx_t
         connected
     } channel_state;
     uint8_t channel_number;
-    int valid_mask;
 
     uint8_t down_buf[BUFSIZE];
     size_t down_buf_level;
@@ -102,11 +102,6 @@ int jtagHostLoop()
         serv_ctx->up_buf_level = 0;
         serv_ctx->down_buf_level = 0;
 
-        if(ch == 0) serv_ctx->valid_mask = IPDBG_LA_VALID_MASK;
-        if(ch == 1) serv_ctx->valid_mask = IPDBG_IOVIEW_VALID_MASK;
-        if(ch == 2) serv_ctx->valid_mask = IPDBG_GDB_VALID_MASK;
-        if(ch == 3) serv_ctx->valid_mask = IPDBG_WFG_VALID_MASK;
-
         apr_socket_t *listening_sock = create_listen_sock(mp, ch);
         assert(listening_sock);
 
@@ -127,7 +122,7 @@ int jtagHostLoop()
             for(size_t idx = 0 ; idx < channel_contexts[ch]->down_buf_level; ++idx)
             {
                 uint16_t val;
-                ipdbgJTAGtransfer(&val, channel_contexts[ch]->down_buf[idx] | channel_contexts[ch]->valid_mask);
+                ipdbgJTAGtransfer(&val, channel_contexts[ch]->down_buf[idx] | IPDBG_VALID_MASK | (ch << 8));
                 transfers++;
 
                 distribute_to_up_buffer(val, channel_contexts);
@@ -233,7 +228,6 @@ static int do_accept(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_socket_t 
     apr_status_t rv = apr_socket_accept(&ns, lsock, mp);
     if (rv == APR_SUCCESS)
     {
-        //serv_ctx_t *serv_ctx = apr_palloc(mp, sizeof(serv_ctx_t));
         serv_ctx->up_buf_level = 0;
         serv_ctx->down_buf_level = 0;
         serv_ctx->channel_state = connected;
@@ -249,7 +243,7 @@ static int do_accept(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_socket_t 
 
         apr_pollset_add(pollset, &pfd); //Add a socket or file descriptor to a pollset
 
-        //printf("connected client to channel %d\n", serv_ctx->channel_number);
+        printf("connected client to channel %d\n", serv_ctx->channel_number);
     }
     return TRUE;
 }
@@ -257,7 +251,6 @@ static int do_accept(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_socket_t 
 
 static int connection_tx_cb(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_socket_t *sock)
 {
-
     if(serv_ctx->up_buf_level != 0)
     {
         apr_size_t wlen = serv_ctx->up_buf_level;
@@ -272,9 +265,6 @@ static int connection_tx_cb(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_so
 
 static int connection_rx_cb(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_socket_t *sock)
 {
-    //printf("connection_rx_cb()\n");
-
-
     apr_size_t len = BUFSIZE - serv_ctx->down_buf_level;
 
     apr_status_t rv = apr_socket_recv(sock, (char*)&serv_ctx->down_buf[serv_ctx->down_buf_level], &len); //Daten empfangen
@@ -291,15 +281,13 @@ static int connection_rx_cb(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_so
     }
     else
     {
-        /* we got data */
+         //we got data
 //        printf("rx(%d): ", serv_ctx->channel_number);
 //        for(size_t i = 0; i < len ;++i)
 //            printf("0x%02x ", (int)serv_ctx->down_buf[serv_ctx->down_buf_level+i]);
 //        printf("\n");
 
         serv_ctx->down_buf_level += len;
-
-        //ipdbgJtagWrite(serv_ctx->chain, (uint8_t*)buf, len, serv_ctx->valid_mask);
 
     }
 
@@ -309,29 +297,12 @@ static int connection_rx_cb(serv_ctx_t *serv_ctx, apr_pollset_t *pollset, apr_so
 
 void distribute_to_up_buffer(uint16_t val, serv_ctx_t *channel_contexts[])
 {
-
-    if ((val & 0xf00) == IPDBG_IOVIEW_VALID_MASK)
+    /* flow control missing here */
+    if (val & IPDBG_VALID_MASK)
     {
-        size_t index = channel_contexts[1]->up_buf_level;
-        channel_contexts[1]->up_buf[index] = val & 0x00FF;
-        channel_contexts[1]->up_buf_level++;
-    }
-    if ((val & 0xf00) == IPDBG_LA_VALID_MASK)
-    {
-        size_t index = channel_contexts[0]->up_buf_level;
-        channel_contexts[0]->up_buf[index] = val & 0x00FF;
-        channel_contexts[0]->up_buf_level++;
-    }
-    if ((val & 0xf00) == IPDBG_GDB_VALID_MASK)
-    {
-        size_t index = channel_contexts[2]->up_buf_level;
-        channel_contexts[2]->up_buf[index] = val & 0x00FF;
-        channel_contexts[2]->up_buf_level++;
-    }
-    if ((val & 0xf00) == IPDBG_WFG_VALID_MASK)
-    {
-        size_t index = channel_contexts[3]->up_buf_level;
-        channel_contexts[3]->up_buf[index] = val & 0x00FF;
-        channel_contexts[3]->up_buf_level++;
+        size_t ch = (val >> 8) & 0x7;
+        size_t index = channel_contexts[ch]->up_buf_level;
+        channel_contexts[ch]->up_buf[index] = val & 0x00FF;
+        channel_contexts[ch]->up_buf_level++;
     }
 }

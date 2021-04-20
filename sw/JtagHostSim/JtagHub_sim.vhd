@@ -2,40 +2,31 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.ipdbg_interface_pkg.all;
+
 entity JtagHub is
     generic(
         MFF_LENGTH : natural
     );
     port(
-        clk                   : in  std_logic;
-        ce                    : in  std_logic;
+        clk        : in  std_logic;
+        ce         : in  std_logic;
 
-        data_dwn              : out std_logic_vector(7 downto 0);
-
-        data_dwn_ready_la     : in  std_logic;
-        data_dwn_ready_ioview : in  std_logic;
-        data_dwn_ready_gdb    : in  std_logic;
-        data_dwn_ready_wfg    : in  std_logic;
-
-        data_dwn_valid_la     : out std_logic;
-        data_dwn_valid_ioview : out std_logic;
-        data_dwn_valid_gdb    : out std_logic;
-        data_dwn_valid_wfg    : out std_logic;
-
-        data_up_ready_la      : out std_logic;
-        data_up_ready_ioview  : out std_logic;
-        data_up_ready_gdb     : out std_logic;
-        data_up_ready_wfg     : out std_logic;
-
-        data_up_valid_la      : in  std_logic;
-        data_up_valid_ioview  : in  std_logic;
-        data_up_valid_gdb     : in  std_logic;
-        data_up_valid_wfg     : in  std_logic;
-
-        data_up_la            : in  std_logic_vector(7 downto 0);
-        data_up_ioview        : in  std_logic_vector(7 downto 0);
-        data_up_wfg           : in  std_logic_vector(7 downto 0);
-        data_up_gdb           : in  std_logic_vector(7 downto 0)
+        dn_lines_0 : out ipdbg_dn_lines;
+        dn_lines_1 : out ipdbg_dn_lines;
+        dn_lines_2 : out ipdbg_dn_lines;
+        dn_lines_3 : out ipdbg_dn_lines;
+        dn_lines_4 : out ipdbg_dn_lines;
+        dn_lines_5 : out ipdbg_dn_lines;
+        dn_lines_6 : out ipdbg_dn_lines;
+        up_lines_0 : in  ipdbg_up_lines := unused_up_lines;
+        up_lines_1 : in  ipdbg_up_lines := unused_up_lines;
+        up_lines_2 : in  ipdbg_up_lines := unused_up_lines;
+        up_lines_3 : in  ipdbg_up_lines := unused_up_lines;
+        up_lines_4 : in  ipdbg_up_lines := unused_up_lines;
+        up_lines_5 : in  ipdbg_up_lines := unused_up_lines;
+        up_lines_6 : in  ipdbg_up_lines := unused_up_lines
     );
 end entity;
 
@@ -54,17 +45,39 @@ architecture structure of JtagHub is
         assert false severity failure;
     end set_data_to_jtag_host;
 
-    signal data_dwn_ready : std_logic_vector(3 downto 0);
-    signal data_dwn_valid : std_logic_vector(3 downto 0);
-    signal data_up_ready  : std_logic_vector(3 downto 0);
-    signal data_up_valid  : std_logic_vector(3 downto 0);
-    type data_up_t        is array (3 downto 0) of std_logic_vector(7 downto 0);
+
+    signal data_dwn       : std_logic_vector(7 downto 0);
+    signal data_dwn_ready : std_logic_vector(6 downto 0);
+    signal data_dwn_valid : std_logic_vector(6 downto 0);
+    signal data_up_ready  : std_logic_vector(6 downto 0);
+    signal data_up_valid  : std_logic_vector(6 downto 0);
+    type data_up_t        is array (6 downto 0) of std_logic_vector(7 downto 0);
     signal data_up        : data_up_t;
 
 begin
-    data_dwn_ready <= data_dwn_ready_wfg & data_dwn_ready_gdb & data_dwn_ready_ioview & data_dwn_ready_la;
-    data_up_valid <= data_up_valid_wfg & data_up_valid_gdb & data_up_valid_ioview & data_up_valid_la;
-    data_up <= (3 => data_up_wfg, 2 => data_up_gdb, 1 => data_up_ioview, 0 => data_up_la);
+    data_dwn_ready <= up_lines_6.dnlink_ready &
+                      up_lines_5.dnlink_ready &
+                      up_lines_4.dnlink_ready &
+                      up_lines_3.dnlink_ready &
+                      up_lines_2.dnlink_ready &
+                      up_lines_1.dnlink_ready &
+                      up_lines_0.dnlink_ready;
+
+    data_up_valid  <= up_lines_6.uplink_valid &
+                      up_lines_5.uplink_valid &
+                      up_lines_4.uplink_valid &
+                      up_lines_3.uplink_valid &
+                      up_lines_2.uplink_valid &
+                      up_lines_1.uplink_valid &
+                      up_lines_0.uplink_valid;
+
+    data_up(0)     <= up_lines_0.uplink_data;
+    data_up(1)     <= up_lines_1.uplink_data;
+    data_up(2)     <= up_lines_2.uplink_data;
+    data_up(3)     <= up_lines_3.uplink_data;
+    data_up(4)     <= up_lines_4.uplink_data;
+    data_up(5)     <= up_lines_5.uplink_data;
+    data_up(6)     <= up_lines_6.uplink_data;
     process(clk)
         variable data_temp_dwn : std_logic_vector(15 downto 0);
         variable data_temp_up  : std_logic_vector(15 downto 0);
@@ -84,45 +97,52 @@ begin
                 end if;
 
                 data_dwn_valid <= (others => '0');
-                case data_pending is
-                when x"C" => if data_dwn_ready(0) = '1' and data_dwn_valid(0) = '0' then data_dwn_valid(0) <= '1'; data_pending := x"0"; end if;
-                when x"A" => if data_dwn_ready(1) = '1' and data_dwn_valid(1) = '0' then data_dwn_valid(1) <= '1'; data_pending := x"0"; end if;
-                when x"9" => if data_dwn_ready(2) = '1' and data_dwn_valid(2) = '0' then data_dwn_valid(2) <= '1'; data_pending := x"0"; end if;
-                when x"B" => if data_dwn_ready(3) = '1' and data_dwn_valid(3) = '0' then data_dwn_valid(3) <= '1'; data_pending := x"0"; end if;
-                when others => data_pending := x"0";
-                end case;
+                if data_pending(3) = '1' then
+                    for I in 0 to 6 loop
+                        if unsigned(data_pending(2 downto 0)) = to_unsigned(I, 3) then
+                            if data_dwn_ready(I) = '1' and data_dwn_valid(I) = '0' then
+                                data_dwn_valid(I) <= '1'; data_pending := x"0";
+                            end if;
+                        end if;
+                    end loop;
+                    if data_pending = x"f" then
+                        -- todo: reset
+                        data_pending := x"0";
+                    end if;
+                end if;
 
                 data_up_ready <= (others => '1');
-                if data_up_valid(0) = '1' and data_up_ready(0) = '1' then
-                    data_up_ready(0) <= '0';
-                    data_temp_up := x"0C" & data_up(0);
-                    set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
-                end if;
-                if data_up_valid(1) = '1' and data_up_ready(1) = '1' then
-                    data_up_ready(1) <= '0';
-                    data_temp_up := x"0A" & data_up(1);
-                    set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
-                end if;
-                if data_up_valid(2) = '1' and data_up_ready(2) = '1' then
-                    data_up_ready(2) <= '0';
-                    data_temp_up := x"09" & data_up(2);
-                    set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
-                end if;
-                if data_up_valid(3) = '1' and data_up_ready(3) = '1' then
-                    data_up_ready(3) <= '0';
-                    data_temp_up := x"0B" & data_up(3);
-                    set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
-                end if;
+                for I in 0 to 6 loop
+                    if data_up_valid(I) = '1' and data_up_ready(I) = '1' then
+                        data_up_ready(I) <= '0';
+                        data_temp_up := "00001" & std_logic_vector(to_unsigned(I, 3)) & data_up(I);
+                        set_data_to_jtag_host(to_integer(to_01(unsigned(data_temp_up))));
+                    end if;
+                end loop;
             end if;
         end if;
     end process;
-    data_dwn_valid_la     <= data_dwn_valid(0);
-    data_dwn_valid_ioview <= data_dwn_valid(1);
-    data_dwn_valid_gdb    <= data_dwn_valid(2);
-    data_dwn_valid_wfg    <= data_dwn_valid(3);
-    data_up_ready_la      <= data_up_ready(0);
-    data_up_ready_ioview  <= data_up_ready(1);
-    data_up_ready_gdb     <= data_up_ready(2);
-    data_up_ready_wfg     <= data_up_ready(3);
+    dn_lines_0.dnlink_valid <= data_dwn_valid(0);
+    dn_lines_1.dnlink_valid <= data_dwn_valid(1);
+    dn_lines_2.dnlink_valid <= data_dwn_valid(2);
+    dn_lines_3.dnlink_valid <= data_dwn_valid(3);
+    dn_lines_4.dnlink_valid <= data_dwn_valid(4);
+    dn_lines_5.dnlink_valid <= data_dwn_valid(5);
+    dn_lines_6.dnlink_valid <= data_dwn_valid(6);
+    dn_lines_0.dnlink_data <= data_dwn;
+    dn_lines_1.dnlink_data <= data_dwn;
+    dn_lines_2.dnlink_data <= data_dwn;
+    dn_lines_3.dnlink_data <= data_dwn;
+    dn_lines_4.dnlink_data <= data_dwn;
+    dn_lines_5.dnlink_data <= data_dwn;
+    dn_lines_6.dnlink_data <= data_dwn;
+
+    dn_lines_0.uplink_ready <= data_up_ready(0);
+    dn_lines_1.uplink_ready <= data_up_ready(1);
+    dn_lines_2.uplink_ready <= data_up_ready(2);
+    dn_lines_3.uplink_ready <= data_up_ready(3);
+    dn_lines_4.uplink_ready <= data_up_ready(4);
+    dn_lines_5.uplink_ready <= data_up_ready(5);
+    dn_lines_6.uplink_ready <= data_up_ready(6);
 
 end architecture structure;

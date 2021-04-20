@@ -47,11 +47,15 @@ e~tb_top.o: $(OBJDIR)/tb_top.o $(OBJDIR)/tb_top.o $(OBJDIR)/JtagHub_sim.o \
     $(OBJDIR)/IpdbgEscaping.o $(OBJDIR)/pdpRam.o
 	$(GHDL) --bind $(GHDLBINDFLAGS) tb_top
 
+$(OBJDIR)/ipdbg_interface_pkg.o: ../../rtl/common/ipdbg_interface_pkg.vhd
+	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/tb_top.o: tb_top.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/JtagHub_sim.o: JtagHub_sim.vhd
+$(OBJDIR)/JtagHub_sim.o: JtagHub_sim.vhd \
+	$(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/LogicAnalyserTop.o: ../../rtl/LogicAnalyser/LogicAnalyserTop.vhd
+$(OBJDIR)/LogicAnalyserTop.o: ../../rtl/LogicAnalyser/LogicAnalyserTop.vhd \
+	$(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/LogicAnalyserMemory.o: ../../rtl/LogicAnalyser/LogicAnalyserMemory.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
