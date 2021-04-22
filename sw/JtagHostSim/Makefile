@@ -49,7 +49,7 @@ e~tb_top.o: $(OBJDIR)/tb_top.o $(OBJDIR)/tb_top.o $(OBJDIR)/JtagHub_sim.o \
 
 $(OBJDIR)/ipdbg_interface_pkg.o: ../../rtl/common/ipdbg_interface_pkg.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/tb_top.o: tb_top.vhd
+$(OBJDIR)/tb_top.o: tb_top.vhd $(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/JtagHub_sim.o: JtagHub_sim.vhd \
 	$(OBJDIR)/ipdbg_interface_pkg.o
