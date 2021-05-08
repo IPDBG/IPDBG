@@ -204,7 +204,7 @@ begin
 --    end process;
 
     sample_enable <= '1';
-    data_in_la <= data_out_wfg;
+    data_in_la <= data_out_wfg when output_active = '1' else x"0000";
 
     wfg: component WaveformGeneratorTop
         generic map(

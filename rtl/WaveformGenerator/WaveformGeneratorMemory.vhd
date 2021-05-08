@@ -252,10 +252,10 @@ begin
     begin
         process (clk,arst)
             procedure assign_reset is begin
-                    enable <= '0';
-                    first_sample <= '-';
-                    data_out <= (others => '-');
-                    enabled <= '0';
+                enable <= '0';
+                first_sample <= '-';
+                data_out <= (others => '-');
+                enabled <= '0';
             end procedure assign_reset;
         begin
             if arst = '1' then

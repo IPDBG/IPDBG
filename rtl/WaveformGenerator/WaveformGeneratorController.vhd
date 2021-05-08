@@ -26,7 +26,8 @@ entity WaveformGeneratorController is
         data_samples_if_reset : out std_logic;
         data_samples_last     : out std_logic;
         start                 : out std_logic;
-        stop                  : out std_logic
+        stop                  : out std_logic;
+        enabled               : in  std_logic
     );
 end entity WaveformGeneratorController;
 
@@ -41,14 +42,15 @@ architecture tab of WaveformGeneratorController is
 
 
     -----------------------Befehle WaveformGenerator -----------------------
-    constant start_command                  :std_logic_vector := "11110000"; --F0
-    constant stop_command                   :std_logic_vector := "11110001"; --F1
-    constant return_sizes_command           :std_logic_vector := "11110010"; --F2
-    constant write_samples_command          :std_logic_vector := "11110011"; --F3
-    constant set_numberofsamples_command    :std_logic_vector := "11110100"; --F4
+    constant start_command                  : std_logic_vector := "11110000"; --F0
+    constant stop_command                   : std_logic_vector := "11110001"; --F1
+    constant return_sizes_command           : std_logic_vector := "11110010"; --F2
+    constant write_samples_command          : std_logic_vector := "11110011"; --F3
+    constant set_numberofsamples_command    : std_logic_vector := "11110100"; --F4
+    constant return_isrunning_command       : std_logic_vector := "11110101"; --F5
 
     -----------------------state machines
-    type states_t is(init, set_numberofsamples, write_samples, return_sizes);
+    type states_t is(init, set_numberofsamples, write_samples, return_sizes, return_isrunning);
     signal state : states_t;
 
     type Output is(init, Zwischenspeicher, shift, get_next_data);
@@ -121,6 +123,7 @@ begin
                     set_addroflastsample_next_byte <= '0';
                     set_dataouts_next_byte <= '0';
                     addr_of_last_sample_stb_early <= '0';
+                    up_lines.uplink_valid <= '0';
                     case state is
                     when init =>
                         if dn_lines.dnlink_valid = '1' then
@@ -137,6 +140,9 @@ begin
                                 state <= return_sizes;
                                 init_Output <= init;
                             end if ;
+                            if dn_lines.dnlink_data = return_isrunning_command then
+                                state <= return_isrunning;
+                            end if;
                             if dn_lines.dnlink_data = write_samples_command then
                                 data_samples_if_reset <= '1';
                                 sample_counter <= (others => '0');
@@ -165,8 +171,6 @@ begin
                                 init_Output <= shift;
                             end if;
                         when shift =>
-                            up_lines.uplink_valid <= '0';
-
                             if dn_lines.uplink_ready = '0' then
                                 init_Output <= Zwischenspeicher;
                             end if;
@@ -179,7 +183,6 @@ begin
                                     state <= init;
                                 end if;
                             end if;
-
                         when get_next_data =>
                             if dn_lines.uplink_ready = '1' then
                                 counter <= (others => '0');
@@ -188,6 +191,13 @@ begin
                                 init_Output <= Zwischenspeicher;
                             end if;
                         end case;
+
+                    when return_isrunning =>
+                        if dn_lines.uplink_ready = '1' then
+                            up_lines.uplink_data <= "0000000" & enabled;
+                            up_lines.uplink_valid <= '1';
+                            state <= init;
+                        end if;
 
                     when write_samples =>
                         if dn_lines.dnlink_valid = '1' then

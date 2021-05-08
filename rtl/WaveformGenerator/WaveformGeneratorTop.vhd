@@ -65,7 +65,8 @@ architecture structure of WaveformGeneratorTop is
             data_samples_if_reset : out std_logic;
             data_samples_last     : out std_logic;
             start                 : out std_logic;
-            stop                  : out std_logic
+            stop                  : out std_logic;
+            enabled               : in  std_logic
         );
     end component WaveformGeneratorController;
 
@@ -123,7 +124,8 @@ begin
             data_samples_if_reset   => data_samples_if_reset,
             data_samples_last       => data_samples_last,
             start                   => start,
-            stop                    => stop
+            stop                    => stop,
+            enabled                 => enabled
         );
 
     output_active <= enabled;
