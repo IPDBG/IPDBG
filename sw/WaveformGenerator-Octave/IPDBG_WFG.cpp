@@ -48,7 +48,7 @@ using namespace std;
 #define RETURN_SIZES_COMMAND            0xF2
 #define WRITE_SAMPLES_COMMAND           0xF3
 #define SET_NUMBEROFSAMPLES_COMMAND     0xF4
-
+#define ONE_SHOT_STROBE_COMMAND         0xF6
 
 #ifdef _WIN32
     WSADATA wsaData;
@@ -171,7 +171,12 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
                 printf("sending start\n");
                 buf[0] = START_COMMAND;
             }
-            else                                     /// send stop
+            else if(commandStr == std::string("oneshot"))                                     /// send stop
+            {
+                printf("sending one shot\n");
+                buf[0] = ONE_SHOT_STROBE_COMMAND;
+            }
+            else
             {
                 printf("sending stop\n");
                 buf[0] = STOP_COMMAND;

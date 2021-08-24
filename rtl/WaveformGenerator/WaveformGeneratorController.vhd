@@ -27,7 +27,8 @@ entity WaveformGeneratorController is
         data_samples_last     : out std_logic;
         start                 : out std_logic;
         stop                  : out std_logic;
-        enabled               : in  std_logic
+        enabled               : in  std_logic;
+        one_shot              : out std_logic
     );
 end entity WaveformGeneratorController;
 
@@ -48,6 +49,7 @@ architecture tab of WaveformGeneratorController is
     constant write_samples_command          : std_logic_vector := "11110011"; --F3
     constant set_numberofsamples_command    : std_logic_vector := "11110100"; --F4
     constant return_isrunning_command       : std_logic_vector := "11110101"; --F5
+    constant one_shot_strobe_command        : std_logic_vector := "11110110"; --F6
 
     -----------------------state machines
     type states_t is(init, set_numberofsamples, write_samples, return_sizes, return_isrunning);
@@ -105,6 +107,7 @@ begin
             data_samples_last_early         <= '0';
             start                           <= '-';
             stop                            <= '-';
+            one_shot                        <= '-';
         end procedure reset_assignments;
     begin
         if arst = '1' then
@@ -116,6 +119,7 @@ begin
                 if ce = '1' then
                     start <= '0';
                     stop  <= '0';
+                    one_shot <= '0';
                     data_dwn_delayed <= dn_lines.dnlink_data;
                     data_samples_valid_early <= '0';
                     data_samples_last_early <= '0';
@@ -132,6 +136,9 @@ begin
                             end if ;
                             if dn_lines.dnlink_data = stop_command then
                                 stop <= '1';
+                            end if ;
+                            if dn_lines.dnlink_data = one_shot_strobe_command then
+                                one_shot <= '1';
                             end if ;
                             if dn_lines.dnlink_data = return_sizes_command then
                                 counter <= (others => '0');

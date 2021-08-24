@@ -5,31 +5,33 @@ use ieee.numeric_std.all;
 
 entity WaveformGeneratorMemory is
     generic(
-        DATA_WIDTH       : natural := 8;
-        ADDR_WIDTH       : natural := 8;
-        ASYNC_RESET      : boolean := true;
-        DOUBLE_BUFFER    : boolean := false
+        DATA_WIDTH    : natural := 8;
+        ADDR_WIDTH    : natural := 8;
+        ASYNC_RESET   : boolean := true;
+        DOUBLE_BUFFER : boolean := false;
+        SYNC_MASTER   : boolean := true
     );
     port(
-        clk              : in  std_logic;
-        rst              : in  std_logic;
-        ce               : in  std_logic;
-
+        clk                   : in  std_logic;
+        rst                   : in  std_logic;
+        ce                    : in  std_logic;
 
         -- write
-        data_samples            : in  std_logic_vector(DATA_WIDTH-1 downto 0);     -- from controller
-        data_samples_valid      : in  std_logic;                                   -- from controller
-        data_samples_if_reset   : in  std_logic;                                   -- from controller
-        data_samples_last       : in  std_logic;
+        data_samples          : in  std_logic_vector(DATA_WIDTH-1 downto 0);     -- from controller
+        data_samples_valid    : in  std_logic;                                   -- from controller
+        data_samples_if_reset : in  std_logic;                                   -- from controller
+        data_samples_last     : in  std_logic;
 
-        start                   : in  std_logic;                                   -- from controller
-        stop                    : in  std_logic;                                   -- from controller
+        start                 : in  std_logic;                                   -- from controller
+        stop                  : in  std_logic;                                   -- from controller
 
-        enabled                 : out std_logic;
-        data_out                : out std_logic_vector(DATA_WIDTH-1 downto 0);     -- THE output
-        first_sample            : out std_logic;                                   -- THE output
-        data_out_enable         : in  std_logic := '1'                             -- timing for output
-
+        enabled               : out std_logic;
+        data_out              : out std_logic_vector(DATA_WIDTH-1 downto 0);     -- THE output
+        first_sample          : out std_logic;                                   -- THE output
+        data_out_enable       : in  std_logic := '1';                            -- timing for output
+        one_shot              : in  std_logic;
+        sync_out              : out std_logic;
+        sync_in               : in  std_logic
     );
 end entity WaveformGeneratorMemory;
 
@@ -180,26 +182,47 @@ begin
     end block mem;
 
     readFsm: block
-        signal fisrt_address_set        : std_logic;
-        signal fisrt_address_set_d      : std_logic;
+        type state_t                    is (idle, running, oneshot, wait_sync);
+        signal state                    : state_t;
+        signal first_address_set        : std_logic;
+        signal first_address_set_d      : std_logic;
 
         signal addr_of_last_sample      : unsigned(ADDR_WIDTH-1 downto 0);
         signal addr_of_last_sample_next : unsigned(ADDR_WIDTH-1 downto 0);
         signal buffer_next              : std_logic;
         signal current_rd_buffer        : std_logic;
         signal current_rd_buffer_d      : std_logic;
+
+        signal set_enable               : std_logic;
+        signal enabled_d                : std_logic;
+        signal enabled_s                : std_logic;
+
+        signal start_latched            : std_logic;
+        signal stop_latched             : std_logic;
+        signal one_shot_latched         : std_logic;
+        signal sync_out_local           : std_logic;
     begin
+        sync_out <= sync_out_local;
+
         process (clk, arst)
             procedure assign_reset is begin
                 read_address <= (others => '-');
                 first_sample_s <= '0';
-                fisrt_address_set <= '0';
-                fisrt_address_set_d <= '0';
+                first_address_set <= '0';
+                first_address_set_d <= '0';
                 current_rd_buffer_s <= '0';
                 current_rd_buffer_d <= '0';
                 current_rd_buffer   <= '0';
-                buffer_next   <= '0';
+                buffer_next <= '0';
                 addr_of_last_sample_next <= (others => '-');
+
+                first_sample <= '-';
+                data_out <= (others => '-');
+                enabled <= '0';
+                set_enable <= '0';
+                enabled_d <= '0';
+                enabled_s <= '0';
+                sync_out_local <= '0';
             end procedure assign_reset;
         begin
             if arst = '1' then
@@ -217,73 +240,107 @@ begin
 
 
                         if data_out_enable = '1' then
-                            fisrt_address_set <= '0';
-                            if to_01(read_address) = to_01(addr_of_last_sample) then
+                            start_latched <= '0';
+                        elsif start = '1' then
+                            start_latched <= '1';
+                        end if;
+                        if data_out_enable = '1' then
+                            stop_latched <= '0';
+                        elsif stop = '1' then
+                            stop_latched <= '1';
+                        end if;
+                        if data_out_enable = '1' then
+                            one_shot_latched <= '0';
+                        elsif one_shot = '1' then
+                            one_shot_latched <= '1';
+                        end if;
+
+
+                        if data_out_enable = '1' then
+                            sync_out_local <= '0';
+                            first_address_set <= '0';
+                            read_address <= to_01(read_address) + 1;
+                            case state is
+                            when idle =>
                                 read_address <= (others => '0');
-                                fisrt_address_set <= '1';
                                 current_rd_buffer <= buffer_next;
                                 addr_of_last_sample <= to_01(addr_of_last_sample_next);
-                            else
-                                read_address <= to_01(read_address) + 1;
-                            end if;
+                                set_enable <= '0';
+                                if (one_shot_latched or one_shot) = '1' then
+                                    state <= oneshot;
+                                    first_address_set <= '1';
+                                    set_enable <= '1';
+                                elsif (start_latched or start) = '1' then
+                                    if SYNC_MASTER then
+                                        state <= running;
+                                        first_address_set <= '1';
+                                        set_enable <= '1';
+                                    else
+                                        state <= wait_sync;
+                                    end if;
+                                end if;
+                            when wait_sync =>
+                                read_address <= (others => '0');
+                                current_rd_buffer <= buffer_next;
+                                addr_of_last_sample <= to_01(addr_of_last_sample_next);
+                                set_enable <= '0';
+                                if sync_in = '1' then
+                                    state <= running;
+                                    first_address_set <= '1';
+                                    set_enable <= '1';
+                                end if;
+                            when running =>
+                                if to_01(read_address) + 1 = to_01(addr_of_last_sample) then
+                                    sync_out_local <= '1';
+                                end if;
+                                if sync_out_local = '1' then
+                                    read_address <= (others => '0');
+                                    first_address_set <= '1';
+                                    current_rd_buffer <= buffer_next;
+                                    addr_of_last_sample <= to_01(addr_of_last_sample_next);
+                                end if;
+                                if (stop_latched or stop) = '1' then
+                                    state <= idle;
+                                    set_enable <= '0';
+                                end if;
+                            when oneshot =>
+                                if to_01(read_address) = to_01(addr_of_last_sample) then
+                                    state <= idle;
+                                    set_enable <= '0';
+                                end if;
+                            end case;
                         end if;
+
 
                         -- This is depending on the timing of the pdpRam. (i.e. we have a strong coupling to the pdpRam)
                         -- An alternative solution was to spend an additional bit of the waveform - a big waste.
                         -- So we live with this coupling.
-                        fisrt_address_set_d <= fisrt_address_set;
+                        first_address_set_d <= first_address_set;
                         current_rd_buffer_d <= current_rd_buffer;
+                        enabled_d           <= set_enable;
                         if RAM_OUTPUT_REG then
-                            first_sample_s      <= fisrt_address_set_d;
+                            first_sample_s      <= first_address_set_d;
                             current_rd_buffer_s <= current_rd_buffer_d;
+                            enabled_s           <= enabled_d;
                         else
-                            first_sample_s      <= fisrt_address_set;
+                            first_sample_s      <= first_address_set;
                             current_rd_buffer_s <= current_rd_buffer;
+                            enabled_s           <= set_enable;
                         end if;
-                    end if;
-                end if;
-            end if;
-        end process;
-    end block;
 
 
-    output: block
-        signal enable : bit;
-    begin
-        process (clk,arst)
-            procedure assign_reset is begin
-                enable <= '0';
-                first_sample <= '-';
-                data_out <= (others => '-');
-                enabled <= '0';
-            end procedure assign_reset;
-        begin
-            if arst = '1' then
-                assign_reset;
-            elsif rising_edge(clk) then
-                if srst = '1' then
-                    assign_reset;
-                else
-                    if ce = '1' then
-                        if start = '1' then
-                            enable <= '1';
-                        elsif stop = '1' then
-                            enable <= '0';
-                        end if;
-                        if enable = '1' then
-                            enabled <= '1';
-                            if data_out_enable = '1' then
-                                first_sample <= first_sample_s;
+                        if data_out_enable = '1' then
+                            enabled <= enabled_s;
+                            first_sample <= first_sample_s;
+                            if enabled_s = '1' then
                                 if current_rd_buffer_s = '0' or not DOUBLE_BUFFER then
                                     data_out <= read_data;
                                 else
                                     data_out <= read_data_b2;
                                 end if;
+                            else
+                                data_out <= (others => '0');
                             end if;
-                        else
-                            enabled <= '0';
-                            first_sample <= '0';
-                            data_out <= (others => '0');
                         end if;
                     end if;
                 end if;
