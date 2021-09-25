@@ -34,6 +34,7 @@ architecture tab of IpdbgTap is
     signal TAP                  : TAP_States;
 
     signal InstuctionRegister   : std_logic_vector(7 downto 0) := IDCode;
+    constant Status             : std_logic_vector(7 downto 0) := x"01";
     signal BypassRegister       : std_logic;
     signal IDCodeRegister       : std_logic_vector(31 downto 0) := IdValue;
 
@@ -131,6 +132,8 @@ begin
                 BypassSelected <= '0';
                 IdRegisterSelected <= '1';
                 InstuctionRegister <= IDCode;
+            elsif TAP = Capture_ir then
+                InstuctionRegister <= Status;
             end if;
 
             if TAP = Shift_dr then
