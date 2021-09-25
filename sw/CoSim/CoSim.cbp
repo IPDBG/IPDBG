@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="CoSim" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="all">
+				<Option output="CoSim" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-std=c++11" />
+		</Compiler>
+		<Linker>
+		</Linker>
+		<Unit filename="../../rtl/IoView/IoViewController.vhd" />
+		<Unit filename="../../rtl/IoView/IoViewTop.vhd" />
+		<Unit filename="../../rtl/JtagHub/JtagCdc.vhd" />
+		<Unit filename="../../rtl/JtagHub/JtagHub.vhd" />
+		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserController.vhd">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserMemory.vhd">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserTop.vhd">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserTrigger.vhd">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="../../rtl/TAP/IpdbgTap.vhd" />
+		<Unit filename="../../rtl/TAP/IpdbgTapExtPins.vhd" />
+		<Unit filename="../../rtl/TAP/IpdbgTap_pkg.vhd" />
+		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorController.vhd" />
+		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorMemory.vhd" />
+		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorTop.vhd" />
+		<Unit filename="../../rtl/common/IpdbgEscaping.vhd" />
+		<Unit filename="JtagAdapter.vhd" />
+		<Unit filename="Makefile" />
+		<Unit filename="main.cpp" />
+		<Unit filename="tb_top.vhd" />
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>
