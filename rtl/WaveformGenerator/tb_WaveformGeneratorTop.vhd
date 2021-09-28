@@ -38,11 +38,11 @@ architecture test of tb_WaveformGeneratorTop is
     );
 end component WaveformGeneratorTop;
 
-    constant NUMBER_OF_SAMPLES_MASTER  : integer:=17;
-    constant NUMBER_OF_SAMPLES_SLAVE   : integer:=11;
+    constant NUMBER_OF_SAMPLES_MASTER  : integer:= 16;
+    constant NUMBER_OF_SAMPLES_SLAVE   : integer:= 40;
 
 
-    constant ADDR_WIDTH    : natural := 6;
+    constant ADDR_WIDTH    : natural := 11;
     constant ASYNC_RESET   : boolean := false;
     constant DOUBLE_BUFFER : boolean := false;
     signal  clk            : std_logic;
@@ -97,6 +97,8 @@ begin
     end process;
 
     ce <= '1';
+    dn_lines_master.uplink_ready <= '1';
+    dn_lines_slave.uplink_ready <= '1';
 
 
     process begin
@@ -109,52 +111,83 @@ begin
         wait for T/5;
         wait for 5*T;
 
-        -- set address of last sample
+        -- set address of last sample Master
         dn_lines_master.dnlink_valid <= '1';
         dn_lines_master.dnlink_data  <= x"f4";
+
+        wait for T;
+        dn_lines_master.dnlink_data  <= x"00";
+        wait for T;
+        if to_unsigned(NUMBER_OF_SAMPLES_MASTER, dn_lines_master.dnlink_data'length) = x"55" then
+            dn_lines_master.dnlink_data  <= x"55"; --Escape escape symbol
+            wait for T;
+        elsif to_unsigned(NUMBER_OF_SAMPLES_MASTER, dn_lines_master.dnlink_data'length) = x"EE" then
+            dn_lines_master.dnlink_data  <= x"55"; --Escape Reset symbol
+            wait for T;
+        end if;
+        dn_lines_master.dnlink_data <= std_logic_vector(to_unsigned(NUMBER_OF_SAMPLES_MASTER, dn_lines_master.dnlink_data'length));
+        wait for T;
+        dn_lines_master.dnlink_valid <= '0';
+        wait for 50*T;
+
+        -- set address of last sample Slave
         dn_lines_slave.dnlink_valid  <= '1';
         dn_lines_slave.dnlink_data   <= x"f4";
         wait for T;
-
-        dn_lines_master.dnlink_data  <= std_logic_vector(to_unsigned(NUMBER_OF_SAMPLES_MASTER, dn_lines_slave.dnlink_data'length));--x"0F"; --
-        dn_lines_slave.dnlink_data   <= std_logic_vector(to_unsigned(NUMBER_OF_SAMPLES_SLAVE, dn_lines_slave.dnlink_data'length));--x"09"; --
+        dn_lines_slave.dnlink_data  <= x"00";
         wait for T;
-
-        dn_lines_master.dnlink_valid <= '0';
+        if to_unsigned(NUMBER_OF_SAMPLES_SLAVE, dn_lines_slave.dnlink_data'length) = x"55" then
+            wait for T;
+        elsif to_unsigned(NUMBER_OF_SAMPLES_SLAVE, dn_lines_slave.dnlink_data'length) = x"EE" then
+            dn_lines_slave.dnlink_data  <= x"55"; --Escape Reset symbol
+            wait for T;
+        end if;
+        dn_lines_slave.dnlink_data <= std_logic_vector(to_unsigned(NUMBER_OF_SAMPLES_SLAVE, dn_lines_slave.dnlink_data'length));--x"09"; --
+        wait for T;
         dn_lines_slave.dnlink_valid  <= '0';
         wait for 5*T;
 
-        -- write samples:
+
+        -- write samples Master
         dn_lines_master.dnlink_valid <= '1';
         dn_lines_master.dnlink_data  <= x"f3";
         wait for T;
 
         dn_lines_master.dnlink_valid <= '1';
         for k in 0 to NUMBER_OF_SAMPLES_MASTER loop
+            if k = 85 then  -- ESCAPE_SYMBOL = 0x55
+                dn_lines_master.dnlink_data  <= x"55"; --Escape Escape symbol
+                wait for T;
+            elsif k = 238 then -- RESET_SYMBOL = 0xEE
+                dn_lines_master.dnlink_data  <= x"55"; --Escape Reset symbol
+                wait for T;
+            end if;
             dn_lines_master.dnlink_data  <= std_logic_vector(to_unsigned(k, dn_lines_master.dnlink_data'length));
             wait for T;
         end loop;
-
         dn_lines_master.dnlink_valid <= '0';
         wait for 5*T;
 
+        -- write samples Slave
         dn_lines_slave.dnlink_valid  <= '1';
         dn_lines_slave.dnlink_data   <= x"f3";
         wait for T;
-
         dn_lines_slave.dnlink_valid  <= '1';
         for k in 0 to NUMBER_OF_SAMPLES_SLAVE loop
-            dn_lines_slave.dnlink_data <= std_logic_vector(to_unsigned(k, dn_lines_slave.dnlink_data'length));
+            if k = 85 then  -- ESCAPE_SYMBOL = 0x55
+                dn_lines_slave.dnlink_data  <= x"55"; --Escape Escape symbol
+                wait for T;
+            elsif k = 238 then -- RESET_SYMBOL = 0xEE
+                dn_lines_slave.dnlink_data  <= x"55"; --Escape Reset symbol
+                wait for T;
+            end if;
+            dn_lines_slave.dnlink_data  <= std_logic_vector(to_unsigned(k, dn_lines_slave.dnlink_data'length));
             wait for T;
         end loop;
 
-        dn_lines_slave.dnlink_valid  <= '0';
-        wait for 7*T;
 
-        one_shot <= '1';
-        wait for T;
-        one_shot <= '0';
-        wait for 97*T;
+        dn_lines_slave.dnlink_valid  <= '0';
+        wait for 50*T;
 
 
         -- set start Master
@@ -198,10 +231,10 @@ begin
         dn_lines_slave.dnlink_valid <= '0';
 
 
-        wait for 90*T;
+        wait for 150*T;
 
 
-        -- set start Master         = Slave should start on sync
+        -- set start Master
         dn_lines_master.dnlink_valid <= '1';
         dn_lines_master.dnlink_data  <= x"f0";
         wait for T;
