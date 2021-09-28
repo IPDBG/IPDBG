@@ -7,9 +7,10 @@ use work.ipdbg_interface_pkg.all;
 
 entity WaveformGeneratorController is
     generic(
-        DATA_WIDTH  : natural := 8;
-        ADDR_WIDTH  : natural := 8;
-        ASYNC_RESET : boolean := true
+        DATA_WIDTH    : natural := 8;
+        ADDR_WIDTH    : natural := 8;
+        ASYNC_RESET   : boolean := true;
+        DOUBLE_BUFFER : boolean
     );
     port(
         clk                   : in  std_logic;
@@ -27,7 +28,8 @@ entity WaveformGeneratorController is
         data_samples_last     : out std_logic;
         start                 : out std_logic;
         stop                  : out std_logic;
-        enabled               : in  std_logic
+        enabled               : in  std_logic;
+        one_shot              : out std_logic
     );
 end entity WaveformGeneratorController;
 
@@ -47,16 +49,18 @@ architecture tab of WaveformGeneratorController is
     constant return_sizes_command           : std_logic_vector := "11110010"; --F2
     constant write_samples_command          : std_logic_vector := "11110011"; --F3
     constant set_numberofsamples_command    : std_logic_vector := "11110100"; --F4
-    constant return_isrunning_command       : std_logic_vector := "11110101"; --F5
+    constant return_status_command          : std_logic_vector := "11110101"; --F5
+    constant one_shot_strobe_command        : std_logic_vector := "11110110"; --F6
 
     -----------------------state machines
-    type states_t is(init, set_numberofsamples, write_samples, return_sizes, return_isrunning);
+    type states_t is(init, set_numberofsamples, write_samples, return_sizes, return_status, send_last_ack);
     signal state : states_t;
 
     type Output is(init, Zwischenspeicher, shift, get_next_data);
     signal init_Output    : Output;
 
-    signal data_size_s                      : natural range 0 to data_size;
+    signal byte_cntr                        : natural range 0 to data_size;
+    signal byte_cnt_timeout                 : natural range 0 to 63;
     signal addr_size_s                      : natural range 0 to data_size;
     signal data_samples_valid_early         : std_logic;
     signal data_samples_last_early          : std_logic;
@@ -86,7 +90,8 @@ begin
 
     process (clk, arst)
         procedure reset_assignments is begin
-            data_size_s                     <= 0;
+            byte_cntr                       <= 0;
+            byte_cnt_timeout                <= 0;
             state                           <= init;
             init_Output                     <= init;
             sizes_temporary                 <= (others => '-');
@@ -105,6 +110,7 @@ begin
             data_samples_last_early         <= '0';
             start                           <= '-';
             stop                            <= '-';
+            one_shot                        <= '-';
         end procedure reset_assignments;
     begin
         if arst = '1' then
@@ -116,6 +122,7 @@ begin
                 if ce = '1' then
                     start <= '0';
                     stop  <= '0';
+                    one_shot <= '0';
                     data_dwn_delayed <= dn_lines.dnlink_data;
                     data_samples_valid_early <= '0';
                     data_samples_last_early <= '0';
@@ -133,6 +140,9 @@ begin
                             if dn_lines.dnlink_data = stop_command then
                                 stop <= '1';
                             end if ;
+                            if dn_lines.dnlink_data = one_shot_strobe_command then
+                                one_shot <= '1';
+                            end if ;
                             if dn_lines.dnlink_data = return_sizes_command then
                                 counter <= (others => '0');
                                 sizes_temporary <= (others => '0');
@@ -140,8 +150,8 @@ begin
                                 state <= return_sizes;
                                 init_Output <= init;
                             end if ;
-                            if dn_lines.dnlink_data = return_isrunning_command then
-                                state <= return_isrunning;
+                            if dn_lines.dnlink_data = return_status_command then
+                                state <= return_status;
                             end if;
                             if dn_lines.dnlink_data = write_samples_command then
                                 data_samples_if_reset <= '1';
@@ -152,7 +162,8 @@ begin
                                 state <= set_numberofsamples;
                             end if ;
                             addr_size_s <= 0;
-                            data_size_s <= 0;
+                            byte_cntr 	<= 0;
+                            byte_cnt_timeout <= 0;
                         end if;
 
                     when return_sizes =>
@@ -192,9 +203,11 @@ begin
                             end if;
                         end case;
 
-                    when return_isrunning =>
+                    when return_status =>
                         if dn_lines.uplink_ready = '1' then
-                            up_lines.uplink_data <= "0000000" & enabled;
+                            up_lines.uplink_data <= x"00";
+                            up_lines.uplink_data(0) <= enabled;
+                            up_lines.uplink_data(1) <= '1' when DOUBLE_BUFFER else '0';
                             up_lines.uplink_valid <= '1';
                             state <= init;
                         end if;
@@ -202,25 +215,44 @@ begin
                     when write_samples =>
                         if dn_lines.dnlink_valid = '1' then
                             set_dataouts_next_byte <= '1';
-                            if (data_size_s + 1 = data_size) then
+                            if byte_cnt_timeout = 63 then
+                                byte_cnt_timeout <= 0;
+                                up_lines.uplink_data <= x"FA";
+                                if dn_lines.uplink_ready = '1' then
+                                    up_lines.uplink_valid <= '1';
+                                end if;
+                            else
+                                byte_cnt_timeout <= byte_cnt_timeout+1;
+                            end if;
+
+                            if (byte_cntr + 1 = data_size) then
                                 data_samples_valid_early <= '1';
                                 sample_counter <= sample_counter + 1;
-                                data_size_s <= 0;
+                                byte_cntr <= 0;
                                 if sample_counter  = unsigned(addr_of_last_sample_s) then
-                                    state <= init;
+                                    up_lines.uplink_valid <= '0';
+                                    state <= send_last_ack;
                                     data_samples_last_early <= '1';
                                 end if;
                             else
-                                data_size_s <= data_size_s + 1;
+                                byte_cntr <= byte_cntr + 1;
                             end if;
                         end if;
+                    when send_last_ack =>
+                    up_lines.uplink_data <= x"FB";
+                    if dn_lines.uplink_ready = '1' then
+                        up_lines.uplink_valid <= '1';
+                        state <= init;
+                    end if;
+
                     when set_numberofsamples =>
                         if dn_lines.dnlink_valid = '1' then
                             if (addr_size_s + 1 = addr_size) then
                                 state <= init;
                                 addr_of_last_sample_stb_early <= '1';
+                            else
+                                addr_size_s <= addr_size_s + 1;
                             end if;
-                            addr_size_s <= addr_size_s + 1;
                             set_addroflastsample_next_byte <= '1';
                         end if;
                     end case;

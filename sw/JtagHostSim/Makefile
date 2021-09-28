@@ -5,7 +5,7 @@ CC=gcc
 GHDL=ghdl
 DEBUG=-g
 OBJDIR=./obj
-GHDLBINDFLAGS=--workdir=$(OBJDIR)
+GHDLBINDFLAGS=--std=08 --workdir=$(OBJDIR)
 GHDLFLAGS=-O3 $(DEBUG) $(GHDLBINDFLAGS)
 
 LDFLAGS=-O3
@@ -44,15 +44,15 @@ e~tb_top.o: $(OBJDIR)/tb_top.o $(OBJDIR)/tb_top.o $(OBJDIR)/JtagHub_sim.o \
     $(OBJDIR)/LogicAnalyserTop.o $(OBJDIR)/LogicAnalyserMemory.o $(OBJDIR)/LogicAnalyserTrigger.o $(OBJDIR)/LogicAnalyserController.o \
     $(OBJDIR)/WaveformGeneratorController.o $(OBJDIR)/WaveformGeneratorMemory.o $(OBJDIR)/WaveformGeneratorTop.o \
     $(OBJDIR)/IoViewTop.o $(OBJDIR)/IoViewController.o \
-    $(OBJDIR)/IpdbgEscaping.o $(OBJDIR)/pdpRam.o
+    $(OBJDIR)/IpdbgEscaping.o $(OBJDIR)/pdpRam.o \
+    $(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) --bind $(GHDLBINDFLAGS) tb_top
 
 $(OBJDIR)/ipdbg_interface_pkg.o: ../../rtl/common/ipdbg_interface_pkg.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/tb_top.o: tb_top.vhd $(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/JtagHub_sim.o: JtagHub_sim.vhd \
-	$(OBJDIR)/ipdbg_interface_pkg.o
+$(OBJDIR)/JtagHub_sim.o: JtagHub_sim.vhd $(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/LogicAnalyserTop.o: ../../rtl/LogicAnalyser/LogicAnalyserTop.vhd \
 	$(OBJDIR)/ipdbg_interface_pkg.o
@@ -67,11 +67,13 @@ $(OBJDIR)/IpdbgEscaping.o: ../../rtl/common/IpdbgEscaping.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/pdpRam.o: ../../rtl/common/pdpRam.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/WaveformGeneratorController.o: ../../rtl/WaveformGenerator/WaveformGeneratorController.vhd
+$(OBJDIR)/WaveformGeneratorController.o: ../../rtl/WaveformGenerator/WaveformGeneratorController.vhd \
+	$(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/WaveformGeneratorMemory.o: ../../rtl/WaveformGenerator/WaveformGeneratorMemory.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/WaveformGeneratorTop.o: ../../rtl/WaveformGenerator/WaveformGeneratorTop.vhd
+$(OBJDIR)/WaveformGeneratorTop.o: ../../rtl/WaveformGenerator/WaveformGeneratorTop.vhd \
+	$(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/IoViewTop.o: ../../rtl/IoView/IoViewTop.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
