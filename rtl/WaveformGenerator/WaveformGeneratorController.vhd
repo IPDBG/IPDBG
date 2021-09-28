@@ -239,11 +239,11 @@ begin
                             end if;
                         end if;
                     when send_last_ack =>
-                    up_lines.uplink_data <= x"FB";
-                    if dn_lines.uplink_ready = '1' then
-                        up_lines.uplink_valid <= '1';
-                        state <= init;
-                    end if;
+                        up_lines.uplink_data <= x"FB";
+                        if dn_lines.uplink_ready = '1' then
+                            up_lines.uplink_valid <= '1';
+                            state <= init;
+                        end if;
 
                     when set_numberofsamples =>
                         if dn_lines.dnlink_valid = '1' then

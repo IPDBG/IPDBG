@@ -261,12 +261,11 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
             }
         }
 
-    /// get status to ensure socket stays open until all data from the actual command is out of the socket
-    buf[0] = RETURN_STATUS_COMMAND;
-    if (ipdbg_wfg_send(&socket, buf, 1))
-        printf("ERROR: not able to send command\n");
-    received = ipdbg_wfg_receive(&socket, buf1, 1);
-
+        /// get status to ensure socket stays open until all data from the actual command is out of the socket
+        buf[0] = RETURN_STATUS_COMMAND;
+        if (ipdbg_wfg_send(&socket, buf, 1))
+            printf("ERROR: not able to send command\n");
+        received = ipdbg_wfg_receive(&socket, buf1, 1);
     }
     else
     {
