@@ -386,6 +386,11 @@ int ipdbg_wfg_close(int *socket_handle)
         while(recv(*socket_handle, recvbuf, recvbuflen, 0) > 0);
     }
 #endif
+    /// Close Socket faster, so the socket can be reopened earlier
+    struct linger ls{1, 1};
+    if(setsockopt(*socket_handle, SOL_SOCKET, SO_LINGER, &ls, sizeof(ls)) == -1) //
+        perror("SOL_SOCKET Error: ");
+
     if (close(*socket_handle) >= 0)
         ret = 0;
 
