@@ -48,6 +48,7 @@ using namespace std;
 #define RETURN_SIZES_COMMAND            0xF2
 #define WRITE_SAMPLES_COMMAND           0xF3
 #define SET_NUMBEROFSAMPLES_COMMAND     0xF4
+#define RETURN_STATUS_COMMAND           0xF5
 #define ONE_SHOT_STROBE_COMMAND         0xF6
 
 #ifdef _WIN32
@@ -75,25 +76,17 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     string ipAddrStr;
 
     if(!arg0.is_string())
-    {
         ipAddrStr = "127.0.0.1";
-    }
     else
-    {
         ipAddrStr = arg0.string_value();
-    }
 
     const octave_value &arg1 = args(1);
     string portNumberStr;
 
     if(!arg1.is_string())
-    {
         portNumberStr = "4245";
-    }
     else
-    {
         portNumberStr = arg1.string_value();
-    }
 
     unsigned int DATA_WIDTH = 0;
     unsigned int ADDR_WIDTH = 0;
@@ -119,7 +112,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     }
 
     uint8_t buf[2] = {0xee, 0xee};
-    if (ipdbg_wfg_send(&socket, buf, 2)>0)
+    if (ipdbg_wfg_send(&socket, buf, 2) > 0)
         printf("ERROR: not able to send reset\n");
 
     /// get sizes
@@ -152,8 +145,8 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
     printf("ADDR_WIDTH = %d\n", ADDR_WIDTH);
     int HOST_WORD_SIZE = 8; // bits/ word
 
-    unsigned int DATA_WIDTH_BYTES = (DATA_WIDTH+HOST_WORD_SIZE -1)/HOST_WORD_SIZE;
-    unsigned int ADDR_WIDTH_BYTES = (ADDR_WIDTH+HOST_WORD_SIZE -1)/HOST_WORD_SIZE;
+    unsigned int DATA_WIDTH_BYTES = (DATA_WIDTH+HOST_WORD_SIZE -1) / HOST_WORD_SIZE;
+    unsigned int ADDR_WIDTH_BYTES = (ADDR_WIDTH+HOST_WORD_SIZE -1) / HOST_WORD_SIZE;
 
     limit_samples_max = (0x01 << ADDR_WIDTH);
     printf("limit_samples_max = %d\n", limit_samples_max);
@@ -171,7 +164,7 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
                 printf("sending start\n");
                 buf[0] = START_COMMAND;
             }
-            else if(commandStr == std::string("oneshot"))                                     /// send stop
+            else if(commandStr == std::string("oneshot"))
             {
                 printf("sending one shot\n");
                 buf[0] = ONE_SHOT_STROBE_COMMAND;
@@ -187,23 +180,22 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
         }
         else
         {
-            int64NDArray data_to_send= arg2.array_value();
+            int64NDArray data_to_send = arg2.array_value();
             dim_vector dv = data_to_send.dims();
             limit_samples = data_to_send.numel();
 
             ///set number of samples
             buf[0] = SET_NUMBEROFSAMPLES_COMMAND;
-            if (ipdbg_wfg_send(&socket, buf, 1)>0)
+            if (ipdbg_wfg_send(&socket, buf, 1) > 0)
                 printf("ERROR: not able to send command\n");
 
-            if(limit_samples>limit_samples_max)
-            {
+            if(limit_samples > limit_samples_max)
                 printf("ERROR: too many samples\n");
-            }
+
             else
             {
-                printf("limit_samples: %d\n",limit_samples);
-                uint8_t  buffer[4] = { (uint8_t)((limit_samples-1)         & 0x000000ff),
+                printf("limit_samples: %d\n", limit_samples);
+                uint8_t  buffer[4] = { (uint8_t)((limit_samples-1)          & 0x000000ff),
                                      ( (uint8_t)(((limit_samples-1) >>  8)  & 0x000000ff)),
                                      ( (uint8_t)(((limit_samples-1) >>  16) & 0x000000ff)),
                                      ( (uint8_t)(((limit_samples-1) >>  24) & 0x000000ff))};
@@ -213,13 +205,12 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
 
                 /// write samples
                 buf[0] = WRITE_SAMPLES_COMMAND;
-                if (ipdbg_wfg_send(&socket, buf, 1)>0)
-                    printf("ERROR: not able to send command");
+                if (ipdbg_wfg_send(&socket, buf, 1) > 0)
+                    printf("ERROR: not able to send command\n");
 
                 for(unsigned int i = 0; i < limit_samples; i++)
                 {
                     int64_t val = data_to_send(i);
-                    //printf("%ld, ", val);
                     uint8_t buffer [4] = { (uint8_t) (val         & 0x000000ff),
                                          ( (uint8_t)((val >>   8) & 0x000000ff)),
                                          ( (uint8_t)((val >>  16) & 0x000000ff)),
@@ -228,12 +219,76 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
                         send_escaping(&socket, &(buffer[DATA_WIDTH_BYTES-1-i]), 1);
                 }
 
-                ///send start
-                buf[0] = START_COMMAND;
-                if (ipdbg_wfg_send(&socket, buf, 1))
-                    printf("ERROR: not able to send command");
+
+                int receivedAcknowledge = (limit_samples * DATA_WIDTH_BYTES / 64) +1;
+                bool recievedTermAck;
+                uint8_t retry_count = 0;
+                while (receivedAcknowledge)
+                {
+                    int received = ipdbg_wfg_receive(&socket, buf1, 1); //??? timeout
+                    if (received < 0)
+                    {
+                        printf("ERROR: reading from socket failed\n");
+                        break;
+                    }
+                    else if (received == 0)
+                    {
+                        if (++retry_count >= 10)
+                        {
+                            printf("ERROR: timeout while writing samples\n");
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        retry_count = 0;
+                        if (*buf1 == 0xFB)
+                        {
+                            recievedTermAck = true;
+                            break;
+                        }
+                    }
+                    receivedAcknowledge -= received;
+                }
+
+                if (!recievedTermAck)
+                    printf("ERROR: Didn't receive terminating acknowledge\n");
+
+                buf[0] = buf[1] = 0xee;
+                if (ipdbg_wfg_send(&socket, buf, 2) > 0)
+                    printf("ERROR: not able to send reset\n");
+
             }
         }
+
+    /// get status to ensure socket stays open until all data from the actual command is out of the socket
+    buf[0] = RETURN_STATUS_COMMAND;
+    if (ipdbg_wfg_send(&socket, buf, 1))
+        printf("ERROR: not able to send command\n");
+    received = ipdbg_wfg_receive(&socket, buf1, 1);
+
+    }
+    else
+    {
+        /// get and print status
+        const uint8_t enabledFlag       = 0x01;
+        const uint8_t doubleBufferFlag 	= 0x02;
+
+        buf[0] = RETURN_STATUS_COMMAND;
+        if (ipdbg_wfg_send(&socket, buf, 1))
+            printf("ERROR: not able to send command\n");
+
+        received = ipdbg_wfg_receive(&socket, buf1, 1);
+
+        if(buf1[0] & enabledFlag)
+            printf("WFG is running, ");
+        else
+            printf("WFG is not running, ");
+
+        if(buf1[0] & doubleBufferFlag)
+            printf("has double buffer\n ");
+        else
+            printf("has no double buffer\n ");
     }
     ipdbg_wfg_close(&socket);
 
@@ -275,9 +330,7 @@ int ipdbg_wfg_open(int *socket_handle, string *ipAddrStr, string *portNumberStr)
     freeaddrinfo(results);
 
     if (*socket_handle < 0)
-    {
         return 1;
-    }
 
     return 0;
 }
@@ -289,14 +342,10 @@ int ipdbg_wfg_send(int *socket_handle, const uint8_t *buf, size_t len)
     out = send(*socket_handle, (char*)buf, len, 0);
 
     if (out < 0)
-    {
         return 1;
-    }
 
     if ((unsigned int)out < len)
-    {
         printf("Only sent %d/%d bytes of data.", out, (int)len);
-    }
 
     return 0;
 }
@@ -318,9 +367,7 @@ int ipdbg_wfg_receive(int *socket_handle, uint8_t *buf, int bufsize)
             return len;
         }
         else
-        {
             received += len;
-        }
     }
 
     return received;
@@ -352,17 +399,9 @@ int send_escaping(int *socket_handle, uint8_t *dataToSend, int length)
     {
         uint8_t payload = *dataToSend++;
 
-        if ( payload == (uint8_t)RESET_SYMBOL )
+        if (payload == (uint8_t)RESET_SYMBOL || payload == (uint8_t)ESCAPE_SYMBOL)
         {
             uint8_t escapeSymbol = ESCAPE_SYMBOL;
-
-            ipdbg_wfg_send(socket_handle, &escapeSymbol, 1);
-        }
-
-        if ( payload == (uint8_t)ESCAPE_SYMBOL )
-        {
-            uint8_t escapeSymbol = ESCAPE_SYMBOL;
-
             ipdbg_wfg_send(socket_handle, &escapeSymbol, 1);
         }
 
