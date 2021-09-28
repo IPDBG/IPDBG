@@ -54,9 +54,10 @@ architecture structure of WaveformGeneratorTop is
 
     component WaveformGeneratorController is
         generic(
-            DATA_WIDTH  : natural := 8;
-            ADDR_WIDTH  : natural := 8;
-            ASYNC_RESET : boolean
+            DATA_WIDTH    : natural;
+            ADDR_WIDTH    : natural;
+            ASYNC_RESET   : boolean;
+            DOUBLE_BUFFER : boolean
         );
         port(
             clk                   : in  std_logic;
@@ -120,9 +121,10 @@ begin
 
     Controller: component WaveformGeneratorController
         generic map(
-            DATA_WIDTH  => DATA_WIDTH,
-            ADDR_WIDTH  => ADDR_WIDTH,
-            ASYNC_RESET => ASYNC_RESET
+            DATA_WIDTH    => DATA_WIDTH,
+            ADDR_WIDTH    => ADDR_WIDTH,
+            ASYNC_RESET   => ASYNC_RESET,
+            DOUBLE_BUFFER => DOUBLE_BUFFER
         )
         port map(
             clk                     => clk,

@@ -71,6 +71,7 @@ architecture behavioral of WaveformGeneratorMemory is
 
     signal data_samples_last_d : std_logic;
 
+    signal start_loc           : std_logic;
     signal next_rd_buffer      : std_logic;
     signal next_rd_stb         : std_logic;
     signal next_rd_addr_last   : unsigned(ADDR_WIDTH-1 downto 0);
@@ -90,10 +91,13 @@ begin
     writeFsm: block
         signal we_com        : std_logic;
         signal curr_w_buffer : bit;
+        signal start_sreg    : std_logic_vector(2 downto 0);
     begin
+    	start_loc <= start_sreg(start_sreg'left);
         process (clk) begin
             if rising_edge(clk) then
                 if ce = '1' then
+                    start_sreg <= start_sreg(start_sreg'left-1 downto start_sreg'right) & start;
                     write_enable <= '0';
                     write_enable_b2 <= '0';
                     if data_samples_if_reset = '1' then
@@ -241,7 +245,7 @@ begin
 
                         if data_out_enable = '1' then
                             start_latched <= '0';
-                        elsif start = '1' then
+                        elsif start_loc = '1' then
                             start_latched <= '1';
                         end if;
                         if data_out_enable = '1' then
@@ -270,7 +274,7 @@ begin
                                     state <= oneshot;
                                     first_address_set <= '1';
                                     set_enable <= '1';
-                                elsif (start_latched or start) = '1' then
+                                elsif (start_latched or start_loc) = '1' then
                                     if SYNC_MASTER then
                                         state <= running;
                                         first_address_set <= '1';
