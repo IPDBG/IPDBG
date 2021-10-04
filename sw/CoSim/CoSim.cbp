@@ -23,8 +23,6 @@
 		<Compiler>
 			<Add option="-std=c++11" />
 		</Compiler>
-		<Linker>
-		</Linker>
 		<Unit filename="../../rtl/IoView/IoViewController.vhd" />
 		<Unit filename="../../rtl/IoView/IoViewTop.vhd" />
 		<Unit filename="../../rtl/JtagHub/JtagCdc.vhd" />
@@ -50,6 +48,8 @@
 		<Unit filename="../../rtl/common/IpdbgEscaping.vhd" />
 		<Unit filename="JtagAdapter.vhd" />
 		<Unit filename="Makefile" />
+		<Unit filename="README.md" />
+		<Unit filename="ipdbg_JtagSim.cfg" />
 		<Unit filename="main.cpp" />
 		<Unit filename="tb_top.vhd" />
 		<Extensions />
