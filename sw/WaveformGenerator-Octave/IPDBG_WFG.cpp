@@ -117,22 +117,38 @@ DEFUN_DLD (IPDBG_WFG,args,nargout,
         return octave_value_list();
     }
 
+    int ret = RET_OK;
     if (nargin > 2)
     {
         const octave_value &arg2 = args(2);
 
         if (arg2.is_string())
-            ipdbg_wfg_send_command(arg2.string_value(), &socket);
+            ret = ipdbg_wfg_send_command(arg2.string_value(), &socket);
         else
         {
             int64NDArray data_to_send = arg2.array_value();
             ipdbg_wfg_sizes.limit_samples = data_to_send.numel();
 
             if (ipdbg_wfg_sizes.limit_samples > ipdbg_wfg_sizes.limit_samples_max)
+            {
                 printf("Error: too many samples\n");
+                ret = RET_ERR;
+            }
             else
-                ipdbg_wfg_send_waveform(&socket, &ipdbg_wfg_sizes, &data_to_send);
+                ret = ipdbg_wfg_send_waveform(&socket, &ipdbg_wfg_sizes, &data_to_send);
+
+            if (ret == RET_OK && nargin > 3)
+            {
+                const octave_value &arg3 = args(3);
+                if (arg3.is_string())
+                    ret = ipdbg_wfg_send_command(arg3.string_value(), &socket);
+            }
         }
+
+        /// get status to ensure socket stays open until
+        /// all data has been processed by the remote
+        if (ret == RET_OK)
+            ipdbg_wfg_read_status(&socket, NULL, 1);
     }
     else
     {
@@ -204,10 +220,6 @@ int ipdbg_wfg_close(int *socket_handle)
         while (recv(*socket_handle, recvbuf, recvbuflen, 0) > 0);
     }
 #endif
-    /// Close Socket faster, so the socket_handle can be reopened earlier
-    struct linger ls{1, 1};
-    if (setsockopt(*socket_handle, SOL_SOCKET, SO_LINGER, &ls, sizeof(ls)) == -1)
-        printf("Error: SOL_SOCKET Error\n");
 
     if (close(*socket_handle) >= 0)
         ret = 0;
@@ -479,10 +491,6 @@ int ipdbg_wfg_send_waveform(int *socket_handle,
         printf("Error:sending waveform data failed\n");
         return ret;
     }
-
-    /// get status to ensure socket stays open until
-    /// all data has been processed by the remote
-    ret = ipdbg_wfg_read_status(socket_handle, NULL, 1);
 
     return ret;
 }
