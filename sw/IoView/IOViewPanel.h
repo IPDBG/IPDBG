@@ -42,6 +42,7 @@ public:
 
 private:
     void onCheckBox(wxCommandEvent& event);
+    void OnTextEner(wxCommandEvent &event);
 
     uint32_t numberOfInputs_;
     uint32_t numberOfOutputs_;
@@ -50,13 +51,15 @@ private:
     wxBoxSizer* mainSizer_;
     wxBoxSizer* bInputLedsSizer_;
     wxBoxSizer* bInputTextSizer_;
-    wxStaticBoxSizer* sbOutputsSizer_;
+    wxBoxSizer* bOutputCheckboxSizer_;
+    wxBoxSizer* bOutputTextSizer_;
 
 protected:
     std::vector<wxCheckBox*> outputCheckBoxes_;
     std::vector<awxLed*> inputLeds_;
 
     wxTextCtrl *inputText_;
+    wxTextCtrl *outputText_;
 
     DECLARE_EVENT_TABLE()
 

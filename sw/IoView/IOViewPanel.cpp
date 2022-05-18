@@ -6,6 +6,7 @@
 
 BEGIN_EVENT_TABLE(IOViewPanel, wxPanel)
     EVT_CHECKBOX(wxID_ANY, IOViewPanel::onCheckBox)
+    EVT_TEXT_ENTER(wxID_ANY, IOViewPanel::OnTextEner)
 END_EVENT_TABLE()
 
 
@@ -14,40 +15,117 @@ IOViewPanel::IOViewPanel( wxWindow* parent, IOViewPanelObserver *obs ):
     numberOfInputs_(0),
     numberOfOutputs_(0),
     observer_(obs),
-    inputText_(nullptr)
+    inputText_(nullptr),
+    outputText_(nullptr)
 {
-    mainSizer_ = new wxBoxSizer( wxVERTICAL );
+    mainSizer_ = new wxBoxSizer(wxVERTICAL);
 
-    wxStaticBoxSizer *sbInputsSizer = new wxStaticBoxSizer( wxVERTICAL, this, "Inputs" );
-    mainSizer_->Add( sbInputsSizer, 1, wxEXPAND, 5 );
+    wxStaticBoxSizer *sbInputsSizer = new wxStaticBoxSizer(wxVERTICAL, this, "Inputs");
+    mainSizer_->Add(sbInputsSizer, 1, wxEXPAND, 5);
 
-    bInputLedsSizer_ = new wxBoxSizer( wxHORIZONTAL );
-    sbInputsSizer->Add( bInputLedsSizer_, 1, wxEXPAND, 5 );
+    bInputLedsSizer_ = new wxBoxSizer(wxHORIZONTAL);
+    sbInputsSizer->Add(bInputLedsSizer_, 1, wxEXPAND, 5);
 
-    bInputTextSizer_ = new wxBoxSizer( wxHORIZONTAL );
-    sbInputsSizer->Add( bInputTextSizer_, 1, wxEXPAND, 5 );
+    bInputTextSizer_ = new wxBoxSizer(wxHORIZONTAL);
+    sbInputsSizer->Add(bInputTextSizer_, 1, wxEXPAND, 5);
 
-    sbOutputsSizer_ = new wxStaticBoxSizer( wxHORIZONTAL, this, "Outputs" );
-    mainSizer_->Add( sbOutputsSizer_, 1, wxEXPAND, 5 );
+    wxStaticBoxSizer *sbOutputsSizer = new wxStaticBoxSizer(wxVERTICAL, this, "Outputs");
+    mainSizer_->Add(sbOutputsSizer, 1, wxEXPAND, 5);
 
-    this->SetSizer( mainSizer_ );
+    bOutputCheckboxSizer_ = new wxBoxSizer(wxHORIZONTAL);
+    sbOutputsSizer->Add(bOutputCheckboxSizer_, 1, wxEXPAND, 5);
+
+    bOutputTextSizer_ = new wxBoxSizer(wxHORIZONTAL);
+    sbOutputsSizer->Add(bOutputTextSizer_, 1, wxEXPAND, 5);
+
+    this->SetSizer(mainSizer_);
     this->Layout();
 }
 
-void IOViewPanel::onCheckBox(wxCommandEvent& event)
+void IOViewPanel::onCheckBox(wxCommandEvent &)
 {
-    const size_t numberOfOutputBytes = (numberOfOutputs_+7)/8;
+    const size_t numberOfOutputBytes = (numberOfOutputs_ + 7) / 8;
     uint8_t *buffer = new uint8_t[numberOfOutputBytes];
 
-    for(size_t idx = 0 ; idx < numberOfOutputBytes ; ++idx)
+    for (size_t idx = 0 ; idx < numberOfOutputBytes ; ++idx)
         buffer[idx] = 0;
 
     for (size_t idx = 0 ; idx < numberOfOutputs_ ; ++idx)
-        if(outputCheckBoxes_[numberOfOutputs_-1-idx]->IsChecked())
+        if (outputCheckBoxes_[numberOfOutputs_ - 1 - idx]->IsChecked())
             buffer[idx >> 3] |= (0x01 << (idx & 0x07));
 
-    if(observer_)
+    wxString str{""};
+    for (size_t idx = 0 ; idx < numberOfOutputBytes ; ++idx)
+    {
+        uint32_t d = buffer[idx];
+        str = wxString::Format("%02x", d) + str;
+    }
+    str = "0x" + str;
+    outputText_->SetValue(str);
+
+    if (observer_)
         observer_->setOutput(buffer, numberOfOutputBytes);
+
+    delete[] buffer;
+}
+
+void IOViewPanel::OnTextEner(wxCommandEvent &e)
+{
+    const size_t numberOfOutputBytes = (numberOfOutputs_ + 7) / 8;
+    uint8_t *buffer = new uint8_t[numberOfOutputBytes];
+
+    wxString txt = outputText_->GetValue();
+    if (txt.StartsWith("0x"))
+        txt = txt.substr(2);
+
+    while (txt.length() < 2 * numberOfOutputBytes)
+        txt = "0" + txt;
+
+    bool failed = false;
+    if (txt.length() > 2 * numberOfOutputBytes)
+        failed = true;
+    else
+        for (size_t idx = 0 ; idx < numberOfOutputBytes ; ++idx)
+        {
+            buffer[idx] = 0;
+            wxString ls = txt.substr(txt.length() - 2);
+            long temp = 0;
+            if (ls.ToLong(&temp,16))
+                buffer[idx] = temp & 0xff;
+            else
+            {
+                failed = true;
+                break;
+            }
+            txt = txt.substr(0, txt.length() - 2);
+        }
+    if (failed)
+    {
+        for (size_t idx = 0 ; idx < numberOfOutputBytes ; ++idx)
+            buffer[idx] = 0;
+
+        for (size_t idx = 0 ; idx < numberOfOutputs_ ; ++idx)
+            if (outputCheckBoxes_[numberOfOutputs_ - 1 - idx]->IsChecked())
+                buffer[idx >> 3] |= (0x01 << (idx & 0x07));
+    }
+    wxString str{""};
+    for (size_t idx = 0 ; idx < numberOfOutputBytes ; ++idx)
+    {
+        uint32_t d = buffer[idx];
+        str = wxString::Format("%02x", d) + str;
+    }
+    str = "0x" + str;
+    outputText_->SetValue(str);
+
+    if (!failed)
+    {
+        for (size_t idx = 0 ; idx < numberOfOutputs_ ; ++idx)
+            outputCheckBoxes_[numberOfOutputs_ - 1 - idx]->SetValue(
+                buffer[idx >> 3] & (0x01 << (idx & 0x07))
+            );
+        if (observer_)
+            observer_->setOutput(buffer, numberOfOutputBytes);
+    }
 
     delete[] buffer;
 }
@@ -67,7 +145,7 @@ void IOViewPanel::setLeds(uint8_t *buffer, size_t len)
     static std::string oldText("");
     std::string text;
 
-    for(size_t idx=0; idx<len; idx++)
+    for (size_t idx=0; idx<len; idx++)
     {
         char hexString[3];
         uint8_t validMask=0xff;
@@ -77,7 +155,7 @@ void IOViewPanel::setLeds(uint8_t *buffer, size_t len)
         sprintf(hexString, "%02x", buffer[len-1-idx]&validMask);
         text.append(hexString);
     }
-    if(text.compare(oldText) != 0)
+    if (text.compare(oldText) != 0)
     {
         // Update value only if it has changed. This prevents from flicker.
         inputText_->Clear();
@@ -89,21 +167,36 @@ void IOViewPanel::setLeds(uint8_t *buffer, size_t len)
 
 void IOViewPanel::initOutputs(unsigned int numberOfOutputs)
 {
-    for(size_t i = 0 ; i < outputCheckBoxes_.size() ; ++i)
+    for (size_t i = 0 ; i < outputCheckBoxes_.size() ; ++i)
         delete outputCheckBoxes_[i];
     outputCheckBoxes_.clear();
 
+    if (outputText_)
+    {
+        delete outputText_;
+        outputText_ = nullptr;
+    }
+
     numberOfOutputs_ = numberOfOutputs;
 
-    for(uint32_t i = 0 ; i < numberOfOutputs_ ; ++i)
+    for (uint32_t i = 0 ; i < numberOfOutputs_ ; ++i)
     {
-        wxString str = wxString::Format(_T("P%d"), numberOfOutputs_-1-i);
-        wxCheckBox *checkBox = new wxCheckBox( this, wxID_ANY, str, wxDefaultPosition, wxDefaultSize, 0 );
-        sbOutputsSizer_->Add( checkBox, 0, wxALL, 5 );
+        wxString str = wxString::Format(_T("P%d"), numberOfOutputs_- 1 - i);
+        wxCheckBox *checkBox = new wxCheckBox(this, wxID_ANY, str, wxDefaultPosition, wxDefaultSize, 0);
+        bOutputCheckboxSizer_->Add(checkBox, 0, wxALL, 5);
         outputCheckBoxes_.push_back(checkBox);
     }
 
-    this->SetSizer( mainSizer_ );
+    if (numberOfOutputs > 0)
+    {
+        wxString str{"0x"};
+        for (size_t k = 0 ; k < (numberOfOutputs + 3) / 4 ; ++k)
+            str += "0";
+        outputText_ = new wxTextCtrl(this, wxID_ANY, str, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+        bOutputTextSizer_->Add(outputText_, 0, wxALL, 5);
+    }
+
+    this->SetSizer(mainSizer_);
     this->Layout();
 }
 
@@ -131,11 +224,11 @@ void IOViewPanel::initInputs(unsigned int numberOfInputs)
 
     if(numberOfInputs > 0)
     {
-        wxTextCtrl *text = new wxTextCtrl(this, wxID_ANY);
-        bInputTextSizer_->Add(text, 0, wxALL, 5);
-        inputText_ = text;
+        inputText_ = new wxTextCtrl(this, wxID_ANY);
+        inputText_->SetEditable(false);
+        bInputTextSizer_->Add(inputText_, 0, wxALL, 5);
     }
 
-    this->SetSizer( mainSizer_ );
+    this->SetSizer(mainSizer_);
     this->Layout();
 }
