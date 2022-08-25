@@ -207,7 +207,11 @@ begin
                         if dn_lines.uplink_ready = '1' then
                             up_lines.uplink_data <= x"00";
                             up_lines.uplink_data(0) <= enabled;
-                            up_lines.uplink_data(1) <= '1' when DOUBLE_BUFFER else '0';
+                            if DOUBLE_BUFFER then
+                                up_lines.uplink_data(1) <= '1';
+                            else
+                                up_lines.uplink_data(1) <= '0';
+                            end if;
                             up_lines.uplink_valid <= '1';
                             state <= init;
                         end if;
