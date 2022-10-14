@@ -1,9 +1,5 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-library ecp3;
-use ecp3.components.all;
 
 entity dffpc is
     port(
@@ -14,7 +10,15 @@ entity dffpc is
     );
 end entity dffpc;
 
-architecture lfe3 of dffpc is
+architecture ecp5 of dffpc is
+	component FD1P3AX is
+		port(
+			Q  : out std_logic;
+			CK : in  std_logic;
+			SP : in  std_logic;
+			D  : in  std_logic
+		);
+	end component FD1P3AX;
 begin
     FF : FD1P3AX
         port map
@@ -24,4 +28,4 @@ begin
             SP => ce,
             D  => d
         );
-end architecture lfe3;
+end architecture ecp5;

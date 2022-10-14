@@ -7,8 +7,9 @@ use work.ipdbg_interface_pkg.all;
 
 entity JtagHub is
     generic(
-        MFF_LENGTH          : natural := 3;
-        FLOW_CONTROL_ENABLE : std_logic_vector(6 downto 0)
+        MFF_LENGTH           : natural := 3;
+        FLOW_CONTROL_ENABLE  : std_logic_vector(6 downto 0);
+        TDI_HAS_EXT_REGISTER : boolean := false
     );
     port(
         TCK        : in  std_logic;
@@ -38,8 +39,9 @@ end entity JtagHub;
 architecture structure of JtagHub is
     component JtagCdc is
         generic(
-            MFF_LENGTH          : natural;
-            FLOW_CONTROL_ENABLE : std_logic_vector(6 downto 0)
+            MFF_LENGTH           : natural;
+            FLOW_CONTROL_ENABLE  : std_logic_vector(6 downto 0);
+            TDI_HAS_EXT_REGISTER : boolean
         );
         port(
             clk        : in  std_logic;
@@ -113,8 +115,9 @@ begin
 
     CDC_i : component JtagCdc
         generic map(
-            MFF_LENGTH          => MFF_LENGTH,
-            FLOW_CONTROL_ENABLE => FLOW_CONTROL_ENABLE
+            MFF_LENGTH           => MFF_LENGTH,
+            FLOW_CONTROL_ENABLE  => FLOW_CONTROL_ENABLE,
+            TDI_HAS_EXT_REGISTER => TDI_HAS_EXT_REGISTER
         )
         port map(
             clk        => clk,
