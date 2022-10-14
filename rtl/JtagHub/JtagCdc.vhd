@@ -7,8 +7,9 @@ use work.ipdbg_interface_pkg.all;
 
 entity JtagCdc is
     generic(
-        MFF_LENGTH          : natural := 3;
-        FLOW_CONTROL_ENABLE : std_logic_vector(6 downto 0)
+        MFF_LENGTH           : natural := 3;
+        FLOW_CONTROL_ENABLE  : std_logic_vector(6 downto 0);
+        TDI_HAS_EXT_REGISTER : boolean := false
     );
     port(
         clk        : in  std_logic;
@@ -105,9 +106,24 @@ begin
         update_en <= UPDATE and USER;
 
         update_req <= update_en;
+
         dwn_transfer_data_x            <= dr(DATA_LENGTH-1 downto 0);
         dwn_transfer_function_number_x <= dr(DATA_LENGTH+FUNCTION_LENGTH-1  downto DATA_LENGTH);
-        dwn_transfer_register_valid_x  <= dr(DATA_LENGTH+FUNCTION_LENGTH+XOFF_LENGTH);
+        no_ext_reg_on_tdi: if TDI_HAS_EXT_REGISTER = false generate begin
+            dwn_transfer_register_valid_x  <= dr(DATA_LENGTH+FUNCTION_LENGTH+XOFF_LENGTH);
+        end generate;
+        with_ext_reg_on_tdi: if TDI_HAS_EXT_REGISTER generate
+            signal shift_en_before : std_logic;
+        begin
+            process(DRCLK)begin
+                if rising_edge(DRCLK) then
+                    shift_en_before <= shift_en;
+                    if shift_en = '0' and shift_en_before = '1' then -- we are in exit1 now
+                        dwn_transfer_register_valid_x <= TDI;
+                    end if;
+                end if;
+            end process;
+        end generate;
 
         process(DRCLK)begin
             if rising_edge(DRCLK) then
@@ -157,9 +173,32 @@ begin
             clock_enable <= capture_en or shift_en;
 
             gen_ffs: for I in 0 to DR_LENGTH-1 generate
-                signal d            : std_logic;
+                signal d                      : std_logic;
+                -- tdi is registerd outside this component (lattice jtagx).
+                -- We need to be able to load all the dr flops on capture
+                -- so for the first shift cycle the input to the 2nd flop is from the first
+                -- local flop and afterwards from tdi.
+                constant mux_to_skip_first_dr : boolean := I = DR_LENGTH - 2 and TDI_HAS_EXT_REGISTER;
             begin
-                d <= dr(I+1) when (capture_en = '0') else dr_in(I);
+                with_skip_first_dr_mux: if mux_to_skip_first_dr generate
+                    signal skip_first_dr : std_logic;
+                begin
+                    process(DRCLK)begin
+                        if rising_edge(DRCLK) then
+                            if capture_en = '1' then
+                                skip_first_dr <= '0';
+                            elsif shift_en = '1' then
+                                skip_first_dr <= '1';
+                            end if;
+                        end if;
+                    end process;
+                    d <= dr_in(I) when (capture_en = '1') else
+                         TDI      when (skip_first_dr = '1') else
+                         dr(I + 1);
+                end generate;
+                no_skip_first_dr_mux: if not mux_to_skip_first_dr generate begin
+                    d <= dr_in(I) when (capture_en = '1') else dr(I + 1);
+                end generate;
 
                 dr_ffs : dffpc -- these flops are also used for cdc of up_transfer_register_valid
                     port map(
