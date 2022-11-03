@@ -14,7 +14,7 @@ entity dffpc is
     );
 end entity dffpc;
 
-architecture structure of dffpc is
+architecture intel_arch of dffpc is
 begin
     FF_inst : DFFE
         port map
@@ -26,4 +26,4 @@ begin
         d    => d,
         q    => q
         );
-end architecture structure;
+end architecture intel_arch;

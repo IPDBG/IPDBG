@@ -17,10 +17,9 @@ entity IpdbgTap is
     );
 end entity;
 
-architecture structure of IpdbgTap is
-
-COMPONENT sld_virtual_jtag
-        GENERIC (
+architecture vjtag_arch of IpdbgTap is
+    component sld_virtual_jtag
+        generic (
             sld_auto_instance_index : STRING;
             sld_instance_index      : NATURAL;
             sld_ir_width            : NATURAL;
@@ -29,43 +28,41 @@ COMPONENT sld_virtual_jtag
             sld_sim_total_length    : NATURAL;
             lpm_type                : STRING
         );
-        PORT (
-            tdi                 : OUT STD_LOGIC ;
-            jtag_state_rti_type : OUT STD_LOGIC ;
-            jtag_state_e1dr     : OUT STD_LOGIC ;
-            jtag_state_e2dr     : OUT STD_LOGIC ;
-            tms                 : OUT STD_LOGIC ;
-            jtag_state_pir      : OUT STD_LOGIC ;
-            jtag_state_tlr      : OUT STD_LOGIC ;
-            tck                 : OUT STD_LOGIC ;
-            jtag_state_sir      : OUT STD_LOGIC ;
-            ir_in               : OUT STD_LOGIC_VECTOR (1 DOWNTO 0);
-            virtual_state_cir   : OUT STD_LOGIC ;
-            virtual_state_pdr   : OUT STD_LOGIC ;
-            ir_out              : IN STD_LOGIC_VECTOR (1 DOWNTO 0);
-            virtual_state_uir   : OUT STD_LOGIC ;
-            jtag_state_cir      : OUT STD_LOGIC ;
-            jtag_state_uir      : OUT STD_LOGIC ;
-            jtag_state_pdr      : OUT STD_LOGIC ;
-            tdo                 : IN STD_LOGIC ;
-            jtag_state_sdrs     : OUT STD_LOGIC ;
-            virtual_state_sdr   : OUT STD_LOGIC ;
-            virtual_state_cdr   : OUT STD_LOGIC ;
-            jtag_state_sdr      : OUT STD_LOGIC ;
-            jtag_state_cdr      : OUT STD_LOGIC ;
-            virtual_state_udr   : OUT STD_LOGIC ;
-            jtag_state_udr      : OUT STD_LOGIC ;
-            jtag_state_sirs     : OUT STD_LOGIC ;
-            jtag_state_e1ir     : OUT STD_LOGIC ;
-            jtag_state_e2ir     : OUT STD_LOGIC ;
-            virtual_state_e1dr  : OUT STD_LOGIC ;
-            virtual_state_e2dr  : OUT STD_LOGIC
+        port (
+            tdi                 : out std_logic ;
+            jtag_state_rti_type : out std_logic ;
+            jtag_state_e1dr     : out std_logic ;
+            jtag_state_e2dr     : out std_logic ;
+            tms                 : out std_logic ;
+            jtag_state_pir      : out std_logic ;
+            jtag_state_tlr      : out std_logic ;
+            tck                 : out std_logic ;
+            jtag_state_sir      : out std_logic ;
+            ir_in               : out std_logic_vector (1 downto 0);
+            virtual_state_cir   : out std_logic ;
+            virtual_state_pdr   : out std_logic ;
+            ir_out              : in  std_logic_vector (1 downto 0);
+            virtual_state_uir   : out std_logic ;
+            jtag_state_cir      : out std_logic ;
+            jtag_state_uir      : out std_logic ;
+            jtag_state_pdr      : out std_logic ;
+            tdo                 : in  std_logic ;
+            jtag_state_sdrs     : out std_logic ;
+            virtual_state_sdr   : out std_logic ;
+            virtual_state_cdr   : out std_logic ;
+            jtag_state_sdr      : out std_logic ;
+            jtag_state_cdr      : out std_logic ;
+            virtual_state_udr   : out std_logic ;
+            jtag_state_udr      : out std_logic ;
+            jtag_state_sirs     : out std_logic ;
+            jtag_state_e1ir     : out std_logic ;
+            jtag_state_e2ir     : out std_logic ;
+            virtual_state_e1dr  : out std_logic ;
+            virtual_state_e2dr  : out std_logic
         );
-    END COMPONENT;
-
+    end component;
 begin
-
-        BSCAN_MAX10_inst  :  sld_virtual_jtag
+    vjtag_i  :  sld_virtual_jtag
         generic map(
             sld_auto_instance_index => "YES",
             sld_instance_index      => 0,
@@ -109,4 +106,4 @@ begin
         );
 	 user <= '1';
 
-end architecture structure;
+end architecture vjtag_arch;
