@@ -99,8 +99,6 @@ architecture tab of LogicAnalyserController is
     signal theend                   : std_logic;
     signal la_data_temporary        : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal la_data_temporary_next   : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal sizes_temporary          : std_logic_vector(31 downto 0);
-    signal send                     : std_logic_vector(7 downto 0);
     signal arst, srst               : std_logic;
 
     signal data_dwn_delayed         : std_logic_vector(7 downto 0);
@@ -258,7 +256,6 @@ begin
             counter                  <= (others => '-');
             import_ADDR              <= '-';
             la_data_temporary        <= (others => '-');
-            sizes_temporary          <= (others => '-');
             ende_ausgabe             <= '0';
             theend                   <= '0';
             set_delay_next_byte      <= '0';
@@ -300,7 +297,6 @@ begin
                         end if;
 
                         if get_sizes_active = '1' then
-                            sizes_temporary <= (others => '0');
                             state <= return_sizes;
                             import_ADDR <= '0';
                         end if;
@@ -322,93 +318,57 @@ begin
                         end if;
 
                     when return_id =>
-
-                        case init_Output is
-                        when init =>
-                            if dn_lines.uplink_ready = '1' then
-                                init_Output <= Zwischenspeicher;
-                                send <= I;
-                                counter <= (others => '0');
-                            end if;
-
-                        when Zwischenspeicher =>
-                            if dn_lines.uplink_ready = '1' then
-                                up_lines.uplink_data <= send;
-                                up_lines.uplink_valid <= '1';
-                                counter <= counter + 1;
-                                init_Output <= shift;
-                            end if;
-                         when shift =>
-                            up_lines.uplink_valid <= '0';
-                            init_Output <= get_next_data;
-
-                        when get_next_data =>
-
-                           if counter = to_unsigned(1, counter'length) then
-                                send <= D;
-                                 init_Output <= Zwischenspeicher;
-                           end if;
-                           if counter = to_unsigned(2, counter'length) then
-                                send <= B;
-                                init_Output <= Zwischenspeicher;
-                           end if;
-                           if counter = to_unsigned(3, counter'length) then
-                                send <= G;
-                                init_Output <= Zwischenspeicher;
-                           end if;
-                           if counter = to_unsigned(4, counter'length) then
-                                init_Output <= init;
-                                state <= init;
-                           end if;
-
+                        case counter(1 downto 0) is
+                        when   "00" => up_lines.uplink_data <= I;
+                        when   "01" => up_lines.uplink_data <= D;
+                        when   "10" => up_lines.uplink_data <= B;
+                        when others => up_lines.uplink_data <= G;
                         end case;
 
+                        case init_Output is
+                        when init =>
+                            up_lines.uplink_valid <= '0';
+                            if dn_lines.uplink_ready = '1' then
+                                up_lines.uplink_valid <= '1';
+                                counter <= counter + 1;
+                                if counter(1 downto 0) = 3 then
+                                    state <= init;
+                                else
+                                 init_Output <= Zwischenspeicher;
+                           end if;
+                           end if;
+                        when others => --Zwischenspeicher =>
+                            up_lines.uplink_valid <= '0';
+                                init_Output <= init;
+                        end case;
 
                     when return_sizes =>
+                        case counter(2 downto 0) is
+                        when  "000" => up_lines.uplink_data <= DATA_WIDTH_slv(7 downto 0);
+                        when  "001" => up_lines.uplink_data <= DATA_WIDTH_slv(15 downto 8);
+                        when  "010" => up_lines.uplink_data <= DATA_WIDTH_slv(23 downto 16);
+                        when  "011" => up_lines.uplink_data <= DATA_WIDTH_slv(31 downto 24);
+                        when  "100" => up_lines.uplink_data <= ADDR_WIDTH_slv(7 downto 0);
+                        when  "101" => up_lines.uplink_data <= ADDR_WIDTH_slv(15 downto 8);
+                        when  "110" => up_lines.uplink_data <= ADDR_WIDTH_slv(23 downto 16);
+                        when others => up_lines.uplink_data <= ADDR_WIDTH_slv(31 downto 24);
+                        end case;
 
                         case init_Output is
                         when init =>
-                            if dn_lines.uplink_ready = '1' then
-                                sizes_temporary <= DATA_WIDTH_slv;
-                                init_Output <= Zwischenspeicher;
-                            end if;
-
-                        when Zwischenspeicher =>
-                            if dn_lines.uplink_ready = '1' then
-                                up_lines.uplink_data <= sizes_temporary(up_lines.uplink_data'range);
-                                up_lines.uplink_valid <= '1';
-                                sizes_temporary <= x"00" & sizes_temporary(sizes_temporary'left downto up_lines.uplink_data'length);
-                                counter <= counter + 1;
-                                init_Output <= shift;
-                            end if;
-
-                        when shift =>
                             up_lines.uplink_valid <= '0';
-
-                            if dn_lines.uplink_ready = '0' then
-                                init_Output <= Zwischenspeicher;
-                            end if;
-
-                            if counter = to_unsigned(4, counter'length) then
-                                if import_ADDR = '0' then
-                                    init_Output <= get_next_data;
-                                end if;
-                            end if;
-
-                            if counter = to_unsigned(4, counter'length) then
-                                if import_ADDR = '1' then
-                                    init_Output <= init;
-                                    state <= init;
-                                end if;
-                            end if;
-
-                        when get_next_data =>
                             if dn_lines.uplink_ready = '1' then
-                                counter <= (others => '0');
-                                import_ADDR <= '1';
-                                sizes_temporary <= ADDR_WIDTH_slv;
+                                up_lines.uplink_valid <= '1';
+                                counter <= counter + 1;
+                                if counter(2 downto 0) = 7 then
+                                    state <= init;
+                                else
                                 init_Output <= Zwischenspeicher;
                             end if;
+                                end if;
+                        when others => --Zwischenspeicher =>
+                            up_lines.uplink_valid <= '0';
+                                    init_Output <= init;
                         end case;
 
                     when logic_analyser =>
@@ -605,7 +565,7 @@ begin
 
     prepare_from_wide_data: if DATA_WIDTH > HOST_WORD_SIZE generate begin
         data_up_from_la_data <= la_data_temporary(up_lines.uplink_data'range);
-        la_data_temporary_next <= x"00" & la_data_temporary(la_data_temporary'left downto up_lines.uplink_data'length);
+        la_data_temporary_next <= "--------" & la_data_temporary(la_data_temporary'left downto up_lines.uplink_data'length);
     end generate;
 
     set_trigger_narrow: if DATA_WIDTH <= HOST_WORD_SIZE generate begin
