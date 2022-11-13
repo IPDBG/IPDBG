@@ -65,12 +65,12 @@ architecture tab of LogicAnalyserMemory is
     signal buffering_state       : states_t;
 
     signal write_data            : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal read_data             : std_logic_vector(DATA_WIDTH-1 downto 0):= (others => '0');
+    signal read_data             : std_logic_vector(DATA_WIDTH-1 downto 0);
 
     signal write_address         : unsigned(ADDR_WIDTH-1 downto 0);
     signal read_address          : unsigned(ADDR_WIDTH-1 downto 0);
 
-    signal delay_s               : unsigned(counter'range);
+    signal delay_s               : unsigned(ADDR_WIDTH - 1 downto 0);
 
     signal counter_near_max      : std_logic; --near means max -1
     signal counter_near_delay    : std_logic; --near means delay_s -1
@@ -122,7 +122,7 @@ begin
                         finish <= '0';
                         counter <= (others => '0');
                         full <= '0';
-                        delay_s <= to_01(unsigned('0' & delay));
+                        delay_s <= to_01(unsigned(delay));
                         counter_near_max <= '0';
                         if trigger_active = '1' then -- wait until trigger is active
                             --report "delay is " & integer'image(to_integer(unsigned(delay)));
@@ -133,7 +133,7 @@ begin
                             end if;
                         end if;
                         data_ready <= (others => '0');
-                        if to_01(unsigned('0' & delay)) =to_unsigned(1, delay_s'length) then
+                        if to_01(unsigned(delay)) = 1 then
                             counter_near_delay <= '1';
                         else
                             counter_near_delay <= '0';
@@ -151,7 +151,7 @@ begin
                             if counter = counter_nearmax_val then
                                 counter_near_max <= '1';
                             end if;
-                            if counter + 2 = delay_s then
+                            if counter + 2 = ('0' & delay_s) then
                                 counter_near_delay <= '1';
                             else
                                 counter_near_delay <= '0';
@@ -268,4 +268,3 @@ begin
 
 
 end architecture tab;
-
