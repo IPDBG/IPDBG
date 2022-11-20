@@ -10,7 +10,7 @@ entity dffpc is
     );
 end entity dffpc;
 
-architecture ecp5 of dffpc is
+architecture ecp5_arch of dffpc is
 	component FD1P3AX is
 		port(
 			Q  : out std_logic;
@@ -28,4 +28,4 @@ begin
             SP => ce,
             D  => d
         );
-end architecture ecp5;
+end architecture ecp5_arch;

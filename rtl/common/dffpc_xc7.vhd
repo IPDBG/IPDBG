@@ -14,7 +14,7 @@ entity dffpc is
     );
 end entity dffpc;
 
-architecture xc7 of dffpc is
+architecture xc7_arch of dffpc is
 begin
     FF : FDRE
         generic map
@@ -29,4 +29,4 @@ begin
             D  => d,
             R  => '0'
         );
-end architecture xc7;
+end architecture xc7_arch;

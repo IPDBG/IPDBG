@@ -11,7 +11,7 @@ entity dffpc is
     );
 end entity;
 
-architecture iCE40 of dffpc is
+architecture iCE40_arch of dffpc is
     component SB_DFFE
         port(
             d : in  std_logic;
@@ -28,4 +28,4 @@ begin
             C => clk,-- Clock
             D => d   -- Data
         );
-end architecture iCE40;
+end architecture iCE40_arch;

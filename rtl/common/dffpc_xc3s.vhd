@@ -14,7 +14,7 @@ entity dffpc is
     );
 end entity dffpc;
 
-architecture xc3s of dffpc is
+architecture xc3s_arch of dffpc is
 begin
     FF : FDRSE
         generic map
@@ -30,4 +30,4 @@ begin
             R  => '0',
             S  => '0'
         );
-end architecture xc3s;
+end architecture xc3s_arch;

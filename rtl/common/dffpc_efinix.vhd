@@ -13,7 +13,7 @@ entity dffpc is
     );
 end entity dffpc;
 
-architecture efinix of dffpc is
+architecture efinix_arch of dffpc is
 begin
     EFX_FF_inst : EFX_FF
         generic map (
@@ -32,4 +32,4 @@ begin
             SR  => '0',
             Q   => q
         );
-end architecture efinix;
+end architecture efinix_arch;
