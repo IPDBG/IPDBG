@@ -12,7 +12,7 @@ entity dffpc is
     );
 end entity dffpc;
 
-architecture proasic3 of dffpc is
+architecture proasic3_arch of dffpc is
     component DFN1E1
         port(
             CLK : in  std_logic;
@@ -30,4 +30,4 @@ begin
             E   => ce,
             Q   => q
         );
-end architecture proasic3;
+end architecture proasic3_arch;

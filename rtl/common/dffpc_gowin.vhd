@@ -10,7 +10,7 @@ entity dffpc is
     );
 end entity dffpc;
 
-architecture gowin of dffpc is
+architecture gowin_arch of dffpc is
     component DFFE
         generic (
             INIT : bit
@@ -34,4 +34,4 @@ begin
             CE  => ce
         );
 
-end architecture gowin;
+end architecture gowin_arch;
