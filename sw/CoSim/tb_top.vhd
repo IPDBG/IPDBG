@@ -54,6 +54,11 @@ architecture structure of tb_top is
             FLOW_CONTROL_ENABLE : std_logic_vector(6 downto 0)
         );
         port(
+            TCK        : in  std_logic;
+            TMS        : in  std_logic;
+            TDI        : in  std_logic;
+            TDO        : out std_logic;
+
             clk        : in  std_logic;
             ce         : in  std_logic;
 
@@ -89,6 +94,22 @@ architecture structure of tb_top is
             probe_outputs_update : out std_logic
         );
     end component IoViewTop;
+
+    component JtagAdapter is
+        port(
+            TMS  : out std_logic;
+            TCK  : out std_logic;
+            TDI  : out std_logic;
+            TDO  : in  std_logic;
+            TRST : out std_logic;
+            SRST : out std_logic
+        );
+    end component JtagAdapter;
+
+    signal TMS            : std_logic;
+    signal TCK            : std_logic;
+    signal TDI            : std_logic;
+    signal TDO            : std_logic;
 
     signal clk, rst, ce   : std_logic;
 
@@ -140,48 +161,15 @@ begin
 --        end if;
 --    end process;
 
-    jtag_link: block
-        component IpdbgTapExtPins is
-            port(
-                TMS     : in  std_logic;
-                TCK     : in  std_logic;
-                TDI     : in  std_logic;
-                TDO     : out std_logic;
-                TRSTB   : in  std_logic -- TRSTB is not used with IPDBG's own TAP
-            );
-        end component IpdbgTapExtPins;
-
-        component JtagAdapter is
-            port(
-                TMS  : out std_logic;
-                TCK  : out std_logic;
-                TDI  : out std_logic;
-                TDO  : in  std_logic;
-                TRST : out std_logic;
-                SRST : out std_logic
-            );
-        end component JtagAdapter;
-
-        signal TMS, TCK, TDI, TDO : std_logic;
-    begin
-        jtag_port: component IpdbgTapExtPins
-            port map(
-                TMS    => TMS,
-                TCK    => TCK,
-                TDI    => TDI,
-                TDO    => TDO,
-                TRSTB  => '1'
-            );
-        adapter: component JtagAdapter
-            port map(
-                TMS  => TMS,
-                TCK  => TCK,
-                TDI  => TDI,
-                TDO  => TDO,
-                TRST => open,
-                SRST => open
-            );
-    end block;
+    adapter: component JtagAdapter
+        port map(
+            TMS  => TMS,
+            TCK  => TCK,
+            TDI  => TDI,
+            TDO  => TDO,
+            TRST => open,
+            SRST => open
+        );
 
     jh: component JtagHub
         generic map(
@@ -189,6 +177,10 @@ begin
             FLOW_CONTROL_ENABLE => "0000000"
         )
         port map(
+            TMS        => TMS,
+            TCK        => TCK,
+            TDI        => TDI,
+            TDO        => TDO,
             clk        => clk,
             ce         => ce,
             dn_lines_0 => dn_lines_la,
