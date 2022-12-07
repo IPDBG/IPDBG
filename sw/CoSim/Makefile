@@ -52,15 +52,11 @@ $(OBJDIR)/tb_top.o: tb_top.vhd $(OBJDIR)/ipdbg_interface_pkg.o
 #	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/JtagAdapter.o: JtagAdapter.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/JtagHub.o: ../../rtl/JtagHub/JtagHub.vhd $(OBJDIR)/ipdbg_interface_pkg.o $(OBJDIR)/JtagCdc.o $(OBJDIR)/IpdbgTap.o
+$(OBJDIR)/JtagHub.o: ../../rtl/JtagHub/JtagHub_4ext.vhd $(OBJDIR)/ipdbg_interface_pkg.o $(OBJDIR)/JtagCdc.o $(OBJDIR)/IpdbgTap.o
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/JtagCdc.o: ../../rtl/JtagHub/JtagCdc.vhd $(OBJDIR)/dffpc.o
 	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/IpdbgTap.o: ../../rtl/TAP/IpdbgTap.vhd $(OBJDIR)/IpdbgTapExtPins.o $(OBJDIR)/IpdbgTap_pkg.o
-	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/IpdbgTapExtPins.o: ../../rtl/TAP/IpdbgTapExtPins.vhd $(OBJDIR)/IpdbgTap_pkg.o
-	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/IpdbgTap_pkg.o: ../../rtl/TAP/IpdbgTap_pkg.vhd
+$(OBJDIR)/IpdbgTap.o: ../../rtl/JtagHub/IpdbgTap_generic.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/LogicAnalyserTop.o: ../../rtl/LogicAnalyser/LogicAnalyserTop.vhd $(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) -a $(GHDLFLAGS) $<
