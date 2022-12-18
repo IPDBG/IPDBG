@@ -59,7 +59,6 @@ begin
     update <= update_s;
     shift <= shift_s;
 
-
     jtag_tap_i: component IpdbgTap_intel_jtag
         port map(
             tms         => tms,
@@ -75,9 +74,6 @@ begin
             runidleuser => runidleuser,
             usr1user    => user1user
         );
-
-    drclk <= drclk_s;
-    update <= update_s;
 
     -- there is no captureuser so we follow the tap fsm here to generate it.
     process(drclk_s)begin
