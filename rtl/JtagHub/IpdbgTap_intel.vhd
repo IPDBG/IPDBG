@@ -2,6 +2,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 entity IpdbgTap is
+    generic (
+        sel_user : integer range 0 to 1 := 1
+    );
     port(
         TCK     : in  std_logic;
         TMS     : in  std_logic;
@@ -44,6 +47,7 @@ architecture intel_arch of IpdbgTap is
     signal user_s        : std_logic;
     signal shift_s       : std_logic;
     signal user1user     : std_logic;
+    signal tdi_s         : std_logic;
 
     signal tmsutap       : std_logic;
     signal runidleuser   : std_logic;
@@ -55,9 +59,10 @@ architecture intel_arch of IpdbgTap is
 begin
 
     drclk <= drclk_s;
-    user <= user1user; --
     update <= update_s;
     shift <= shift_s;
+    capture <= '1' when TAP = Capture_dr else '0';
+    tdi_o <= tdi_s;
 
     jtag_tap_i: component IpdbgTap_intel_jtag
         port map(
@@ -68,7 +73,7 @@ begin
             tdouser     => tdo_i,
             tmsutap     => tmsutap,
             tckutap     => drclk_s,
-            tdiutap     => tdi_o,
+            tdiutap     => tdi_s,
             shiftuser   => shift_s,
             updateuser  => update_s,
             runidleuser => runidleuser,
@@ -117,6 +122,28 @@ begin
         end if;
     end process;
 
-    capture <= '1' when TAP = Capture_dr else '0';
+    user0_gen: if sel_user = 0 generate
+        signal ir_sr : std_logic_vector(9 downto 0);
+    begin
+        process(drclk_s)begin
+            if rising_edge(drclk_s) then
+                if TAP = Shift_ir then
+                    ir_sr <= tdi_s & ir_sr(9 downto 1);
+                elsif TAP = Update_ir then
+                    user <= '0';
+                    if ir_sr = "00" & x"0C" then
+                        user <= '1';
+                    end if;
+                elsif TAP = Test_logic_reset then
+                    user <= '0';
+                end if;
+            end if;
+        end process;
+    end generate;
+
+    user1_gen: if sel_user = 1 generate begin
+        user <= user1user;
+    end generate;
+
 
 end architecture intel_arch;
