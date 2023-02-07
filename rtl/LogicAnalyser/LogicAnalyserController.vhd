@@ -334,12 +334,12 @@ begin
                                 if counter(1 downto 0) = 3 then
                                     state <= init;
                                 else
-                                 init_Output <= Zwischenspeicher;
-                           end if;
-                           end if;
+                                    init_Output <= Zwischenspeicher;
+                                end if;
+                            end if;
                         when others => --Zwischenspeicher =>
                             up_lines.uplink_valid <= '0';
-                                init_Output <= init;
+                            init_Output <= init;
                         end case;
 
                     when return_sizes =>
@@ -363,12 +363,12 @@ begin
                                 if counter(2 downto 0) = 7 then
                                     state <= init;
                                 else
-                                init_Output <= Zwischenspeicher;
-                            end if;
+                                    init_Output <= Zwischenspeicher;
                                 end if;
+                            end if;
                         when others => --Zwischenspeicher =>
                             up_lines.uplink_valid <= '0';
-                                    init_Output <= init;
+                            init_Output <= init;
                         end case;
 
                     when logic_analyser =>
@@ -414,7 +414,7 @@ begin
                             data_size_s <= data_size_s + 1;
                             set_mask_curr_next_byte <= '1';
 
-                            if data_size_s + 1 = data_size   then
+                            if data_size_s + 1 = data_size then
                                 state <= init;
                             end if;
                         end if;
@@ -517,7 +517,7 @@ begin
 
                         when get_next_data =>
                             if ende_ausgabe = '1' then
-                                theend <= '1' ;
+                                theend <= '1';
                             end if;
 
                             if data_valid = '1' then
@@ -526,7 +526,7 @@ begin
                                 init_Output <= Zwischenspeicher;
                             end if;
                         end case;
-                    end case ;
+                    end case;
                 end if;
             end if;
         end if;
