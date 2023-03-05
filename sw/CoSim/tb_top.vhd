@@ -13,9 +13,10 @@ architecture structure of tb_top is
 
     component LogicAnalyserTop is
         generic(
-            ADDR_WIDTH      : natural;
-            ASYNC_RESET     : boolean;
-            USE_EXT_TRIGGER : boolean
+            ADDR_WIDTH             : natural;
+            ASYNC_RESET            : boolean;
+            USE_EXT_TRIGGER        : boolean;
+            RUN_LENGTH_COMPRESSION : natural range 0 to 32
         );
         port(
             clk           : in  std_logic;
@@ -127,7 +128,7 @@ architecture structure of tb_top is
 
     signal first_sample   : std_logic;
     signal data_out_wfg   : std_logic_vector(15 downto 0);
-    signal data_in_la     : std_logic_vector(15 downto 0);
+    signal data_in_la     : std_logic_vector(8 downto 0);
 
     signal sample_enable  : std_logic;
     signal output_active  : std_logic;
@@ -197,9 +198,10 @@ begin
 
     la: component LogicAnalyserTop
         generic map(
-            ADDR_WIDTH      => 10,
-            ASYNC_RESET     => ASYNC_RESET,
-            USE_EXT_TRIGGER => false
+            ADDR_WIDTH             => 5,
+            ASYNC_RESET            => ASYNC_RESET,
+            USE_EXT_TRIGGER        => false,
+            RUN_LENGTH_COMPRESSION => 9
         )
         port map(
             clk           => clk,
@@ -211,37 +213,45 @@ begin
             probe         => data_in_la,
             ext_trigger   => ext_trigger
         );
-    process(clk)begin
-        if rising_Edge(clk)then
-            if sample_enable = '1' then
-                ext_trigger <= '0';
-                if data_in_la = x"7f" then
+--    process(clk)begin
+--        if rising_Edge(clk)then
+--            if sample_enable = '1' then
+--                ext_trigger <= '0';
+--                if data_in_la = x"7f" then
                     ext_trigger <= '1';
-                end if;
-            end if;
-        end if;
-    end process;
-
---    process begin
---        --sample_enable <= '0';
---        data_in_la <= x"0000";
---        wait until rst = '0';
---        wait until rising_edge(clk);
---        wait for T/5;
---
---        while true loop
---            --sample_enable <= '0';
---            --wait for T;
---            --sample_enable <= '1';
---            data_in_la <= std_logic_vector(unsigned(data_in_la)+1);
---            wait for T;
---        end loop;
---
---        wait;
+--                end if;
+--            end if;
+--        end if;
 --    end process;
 
+    process
+        variable counter : integer range 0 to 3;
+    begin
+        --sample_enable <= '0';
+        data_in_la <= (others => '0');
+        wait until rst = '0';
+        wait until rising_edge(clk);
+        wait for T/5;
+        counter := 0;
+
+        while true loop
+            --sample_enable <= '0';
+            --wait for T;
+            --sample_enable <= '1';
+            if counter = 3 then
+                data_in_la <= std_logic_vector(unsigned(data_in_la) + 1);
+                counter := 0;
+            else
+                counter := counter + 1;
+            end if;
+            wait for T;
+        end loop;
+
+        wait;
+    end process;
+
     sample_enable <= '1';
-    data_in_la <= data_out_wfg when output_active = '1' else x"0000";
+    --data_in_la <= data_out_wfg when output_active = '1' else x"0000";
 
     wfg: component WaveformGeneratorTop
         generic map(

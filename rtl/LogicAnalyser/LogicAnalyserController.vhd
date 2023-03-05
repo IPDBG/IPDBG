@@ -6,12 +6,13 @@ library work;
 use work.ipdbg_interface_pkg.all;
 
 entity LogicAnalyserController is
-    generic(
-         DATA_WIDTH  : natural := 8; --! width of a sample
-         ADDR_WIDTH  : natural := 4; --! 2**ADDR_WIDTH = size if sample memory
-         ASYNC_RESET : boolean := true
+    generic (
+         DATA_WIDTH             : natural := 8; --! width of a sample
+         ADDR_WIDTH             : natural := 4; --! 2**ADDR_WIDTH = size if sample memory
+         RUN_LENGTH_COMPRESSION : natural range 0 to 32 := 0; --select the additional size for the length
+         ASYNC_RESET            : boolean := true
     );
-    port(
+    port (
         clk               : in  std_logic;
         rst               : in  std_logic;
         ce                : in  std_logic;
@@ -21,19 +22,19 @@ entity LogicAnalyserController is
         up_lines          : out ipdbg_up_lines;
 
         --      Trigger
-        mask_curr         : out std_logic_vector(DATA_WIDTH-1 downto 0);
-        value_curr        : out std_logic_vector(DATA_WIDTH-1 downto 0);
-        mask_last         : out std_logic_vector(DATA_WIDTH-1 downto 0);
-        value_last        : out std_logic_vector(DATA_WIDTH-1 downto 0);
-        mask_edge         : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        mask_curr         : out std_logic_vector(DATA_WIDTH - 1 downto 0);
+        value_curr        : out std_logic_vector(DATA_WIDTH - 1 downto 0);
+        mask_last         : out std_logic_vector(DATA_WIDTH - 1 downto 0);
+        value_last        : out std_logic_vector(DATA_WIDTH - 1 downto 0);
+        mask_edge         : out std_logic_vector(DATA_WIDTH - 1 downto 0);
 
         --      Logic Analyser
-        delay             : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+        delay             : out std_logic_vector(ADDR_WIDTH - 1 downto 0);
         trigger_active    : out std_logic;
         fire_trigger      : out std_logic;
 
         full              : in  std_logic;
-        data              : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+        data              : in  std_logic_vector(DATA_WIDTH + RUN_LENGTH_COMPRESSION - 1 downto 0);
         data_request_next : out std_logic;
         data_valid        : in  std_logic;
 
@@ -47,34 +48,42 @@ architecture tab of LogicAnalyserController is
 
     constant HOST_WORD_SIZE : natural := 8;
 
-    constant data_size      : natural := (DATA_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;                                  -- Berechnung wie oft dass Mask, Value, Mask_last und Value_last eingelesen werden muss.
-    constant addr_size      : natural := (ADDR_WIDTH + HOST_WORD_SIZE - 1)/ HOST_WORD_SIZE;                                  -- Berechnung wie oft, dass das Delay für das Memory eingelesen werden muss.
+    constant data_size      : natural := (DATA_WIDTH + HOST_WORD_SIZE - 1) / HOST_WORD_SIZE;                                  -- Berechnung wie oft dass Mask, Value, Mask_last und Value_last eingelesen werden muss.
+    constant data_size_rlc  : natural := (DATA_WIDTH + HOST_WORD_SIZE + RUN_LENGTH_COMPRESSION - 1) / HOST_WORD_SIZE;                                  -- Berechnung wie oft dass Mask, Value, Mask_last und Value_last eingelesen werden muss.
+    constant addr_size      : natural := (ADDR_WIDTH + HOST_WORD_SIZE - 1) / HOST_WORD_SIZE;                                  -- Berechnung wie oft, dass das Delay für das Memory eingelesen werden muss.
     constant DATA_WIDTH_slv : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(DATA_WIDTH, 32)); -- DATA_WIDTH_slv = Wert der Uebertragung des DATA_WIDTH
     constant ADDR_WIDTH_slv : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(ADDR_WIDTH, 32)); -- DATA_WIDTH_slv = Wert der Uebertragung des DATA_WIDTH
 
     ------------------------------------------------------------------Befehle um den LogicAnalyser zu bedienen-------------------------------------------------------------------------------------------------------------------------------------------------------------
+    constant get_id_command           : std_logic_vector := "10111011";--BB
+    constant get_sizes_command        : std_logic_vector := "10101010";--AA
     constant activate_trigger_command : std_logic_vector := "11111110";--FE
     constant fire_trigger_command     : std_logic_vector := "00000000";--00
     constant config_trigger_command   : std_logic_vector := "11110000";--f0
+    constant select_curr_command      : std_logic_vector :=   "11110001";--f1
+    constant set_mask_curr_command    : std_logic_vector :=     "11110011";--F3
+    constant set_value_curr_command   : std_logic_vector :=     "11110111";--f7
+    constant select_last_command      : std_logic_vector :=   "11111001";--F9
+    constant set_mask_last_command    : std_logic_vector :=     "11111011";--fb
+    constant set_value_last_command   : std_logic_vector :=     "11111111";--FF
     constant logic_analyser_c         : std_logic_vector := "00001111";--0f
-    constant select_curr_command      : std_logic_vector := "11110001";--f1
-    constant set_mask_curr_command    : std_logic_vector := "11110011";--F3
-    constant set_value_curr_command   : std_logic_vector := "11110111";--f7
-    constant select_last_command      : std_logic_vector := "11111001";--F9
-    constant set_mask_last_command    : std_logic_vector := "11111011";--fb
-    constant set_value_last_command   : std_logic_vector := "11111111";--FF
-    constant select_edge_command      : std_logic_vector := "11110101";--F5
-    constant set_edge_mask_command    : std_logic_vector := "11110110";--F6
-    constant set_delay_command        : std_logic_vector := "00011111";--1f
-    constant get_sizes_command        : std_logic_vector := "10101010";--AA
-    constant get_id_command           : std_logic_vector := "10111011";--BB
+    constant set_delay_command        : std_logic_vector :=   "00011111";--1f
+    constant select_edge_command      : std_logic_vector :=   "11110101";--F5
+    constant set_edge_mask_command    : std_logic_vector :=     "11110110";--F6
+    constant get_features_command     : std_logic_vector := "00010000";
+    constant augmented_cmds_command   : std_logic_vector := "00100000"; -- not used here in the vhdl code, but reserved for the augmenting app
+    constant get_rlc_width_command    : std_logic_vector := "01100000";
 
     constant I                        : std_logic_vector := "01001001";
     constant D                        : std_logic_vector := "01000100";
     constant B                        : std_logic_vector := "01000010";
     constant G                        : std_logic_vector := "01000111";
+    constant I_small                  : std_logic_vector := "01101001";
+    constant D_small                  : std_logic_vector := "01100100";
+    constant B_small                  : std_logic_vector := "01100010";
+    constant G_small                  : std_logic_vector := "01100111";
     --State machines
-    type states_t      is(init, return_id, return_sizes, logic_analyser, set_delay,
+    type states_t      is(init, return_id, return_sizes, logic_analyser, set_delay, get_features, get_rlc_width,
                                          config_trigger, select_config_trigger_curr, select_config_trigger_last, select_config_trigger_edge,
                                          set_mask_curr, set_value_curr, set_mask_last, set_value_last, set_edge_mask, data_output);
     signal state       : states_t;
@@ -83,22 +92,22 @@ architecture tab of LogicAnalyserController is
     signal init_Output : Output;
 
     --Zähler
-    signal data_size_s              : natural range 0 to data_size;
+    signal data_size_s              : natural range 0 to data_size_rlc;
     signal addr_size_s              : natural range 0 to addr_size;
 
-    signal mask_curr_s              : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal value_curr_s             : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal mask_last_s              : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal value_last_s             : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal mask_edge_s              : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal delay_s                  : std_logic_vector(ADDR_WIDTH-1 downto 0);
+    signal mask_curr_s              : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal value_curr_s             : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal mask_last_s              : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal value_last_s             : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal mask_edge_s              : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal delay_s                  : std_logic_vector(ADDR_WIDTH - 1 downto 0);
 
     signal counter                  : unsigned(ADDR_WIDTH-1 downto 0);
     signal import_ADDR              : std_logic;
     signal ende_ausgabe             : std_logic;
     signal theend                   : std_logic;
-    signal la_data_temporary        : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal la_data_temporary_next   : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal la_data_temporary        : std_logic_vector(DATA_WIDTH + RUN_LENGTH_COMPRESSION - 1 downto 0);
+    signal la_data_temporary_next   : std_logic_vector(DATA_WIDTH + RUN_LENGTH_COMPRESSION - 1 downto 0);
     signal arst, srst               : std_logic;
 
     signal data_dwn_delayed         : std_logic_vector(7 downto 0);
@@ -129,6 +138,25 @@ architecture tab of LogicAnalyserController is
     signal set_mask_last_active     : std_logic;
     signal set_value_last_active    : std_logic;
     signal set_edge_mask_active     : std_logic;
+    signal get_features_active      : std_logic;
+    signal get_rlc_width_active     : std_logic;
+
+    function calc_features_slv return std_logic_vector is
+        variable res : std_logic_vector(31 downto 0) := (others => '0');
+    begin
+        -- bit 0 is reserved for augmenting app
+        -- the augmenting app gives better signal names, signal grouping, sampling frequency....
+        -- it knows from the hdl design which is currently debugged
+        -- so, here we never set bit 0
+        res(0) := '0';
+
+        if RUN_LENGTH_COMPRESSION > 0 then
+            res(1) := '1';
+        end if;
+        return res;
+    end function;
+    constant features_slv  : std_logic_vector(31 downto 0) := calc_features_slv;
+    constant rlc_width_slv : std_logic_vector(7 downto 0) := std_logic_vector(to_unsigned(RUN_LENGTH_COMPRESSION, 8));
 
 begin
     async_init: if ASYNC_RESET generate begin
@@ -180,6 +208,8 @@ begin
                 set_mask_last_active <= '0';
                 set_value_last_active <= '0';
                 set_edge_mask_active <= '0';
+                get_features_active <= '0';
+                get_rlc_width_active <= '0';
 
                 if dn_lines.dnlink_valid = '1' then
                     if dn_lines.dnlink_data = get_id_command then
@@ -230,6 +260,16 @@ begin
 
                     if dn_lines.dnlink_data = set_edge_mask_command then
                         set_edge_mask_active <= '1';
+                    end if;
+
+                    if dn_lines.dnlink_data = get_features_command then
+                        get_features_active <= '1';
+                    end if;
+
+                    if RUN_LENGTH_COMPRESSION > 0 then
+                        if dn_lines.dnlink_data = get_rlc_width_command then
+                            get_rlc_width_active <= '1';
+                        end if;
                     end if;
 
                 end if;
@@ -283,6 +323,7 @@ begin
                     up_lines.uplink_valid    <= '0';
                     case state is
                     when init =>
+                        init_Output <= init;
                         counter <= (others => '0');
                         if full = '1' then
                             data_request_next <= '1';
@@ -317,12 +358,53 @@ begin
                             state <= logic_analyser;
                         end if;
 
+                        if get_features_active = '1' then
+                            state <= get_features;
+                        end if;
+
+                        if get_rlc_width_active = '1' then
+                            state <= get_rlc_width;
+                        end if;
+
                     when return_id =>
+                        if RUN_LENGTH_COMPRESSION = 0 then
+                            case counter(1 downto 0) is
+                            when   "00" => up_lines.uplink_data <= I;
+                            when   "01" => up_lines.uplink_data <= D;
+                            when   "10" => up_lines.uplink_data <= B;
+                            when others => up_lines.uplink_data <= G;
+                            end case;
+                        else
+                            case counter(1 downto 0) is
+                            when   "00" => up_lines.uplink_data <= I_small;
+                            when   "01" => up_lines.uplink_data <= D_small;
+                            when   "10" => up_lines.uplink_data <= B_small;
+                            when others => up_lines.uplink_data <= G_small;
+                            end case;
+                        end if;
+
+                        case init_Output is
+                        when init =>
+                            up_lines.uplink_valid <= '0';
+                            if dn_lines.uplink_ready = '1' then
+                                up_lines.uplink_valid <= '1';
+                                counter <= counter + 1;
+                                if counter(1 downto 0) = 3 then
+                                    state <= init;
+                                else
+                                    init_Output <= Zwischenspeicher;
+                                end if;
+                            end if;
+                        when others => --Zwischenspeicher =>
+                            up_lines.uplink_valid <= '0';
+                            init_Output <= init;
+                        end case;
+                    when get_features =>
                         case counter(1 downto 0) is
-                        when   "00" => up_lines.uplink_data <= I;
-                        when   "01" => up_lines.uplink_data <= D;
-                        when   "10" => up_lines.uplink_data <= B;
-                        when others => up_lines.uplink_data <= G;
+                        when   "00" => up_lines.uplink_data <= features_slv(7 downto 0);
+                        when   "01" => up_lines.uplink_data <= features_slv(15 downto 8);
+                        when   "10" => up_lines.uplink_data <= features_slv(23 downto 16);
+                        when others => up_lines.uplink_data <= features_slv(31 downto 24);
                         end case;
 
                         case init_Output is
@@ -341,7 +423,13 @@ begin
                             up_lines.uplink_valid <= '0';
                             init_Output <= init;
                         end case;
-
+                    when get_rlc_width =>
+                        up_lines.uplink_data <= rlc_width_slv;
+                        up_lines.uplink_valid <= '0';
+                        if dn_lines.uplink_ready = '1' then
+                            up_lines.uplink_valid <= '1';
+                            state <= init;
+                        end if;
                     when return_sizes =>
                         case counter(2 downto 0) is
                         when  "000" => up_lines.uplink_data <= DATA_WIDTH_slv(7 downto 0);
@@ -443,7 +531,7 @@ begin
                             data_size_s <= data_size_s + 1;
                             set_mask_last_next_byte  <= '1';
 
-                            if data_size_s +1 = data_size then
+                            if data_size_s + 1 = data_size then
                                 state <= init;
                             end if;
                         end if;
@@ -510,7 +598,7 @@ begin
                                 init_Output <= Zwischenspeicher;
                             end if;
 
-                            if counter = data_size then
+                            if counter = data_size_rlc then
                                 data_request_next <= '1';
                                 init_Output <= get_next_data;
                             end if;
@@ -555,15 +643,15 @@ begin
         end process;
     end generate set_delay_wide;
 
-    prepare_from_narrow_data: if DATA_WIDTH <= HOST_WORD_SIZE generate begin
+    prepare_from_narrow_data: if DATA_WIDTH + RUN_LENGTH_COMPRESSION <= HOST_WORD_SIZE generate begin
         process (la_data_temporary) begin
-            data_up_from_la_data                        <= (others => '0');
-            data_up_from_la_data(DATA_WIDTH-1 downto 0) <= la_data_temporary;
+            data_up_from_la_data                                                   <= (others => '0');
+            data_up_from_la_data(DATA_WIDTH + RUN_LENGTH_COMPRESSION - 1 downto 0) <= la_data_temporary;
         end process;
         la_data_temporary_next <= (others => '-');
     end generate;
 
-    prepare_from_wide_data: if DATA_WIDTH > HOST_WORD_SIZE generate begin
+    prepare_from_wide_data: if DATA_WIDTH + RUN_LENGTH_COMPRESSION > HOST_WORD_SIZE generate begin
         data_up_from_la_data <= la_data_temporary(up_lines.uplink_data'range);
         la_data_temporary_next <= "--------" & la_data_temporary(la_data_temporary'left downto up_lines.uplink_data'length);
     end generate;

@@ -7,9 +7,10 @@ use work.ipdbg_interface_pkg.all;
 
 entity LogicAnalyserTop is
     generic(
-         ADDR_WIDTH      : natural := 4;         --! 2**ADDR_WIDTH = size if sample memory
-         ASYNC_RESET     : boolean := true;
-         USE_EXT_TRIGGER : boolean := false
+         ADDR_WIDTH             : natural := 4;         --! 2**ADDR_WIDTH = size if sample memory
+         ASYNC_RESET            : boolean := true;
+         USE_EXT_TRIGGER        : boolean := false;
+         RUN_LENGTH_COMPRESSION : natural range 0 to 32 := 0
     );
     port(
         clk            : in  std_logic;
@@ -41,12 +42,12 @@ architecture structure of LogicAnalyserTop is
             rst               : in  std_logic;
             ce                : in  std_logic;
             sample_enable     : in  std_logic;
-            probe             : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+            probe             : in  std_logic_vector(DATA_WIDTH - 1 downto 0);
             trigger_active    : in  std_logic;
             trigger           : in  std_logic;
             full              : out std_logic;
-            delay             : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-            data              : out std_logic_vector(DATA_WIDTH-1 downto 0);
+            delay             : in  std_logic_vector(ADDR_WIDTH - 1 downto 0);
+            data              : out std_logic_vector(DATA_WIDTH - 1 downto 0);
             data_valid        : out std_logic;
             data_request_next : in  std_logic;
             finish            : out std_logic
@@ -63,22 +64,23 @@ architecture structure of LogicAnalyserTop is
             rst           : in  std_logic;
             ce            : in  std_logic;
             sample_enable : in  std_logic;
-            probe_i       : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            probe_o       : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            mask_curr     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            mask_last     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            value_curr    : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            value_last    : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-            mask_edge     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+            probe_i       : in  std_logic_vector(DATA_WIDTH - 1 downto 0);
+            probe_o       : out std_logic_vector(DATA_WIDTH - 1 downto 0);
+            mask_curr     : in  std_logic_vector(DATA_WIDTH - 1 downto 0);
+            mask_last     : in  std_logic_vector(DATA_WIDTH - 1 downto 0);
+            value_curr    : in  std_logic_vector(DATA_WIDTH - 1 downto 0);
+            value_last    : in  std_logic_vector(DATA_WIDTH - 1 downto 0);
+            mask_edge     : in  std_logic_vector(DATA_WIDTH - 1 downto 0);
             Trigger       : out std_logic
         );
     end component LogicAnalyserTrigger;
 
     component LogicAnalyserController is
         generic(
-            DATA_WIDTH  : natural;
-            ADDR_WIDTH  : natural;
-            ASYNC_RESET : boolean
+            DATA_WIDTH             : natural;
+            ADDR_WIDTH             : natural;
+            RUN_LENGTH_COMPRESSION : natural;
+            ASYNC_RESET            : boolean
         );
         port(
             clk               : in  std_logic;
@@ -86,16 +88,16 @@ architecture structure of LogicAnalyserTop is
             ce                : in  std_logic;
             dn_lines          : in  ipdbg_dn_lines;
             up_lines          : out ipdbg_up_lines;
-            mask_curr         : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            value_curr        : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            mask_last         : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            value_last        : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            mask_edge         : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            delay             : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+            mask_curr         : out std_logic_vector(DATA_WIDTH - 1 downto 0);
+            value_curr        : out std_logic_vector(DATA_WIDTH - 1 downto 0);
+            mask_last         : out std_logic_vector(DATA_WIDTH - 1 downto 0);
+            value_last        : out std_logic_vector(DATA_WIDTH - 1 downto 0);
+            mask_edge         : out std_logic_vector(DATA_WIDTH - 1 downto 0);
+            delay             : out std_logic_vector(ADDR_WIDTH - 1 downto 0);
             trigger_active    : out std_logic;
             fire_trigger      : out std_logic;
             full              : in  std_logic;
-            data              : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+            data              : in  std_logic_vector(DATA_WIDTH + RUN_LENGTH_COMPRESSION - 1 downto 0);
             data_request_next : out std_logic;
             data_valid        : in  std_logic;
             finish            : in  std_logic
@@ -119,15 +121,34 @@ architecture structure of LogicAnalyserTop is
         );
     end component IpdbgEscaping;
 
-    signal mask_curr          : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal value_curr         : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal mask_last          : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal value_last         : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal mask_edge          : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal delay              : std_logic_vector(ADDR_WIDTH-1 downto 0);
+    component LogicAnalyserRunLengthCoder is
+        generic (
+            DATA_WIDTH             : natural;
+            ASYNC_RESET            : boolean;
+            RUN_LENGTH_COMPRESSION : natural
+        );
+        port (
+            clk             : in  std_logic;
+            rst             : in  std_logic;
+            ce              : in  std_logic;
+            sample_enable_i : in  std_logic;
+            probe_i         : in  std_logic_vector(DATA_WIDTH - 1 downto 0);
+            trig_i          : in  std_logic;
+            sample_enable_o : out std_logic;
+            probe_o         : out std_logic_vector(DATA_WIDTH + RUN_LENGTH_COMPRESSION - 1 downto 0);
+            trig_o          : out std_logic
+        );
+    end component LogicAnalyserRunLengthCoder;
+
+    signal mask_curr          : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal value_curr         : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal mask_last          : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal value_last         : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal mask_edge          : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal delay              : std_logic_vector(ADDR_WIDTH - 1 downto 0);
     signal trigger_active     : std_logic;
     signal full               : std_logic;
-    signal data               : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal data               : std_logic_vector(DATA_WIDTH + RUN_LENGTH_COMPRESSION - 1 downto 0);
     signal data_request_next  : std_logic;
     signal data_valid         : std_logic;
     signal finish             : std_logic;
@@ -139,67 +160,19 @@ architecture structure of LogicAnalyserTop is
     signal up_lines_unescaped : ipdbg_up_lines;
     signal reset              : std_logic;
 
-    signal sample             : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal sample_enable_rlc  : std_logic;
+    signal trg                : std_logic;
+    signal trg_rlc            : std_logic;
+    signal prb                : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal sample             : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal sample_rlc         : std_logic_vector(DATA_WIDTH + RUN_LENGTH_COMPRESSION - 1 downto 0);
 begin
-
-    combine_trigger: block
-        signal trg : std_logic;
-        signal prb : std_logic_vector(DATA_WIDTH-1 downto 0);
-    begin
-        int_tirgger_logic: if not USE_EXT_TRIGGER generate begin
-            process (clk) begin --! combines "manual" and configurable trigger
-                if rising_edge(clk) then
-                    if ce = '1' then
-                        if sample_enable = '1' then
-                            prb <= sample;
-                            trg <= fire_trigger_cltrl or trigger_logic;
-                        end if;
-                    end if;
-                end if;
-            end process;
-        end generate;
-        ext_trigger_logic: if USE_EXT_TRIGGER generate begin
-            process (clk) begin --! combines "manual" and configurable trigger
-                if rising_edge(clk) then
-                    if ce = '1' then
-                        if sample_enable = '1' then
-                            prb <= probe;
-                            trg <= fire_trigger_cltrl or ext_trigger;
-                        end if;
-                    end if;
-                end if;
-            end process;
-        end generate;
-
-        memory : component LogicAnalyserMemory
-            generic map(
-                DATA_WIDTH  => DATA_WIDTH,
-                ADDR_WIDTH  => ADDR_WIDTH,
-                ASYNC_RESET => ASYNC_RESET
-            )
-            port map(
-                clk               => clk,
-                rst               => reset,
-                ce                => ce,
-                sample_enable     => sample_enable,
-                probe             => prb,
-                trigger_active    => trigger_active,
-                trigger           => trg,
-                full              => full,
-                delay             => delay,
-                data              => data,
-                data_valid        => data_valid,
-                data_request_next => data_request_next,
-                finish            => finish
-            );
-    end block;
-
     triggerLogic : component LogicAnalyserTrigger
-        generic map(
+        generic map (
             DATA_WIDTH  => DATA_WIDTH,
             ASYNC_RESET => ASYNC_RESET
         )
-        port map(
+        port map (
             clk           => clk,
             rst           => reset,
             ce            => ce,
@@ -214,13 +187,70 @@ begin
             trigger       => trigger_logic
         );
 
-    controller : component LogicAnalyserController
-        generic map(
-            DATA_WIDTH  => DATA_WIDTH,
+    process (clk) begin --! combines "manual" and configurable trigger
+        if rising_edge(clk) then
+            if ce = '1' then
+                if sample_enable = '1' then
+                    if not USE_EXT_TRIGGER then
+                        prb <= sample;
+                        trg <= fire_trigger_cltrl or trigger_logic;
+                    else
+                        prb <= probe;
+                        trg <= fire_trigger_cltrl or ext_trigger;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process;
+
+    rlc_i: component LogicAnalyserRunLengthCoder
+        generic map (
+            DATA_WIDTH             => DATA_WIDTH,
+            ASYNC_RESET            => ASYNC_RESET,
+            RUN_LENGTH_COMPRESSION => RUN_LENGTH_COMPRESSION
+        )
+        port map (
+            clk             => clk,
+            rst             => rst,
+            ce              => ce,
+            sample_enable_i => sample_enable,
+            probe_i         => prb,
+            trig_i          => trg,
+            sample_enable_o => sample_enable_rlc,
+            probe_o         => sample_rlc,
+            trig_o          => trg_rlc
+        );
+
+    memory : component LogicAnalyserMemory
+        generic map (
+            DATA_WIDTH  => DATA_WIDTH + RUN_LENGTH_COMPRESSION,
             ADDR_WIDTH  => ADDR_WIDTH,
             ASYNC_RESET => ASYNC_RESET
         )
-        port map(
+        port map (
+            clk               => clk,
+            rst               => reset,
+            ce                => ce,
+            sample_enable     => sample_enable_rlc,
+            probe             => sample_rlc,
+            trigger_active    => trigger_active,
+            trigger           => trg_rlc,
+            full              => full,
+            delay             => delay,
+            data              => data,
+            data_valid        => data_valid,
+            data_request_next => data_request_next,
+            finish            => finish
+        );
+
+    controller : component LogicAnalyserController
+        generic map (
+            DATA_WIDTH             => DATA_WIDTH,
+            ADDR_WIDTH             => ADDR_WIDTH,
+            RUN_LENGTH_COMPRESSION => RUN_LENGTH_COMPRESSION,
+            ASYNC_RESET            => ASYNC_RESET
+        )
+        port map (
             clk               => clk,
             rst               => reset,
             ce                => ce,
@@ -242,11 +272,11 @@ begin
         );
 
     Escaping : component IpdbgEscaping
-        generic map(
+        generic map (
             ASYNC_RESET  => ASYNC_RESET,
             DO_HANDSHAKE => false
         )
-        port map(
+        port map (
             clk          => clk,
             rst          => rst,
             ce           => ce,

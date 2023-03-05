@@ -33,6 +33,9 @@
 		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserMemory.vhd">
 			<Option compile="1" />
 		</Unit>
+		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserRunLengthCoder.vhd">
+			<Option compile="1" />
+		</Unit>
 		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserTop.vhd">
 			<Option compile="1" />
 		</Unit>

@@ -38,7 +38,7 @@ $(OBJDIR)/main.o: main.cpp
 
 e~tb_top.o: $(OBJDIR)/tb_top.o \
     $(OBJDIR)/JtagAdapter.o $(OBJDIR)/JtagHub.o \
-    $(OBJDIR)/LogicAnalyserTop.o $(OBJDIR)/LogicAnalyserMemory.o $(OBJDIR)/LogicAnalyserTrigger.o $(OBJDIR)/LogicAnalyserController.o \
+    $(OBJDIR)/LogicAnalyserTop.o $(OBJDIR)/LogicAnalyserMemory.o $(OBJDIR)/LogicAnalyserTrigger.o $(OBJDIR)/LogicAnalyserController.o $(OBJDIR)/LogicAnalyserRunLengthCoder.o \
     $(OBJDIR)/WaveformGeneratorController.o $(OBJDIR)/WaveformGeneratorMemory.o $(OBJDIR)/WaveformGeneratorTop.o \
     $(OBJDIR)/IoViewTop.o $(OBJDIR)/IoViewController.o \
     $(OBJDIR)/IpdbgEscaping.o $(OBJDIR)/pdpRam.o
@@ -65,6 +65,8 @@ $(OBJDIR)/LogicAnalyserMemory.o: ../../rtl/LogicAnalyser/LogicAnalyserMemory.vhd
 $(OBJDIR)/LogicAnalyserTrigger.o: ../../rtl/LogicAnalyser/LogicAnalyserTrigger.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/LogicAnalyserController.o: ../../rtl/LogicAnalyser/LogicAnalyserController.vhd
+	$(GHDL) -a $(GHDLFLAGS) $<
+$(OBJDIR)/LogicAnalyserRunLengthCoder.o: ../../rtl/LogicAnalyser/LogicAnalyserRunLengthCoder.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/IpdbgEscaping.o: ../../rtl/common/IpdbgEscaping.vhd $(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) -a $(GHDLFLAGS) $<
