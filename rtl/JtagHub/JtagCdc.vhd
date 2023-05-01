@@ -578,9 +578,9 @@ begin
                             if ce = '1' then
                                 if clear = '1' then
                                     state <= "000";
-                                    up_transfer_function_number <= "---";
-                                    up_transfer_data <= "--------";
-                                    up_transfer_register_valid <= '0';
+                                    up_transfer_function_number <= "111";
+                                    up_transfer_data <= '1' & FLOW_CONTROL_ENABLE;
+                                    up_transfer_register_valid <= '1';
                                 else
                                     if up_transfer_register_valid = '1' then
                                         if dwn_do_update = '1' then
@@ -616,9 +616,9 @@ begin
                                 clear_xoff_bits_valid <= '0';
                                 if clear = '1' then
                                     state <= "000";
-                                    up_transfer_function_number <= "---";
-                                    up_transfer_data <= "--------";
-                                    up_transfer_register_valid <= '0';
+                                    up_transfer_function_number <= "111";
+                                    up_transfer_data <= '1' & FLOW_CONTROL_ENABLE;
+                                    up_transfer_register_valid <= '1';
                                     clear_xoff_bits <= (others => '-');
                                     xon_data    <= (others => '0');
                                 else
@@ -627,7 +627,9 @@ begin
                                             if up_transfer_register_valid_sent = '1' then
                                                 up_transfer_register_valid <= '0';
                                                 if up_transfer_function_number = "111" then
-                                                    clear_xoff_bits_valid <= '1';
+                                                    if up_transfer_data(7) = '0' then
+                                                        clear_xoff_bits_valid <= '1';
+                                                    end if;
                                                     clear_xoff_bits <= up_transfer_data(clear_xoff_bits'range);
                                                     xon_data <= (others => '0');
                                                 end if;
