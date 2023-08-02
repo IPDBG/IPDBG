@@ -1,0 +1,22 @@
+// do not edit keys
+{
+	//channel names
+	"CH0" : "data_0",
+	"CH1" : "clk",
+	"CH2" : "EN",
+	"CH3" : "CS",
+	"CH4" : "RST",
+	"CH5" : "RST",
+	"CH6" : "ch_name_6",
+	"CH7" : "ch_name_7",
+	"CH8" : "ch_name_8",
+	
+	//IP, Port
+	"server_ip" 	: "127.0.0.1",
+	"server_port" 	: "5555",
+	"client_ip" 	: "127.0.0.1",
+	"client_port" 	: "4242",
+	
+	//samplerate
+	"sample_rate"	: 1000000,
+}
