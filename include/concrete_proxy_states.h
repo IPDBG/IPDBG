@@ -7,9 +7,9 @@
 class init : public proxy_state
 {
     public:
-        void enter(proxy* proxy);
-        void toggle(proxy* proxy);
-        void exit(proxy* proxy){}
+        void enter(proxy* proxy) override;
+        void toggle(proxy* proxy) override;
+        void exit(proxy* proxy) override {}
         static proxy_state& getInstance();
 
     private:
@@ -20,63 +20,64 @@ class init : public proxy_state
 class start : public proxy_state
 {
     public:
-        void enter(proxy* proxy);
-        void toggle(proxy* proxy);
-        void exit(proxy* proxy){}
+        void enter(proxy* proxy) override;
+        void toggle(proxy* proxy) override;
+        void exit(proxy* proxy) override {}
         static proxy_state& getInstance();
 };
 
 class get_bus_widths : public proxy_state
 {
     public:
-        void enter(proxy* proxy);
-        void toggle(proxy* proxy);
-        void exit(proxy* proxy) {}
+        void enter(proxy* proxy) override;
+        void toggle(proxy* proxy) override;
+        void exit(proxy* proxy) override {}
         static proxy_state& getInstance();
 };
 
 class get_la_id : public proxy_state
 {
     public:
-        void enter(proxy* proxy);
-        void toggle(proxy* proxy);
-        void exit(proxy* proxy) {}
+        void enter(proxy* proxy) override;
+        void toggle(proxy* proxy) override;
+        void exit(proxy* proxy) override {}
         static proxy_state& getInstance();
 };
 
 class get_rlc_width : public proxy_state
 {
     public:
-        void enter(proxy* proxy);
-        void toggle(proxy* proxy);
-        void exit(proxy* proxy) {}
+        void enter(proxy* proxy) override;
+        void toggle(proxy* proxy) override;
+        void exit(proxy* proxy) override {}
         static proxy_state& getInstance();
 };
 
 class get_features : public proxy_state
 {
     public:
-        void enter(proxy* proxy);
-        void toggle(proxy* proxy);
-        void exit(proxy* proxy) {}
+        void enter(proxy* proxy) override;
+        void toggle(proxy* proxy) override;
+        void exit(proxy* proxy) override {}
         static proxy_state& getInstance();
 };
 
 class get_channel_names : public proxy_state
 {
     public:
-        void enter(proxy* proxy);
-        void toggle(proxy* proxy);
-        void exit(proxy* proxy) {}
+        void enter(proxy* proxy) override;
+        void toggle(proxy* proxy) override;
+        void exit(proxy* proxy) override {}
         static proxy_state& getInstance();
 };
 
 class get_sample_rate : public proxy_state
 {
     public:
-        void enter(proxy* proxy);
-        void toggle(proxy* proxy);
-        void exit(proxy* proxy) {}
+        void enter(proxy* proxy) override;
+        void toggle(proxy* proxy) override;
+        void exit(proxy* proxy) override {}
         static proxy_state& getInstance();
 };
-#endif // CONCRETE_PROXY_STATES_H
+
+#endif

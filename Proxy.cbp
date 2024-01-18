@@ -33,12 +33,9 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add directory="../../../usr/local/include/json" />
 		</Compiler>
 		<Linker>
-			<Add library="../../../usr/lib/x86_64-linux-gnu/libjsoncpp.so.25" />
-			<Add directory="../../../usr/local/include/json" />
-			<Add directory="/usr/local/include/json" />
+			<Add option="`pkg-config jsoncpp --libs`" />
 		</Linker>
 		<Unit filename="include/concrete_proxy_states.h" />
 		<Unit filename="include/proxy.h" />

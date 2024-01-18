@@ -52,7 +52,7 @@ class proxy{
         const char* NEW_LA_ID = "idbg";
 
         proxy(const std::string file_name);
-        ~proxy();
+        ~proxy() = default;
         int connect_proxy();
         int connect_server();
 
@@ -90,4 +90,4 @@ class proxy{
         std::unique_ptr<tcp_client> proxy_client;
         std::unique_ptr<tcp_server> proxy_server;
 };
-#endif // PROXY_H_INCLUDED
+#endif

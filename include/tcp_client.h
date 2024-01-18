@@ -24,4 +24,4 @@ class tcp_client
         boost::asio::ip::tcp::socket socket_;
 };
 
-#endif // TCP_CLIENT_H
+#endif
