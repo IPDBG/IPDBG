@@ -46,7 +46,7 @@ architecture structure of TopTestLFE is
             data_up_6             : in  std_logic_vector(7 downto 0)
         );
     end component JtagHub;
-    component IoViewTop is
+    component IoProbeTop is
         generic(
             ASYNC_RESET    : boolean
         );
@@ -63,7 +63,7 @@ architecture structure of TopTestLFE is
             probe_inputs   : in  std_logic_vector;
             probe_outputs  : out std_logic_vector
         );
-    end component IoViewTop;
+    end component IoProbeTop;
     component LogicAnalyserTop is
         generic(
             ADDR_WIDTH  : natural;
@@ -214,7 +214,7 @@ begin
             data_dwn_6            => open
         );
 
-    iov : component IoViewTop
+    iov : component IoProbeTop
         generic map(
             ASYNC_RESET => ASYNC_RESET
         )

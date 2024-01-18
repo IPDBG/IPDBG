@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 library work;
 use work.ipdbg_interface_pkg.all;
 
-entity IoViewTop is
+entity IoProbeTop is
     generic(
         ASYNC_RESET : boolean := true
     );
@@ -23,11 +23,11 @@ entity IoViewTop is
         probe_outputs        : out std_logic_vector;
         probe_outputs_update : out std_logic
     );
-end entity IoViewTop;
+end entity IoProbeTop;
 
-architecture struct of IoViewTop is
+architecture struct of IoProbeTop is
 
-    component IoViewController is
+    component IoProbeController is
         generic(
             ASYNC_RESET : boolean
         );
@@ -41,7 +41,7 @@ architecture struct of IoViewTop is
             output        : out std_logic_vector;
             output_update : out std_logic
         );
-    end component IoViewController;
+    end component IoProbeController;
 
     component IpdbgEscaping is
         generic(
@@ -65,7 +65,7 @@ architecture struct of IoViewTop is
     signal reset              : std_logic;
 begin
 
-    controller : component IoViewController
+    controller : component IoProbeController
         generic map(
             ASYNC_RESET => ASYNC_RESET
         )

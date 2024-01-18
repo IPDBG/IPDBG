@@ -1,7 +1,7 @@
 # IPDBG - the environment to debug your IP
 ## CoSim - use your favorite tools within the simulation
 
-Demo using the IPDBG tools such as LogicAnalyzer, IoView or WaveformGenerator within a VHDL simulation with GHDL.
+Demo using the IPDBG tools such as LogicAnalyzer, IoProbe or WaveformGenerator within a VHDL simulation with GHDL.
 
 To build the simulation:
 > make

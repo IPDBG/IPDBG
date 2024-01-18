@@ -80,7 +80,7 @@ architecture structure of tb_top is
         );
     end component JtagHub;
 
-    component IoViewTop is
+    component IoProbeTop is
         generic(
             ASYNC_RESET : boolean := true
         );
@@ -94,7 +94,7 @@ architecture structure of tb_top is
             probe_outputs        : out std_logic_vector;
             probe_outputs_update : out std_logic
         );
-    end component IoViewTop;
+    end component IoProbeTop;
 
     component JtagAdapter is
         port(
@@ -175,7 +175,7 @@ begin
     jh: component JtagHub
         generic map(
             MFF_LENGTH => 3,
-            FLOW_CONTROL_ENABLE => "0000000"
+            FLOW_CONTROL_ENABLE => "0010000"
         )
         port map(
             TMS        => TMS,
@@ -201,7 +201,7 @@ begin
             ADDR_WIDTH             => 5,
             ASYNC_RESET            => ASYNC_RESET,
             USE_EXT_TRIGGER        => false,
-            RUN_LENGTH_COMPRESSION => 9
+            RUN_LENGTH_COMPRESSION => 0
         )
         port map(
             clk           => clk,
@@ -274,7 +274,7 @@ begin
         signal probe_inputs_iov   : std_logic_vector(17 downto 0);
         signal probe_outputs_iov  : std_logic_vector(8 downto 0);
     begin
-        iov: component IoViewTop
+        iov: component IoProbeTop
             generic map(
                 ASYNC_RESET => ASYNC_RESET
             )

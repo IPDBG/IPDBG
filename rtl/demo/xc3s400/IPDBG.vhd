@@ -60,7 +60,7 @@ architecture structure of IPDBG is
     end component JtagHub;
 
 
-    component IoViewTop is
+    component IoProbeTop is
         generic(
             ASYNC_RESET : boolean
         );
@@ -77,7 +77,7 @@ architecture structure of IPDBG is
             probe_inputs   : in  std_logic_vector;
             probe_outputs  : out std_logic_vector
         );
-    end component IoViewTop;
+    end component IoProbeTop;
 
     component LogicAnalyserTop is
         generic(
@@ -156,7 +156,7 @@ begin
             probe          => DataIn_LogicAnalyser
         );
 
-    iov : component IoViewTop
+    iov : component IoProbeTop
         generic map(
             ASYNC_RESET => false
         )

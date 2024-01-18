@@ -51,7 +51,7 @@ architecture rtl of TopTestBplR3x is
             data_up_6             : in  std_logic_vector(7 downto 0)
         );
     end component JtagHub;
-    component IoViewTop is
+    component IoProbeTop is
         port(
             clk            : in  std_logic;
             rst            : in  std_logic;
@@ -65,7 +65,7 @@ architecture rtl of TopTestBplR3x is
             probe_inputs   : in  std_logic_vector;
             probe_outputs  : out std_logic_vector
         );
-    end component IoViewTop;
+    end component IoProbeTop;
 
     component TAPExtPins is
         port(
@@ -146,7 +146,7 @@ begin
             data_dwn_6            => open
         );
 
-    iov : component IoViewTop
+    iov : component IoProbeTop
         port map(
             clk            => clk,
             rst            => '0',

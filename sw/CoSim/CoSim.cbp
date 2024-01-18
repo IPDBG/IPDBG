@@ -23,8 +23,8 @@
 		<Compiler>
 			<Add option="-std=c++11" />
 		</Compiler>
-		<Unit filename="../../rtl/IoView/IoViewController.vhd" />
-		<Unit filename="../../rtl/IoView/IoViewTop.vhd" />
+		<Unit filename="../../rtl/IoProbe/IoProbeController.vhd" />
+		<Unit filename="../../rtl/IoProbe/IoProbeTop.vhd" />
 		<Unit filename="../../rtl/JtagHub/JtagCdc.vhd" />
 		<Unit filename="../../rtl/JtagHub/JtagHub.vhd" />
 		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserController.vhd">

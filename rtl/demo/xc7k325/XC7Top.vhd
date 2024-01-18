@@ -74,7 +74,7 @@ architecture structure of XC7Top is
         );
     end component LogicAnalyserTop;
 
-    component IOViewTop is
+    component IoProbeTop is
         generic(
             ASYNC_RESET : boolean
         );
@@ -92,7 +92,7 @@ architecture structure of XC7Top is
             probe_outputs  : out std_logic_vector
 
         );
-    end component IOViewTop;
+    end component IoProbeTop;
 
     component WaveformGeneratorTop is
         generic(
@@ -253,7 +253,7 @@ begin
     --DATAINVALID_LA <= '0';
     --LEDs <= Statedebug;
 
-    IO : component IOViewTop
+    IO : component IoProbeTop
         generic map(
             ASYNC_RESET => ASYNC_RESET
         )

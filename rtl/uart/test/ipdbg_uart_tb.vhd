@@ -28,7 +28,7 @@ architecture test of ipdbg_uart_tb is
         );
     end component ipdbg_uart;
 
-    component IoViewTop is
+    component IoProbeTop is
         generic(
             ASYNC_RESET : boolean := true
         );
@@ -46,7 +46,7 @@ architecture test of ipdbg_uart_tb is
             probe_outputs        : out std_logic_vector;
             probe_outputs_update : out std_logic
         );
-    end component IoViewTop;
+    end component IoProbeTop;
 
     component uart_tx is
         generic (
@@ -192,7 +192,7 @@ begin
             up_lines => up_lines
         );
 
-    iov_i: component IoViewTop
+    iov_i: component IoProbeTop
         generic map(
             ASYNC_RESET => ASYNC_RESET
         )

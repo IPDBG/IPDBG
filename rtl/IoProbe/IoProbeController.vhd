@@ -6,7 +6,7 @@ use ieee.math_real.all;
 library work;
 use work.ipdbg_interface_pkg.all;
 
-entity IoViewController is
+entity IoProbeController is
     generic(
         ASYNC_RESET : boolean := true
     );
@@ -26,7 +26,7 @@ entity IoViewController is
     );
 end entity;
 
-architecture behavioral of IoViewController is
+architecture behavioral of IoProbeController is
 
     constant HOST_WORD_SIZE        : natural := 8;
     constant OUTPUT_WIDTH          : natural := output'length;
