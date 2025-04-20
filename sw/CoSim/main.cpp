@@ -15,8 +15,8 @@ static int bitbang_socket;
 void ghdl_run(int genWaveform)
 {
     printf("calling the vhdl simulator!\n");
-    char *ghdl_argv[] = {(char*)"tb_top", (char*)"--wave=wave.ghw"};
-    int ghdl_argc = 1;
+    char *ghdl_argv[] = {(char*)"tb_top", (char*)"--ieee-asserts=disable", (char*)"--wave=wave.ghw", (char*)"--vcd=waveform.vcd"};
+    int ghdl_argc = 2;
     if (genWaveform)
         ++ghdl_argc;
     ghdl_main(ghdl_argc, ghdl_argv);

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="BusAccess" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc-msys2-mingw64" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/BusAccess" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-Winit-self" />
+					<Add option="-Wextra" />
+					<Add option="-Wall" />
+					<Add option="-fPIC" />
+					<Add option="-g" />
+					<Add option="-DEXPORT" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/BusAccess" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-Winit-self" />
+					<Add option="-Wextra" />
+					<Add option="-Wall" />
+					<Add option="-fPIC" />
+					<Add option="-DEXPORT" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="test">
+				<Option output="bin/test/BusAccess" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="bin/test/" />
+				<Option object_output="obj/test/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add library="BusAccess" />
+					<Add directory="bin/Release" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-g" />
+		</Compiler>
+		<Unit filename="../../rtl/BusAccess/AhbMaster.vhd">
+			<Option target="test" />
+		</Unit>
+		<Unit filename="../../rtl/BusAccess/ApbMaster.vhd">
+			<Option target="test" />
+		</Unit>
+		<Unit filename="../../rtl/BusAccess/AvalonMaster.vhd">
+			<Option target="test" />
+		</Unit>
+		<Unit filename="../../rtl/BusAccess/Axi4lMaster.vhd">
+			<Option target="test" />
+		</Unit>
+		<Unit filename="../../rtl/BusAccess/BusAccessController.vhd">
+			<Option target="test" />
+		</Unit>
+		<Unit filename="../../rtl/BusAccess/BusAccessStatemachine.vhd">
+			<Option target="test" />
+		</Unit>
+		<Unit filename="../../rtl/BusAccess/RiscvDtm.vhd">
+			<Option target="test" />
+		</Unit>
+		<Unit filename="../../rtl/BusAccess/WbMaster.vhd">
+			<Option target="test" />
+		</Unit>
+		<Unit filename="BusAccess.c">
+			<Option compilerVar="CPP" />
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="BusAccess.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="BusAccessCxx.cpp">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="BusAccessCxx.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="BusAccessCxx.tpp">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="octave/BusAccessCxx.i">
+			<Option compile="1" />
+			<Option target="test" />
+		</Unit>
+		<Unit filename="python/BusAccessCxx.i">
+			<Option compile="1" />
+			<Option target="test" />
+		</Unit>
+		<Unit filename="test.c">
+			<Option compilerVar="CC" />
+			<Option target="test" />
+		</Unit>
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>

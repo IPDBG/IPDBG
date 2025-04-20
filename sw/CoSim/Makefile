@@ -41,6 +41,7 @@ e~tb_top.o: $(OBJDIR)/tb_top.o \
     $(OBJDIR)/LogicAnalyserTop.o $(OBJDIR)/LogicAnalyserMemory.o $(OBJDIR)/LogicAnalyserTrigger.o $(OBJDIR)/LogicAnalyserController.o $(OBJDIR)/LogicAnalyserRunLengthCoder.o \
     $(OBJDIR)/WaveformGeneratorController.o $(OBJDIR)/WaveformGeneratorMemory.o $(OBJDIR)/WaveformGeneratorTop.o \
     $(OBJDIR)/IoViewTop.o $(OBJDIR)/IoViewController.o \
+    $(OBJDIR)/BusAccessController.o $(OBJDIR)/BusAccessStatemachine.o $(OBJDIR)/WbMaster.o \
     $(OBJDIR)/IpdbgEscaping.o $(OBJDIR)/pdpRam.o
 	$(GHDL) --bind $(GHDLBINDFLAGS) tb_top
 
@@ -84,4 +85,9 @@ $(OBJDIR)/IoViewTop.o: ../../rtl/IoView/IoViewTop.vhd $(OBJDIR)/ipdbg_interface_
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/IoViewController.o: ../../rtl/IoView/IoViewController.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
-
+$(OBJDIR)/BusAccessStatemachine.o: ../../rtl/BusAccess/BusAccessStatemachine.vhd
+	$(GHDL) -a $(GHDLFLAGS) $<
+$(OBJDIR)/BusAccessController.o: ../../rtl/BusAccess/BusAccessController.vhd
+	$(GHDL) -a $(GHDLFLAGS) $<
+$(OBJDIR)/WbMaster.o: ../../rtl/BusAccess/WbMaster.vhd $(OBJDIR)/ipdbg_interface_pkg.o
+	$(GHDL) -a $(GHDLFLAGS) $<

@@ -41,10 +41,11 @@ $(OBJDIR)/server.o: server.c
 	$(CC) $(CFLAGS) -I/usr/include/apr-1 -c server.c -o $(OBJDIR)/server.o
 
 e~tb_top.o: $(OBJDIR)/tb_top.o $(OBJDIR)/tb_top.o $(OBJDIR)/JtagHub_sim.o \
-    $(OBJDIR)/LogicAnalyserTop.o $(OBJDIR)/LogicAnalyserMemory.o $(OBJDIR)/LogicAnalyserTrigger.o $(OBJDIR)/LogicAnalyserController.o \
+    $(OBJDIR)/LogicAnalyserTop.o $(OBJDIR)/LogicAnalyserMemory.o $(OBJDIR)/LogicAnalyserTrigger.o $(OBJDIR)/LogicAnalyserController.o  $(OBJDIR)/LogicAnalyserRunLengthCoder.o\
     $(OBJDIR)/WaveformGeneratorController.o $(OBJDIR)/WaveformGeneratorMemory.o $(OBJDIR)/WaveformGeneratorTop.o \
     $(OBJDIR)/IoViewTop.o $(OBJDIR)/IoViewController.o \
     $(OBJDIR)/IpdbgEscaping.o $(OBJDIR)/pdpRam.o \
+    $(OBJDIR)/BusAccessController.o $(OBJDIR)/BusAccessStatemachine.o $(OBJDIR)/WbMaster.o \
     $(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) --bind $(GHDLBINDFLAGS) tb_top
 
@@ -63,6 +64,8 @@ $(OBJDIR)/LogicAnalyserTrigger.o: ../../rtl/LogicAnalyser/LogicAnalyserTrigger.v
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/LogicAnalyserController.o: ../../rtl/LogicAnalyser/LogicAnalyserController.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
+$(OBJDIR)/LogicAnalyserRunLengthCoder.o: ../../rtl/LogicAnalyser/LogicAnalyserRunLengthCoder.vhd
+	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/IpdbgEscaping.o: ../../rtl/common/IpdbgEscaping.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/pdpRam.o: ../../rtl/common/pdpRam.vhd
@@ -78,5 +81,11 @@ $(OBJDIR)/WaveformGeneratorTop.o: ../../rtl/WaveformGenerator/WaveformGeneratorT
 $(OBJDIR)/IoViewTop.o: ../../rtl/IoView/IoViewTop.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/IoViewController.o: ../../rtl/IoView/IoViewController.vhd
+	$(GHDL) -a $(GHDLFLAGS) $<
+$(OBJDIR)/BusAccessStatemachine.o: ../../rtl/BusAccess/BusAccessStatemachine.vhd
+	$(GHDL) -a $(GHDLFLAGS) $<
+$(OBJDIR)/BusAccessController.o: ../../rtl/BusAccess/BusAccessController.vhd
+	$(GHDL) -a $(GHDLFLAGS) $<
+$(OBJDIR)/WbMaster.o: ../../rtl/BusAccess/WbMaster.vhd $(OBJDIR)/ipdbg_interface_pkg.o
 	$(GHDL) -a $(GHDLFLAGS) $<
 

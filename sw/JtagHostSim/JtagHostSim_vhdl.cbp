@@ -30,12 +30,18 @@
 			<Add option="-pthread" />
 			<Add library="boost_system" />
 		</Linker>
+		<Unit filename="../../rtl/BusAccess/BusAccessController.vhd" />
+		<Unit filename="../../rtl/BusAccess/BusAccessStatemachine.vhd" />
+		<Unit filename="../../rtl/BusAccess/WbMaster.vhd" />
 		<Unit filename="../../rtl/IoView/IoViewController.vhd" />
 		<Unit filename="../../rtl/IoView/IoViewTop.vhd" />
 		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserController.vhd">
 			<Option compile="1" />
 		</Unit>
 		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserMemory.vhd">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserRunLengthCoder.vhd">
 			<Option compile="1" />
 		</Unit>
 		<Unit filename="../../rtl/LogicAnalyser/LogicAnalyserTop.vhd">
@@ -63,10 +69,6 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="tb_top.vhd" />
-		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

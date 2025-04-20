@@ -45,7 +45,10 @@ architecture structure of tb_top is
             data_out      : out std_logic_vector;
             first_sample  : out std_logic;
             sample_enable : in  std_logic;
-            output_active : out std_logic
+            output_active : out std_logic;
+            one_shot      : in  std_logic;
+            sync_out      : out std_logic;
+            sync_in       : in  std_logic
         );
     end component WaveformGeneratorTop;
 
@@ -96,6 +99,35 @@ architecture structure of tb_top is
         );
     end component IoViewTop;
 
+    component WbMaster is
+        generic (
+            ASYNC_RESET : boolean
+        );
+        port (
+            clk      : in    std_logic;
+            rst      : in    std_logic;
+            ce       : in    std_logic;
+
+            --      host interface (UART or ....)
+            dn_lines : in    ipdbg_dn_lines;
+            up_lines : out   ipdbg_up_lines;
+
+            -- wishbone interface
+            -- stall_i  : in    std_logic;
+            lock_o   : out   std_logic;
+            cyc_o    : out   std_logic;
+            stb_o    : out   std_logic;
+            ack_i    : in    std_logic;
+            rty_i    : in    std_logic := '0';
+            err_i    : in    std_logic := '0';
+            we_o     : out   std_logic;
+            adr_o    : out   std_logic_vector;
+            sel_o    : out   std_logic_vector;
+            dat_o    : out   std_logic_vector;
+            dat_i    : in    std_logic_vector
+        );
+    end component WbMaster;
+
     component JtagAdapter is
         port(
             TMS  : out std_logic;
@@ -123,12 +155,14 @@ architecture structure of tb_top is
     signal up_lines_wfg   : ipdbg_up_lines;
     signal dn_lines_iov   : ipdbg_dn_lines;
     signal up_lines_iov   : ipdbg_up_lines;
+    signal dn_lines_bm    : ipdbg_dn_lines;
+    signal up_lines_bm    : ipdbg_up_lines;
 
     constant T            : time := 10 ns;
 
     signal first_sample   : std_logic;
     signal data_out_wfg   : std_logic_vector(15 downto 0);
-    signal data_in_la     : std_logic_vector(8 downto 0);
+    signal data_in_la     : std_logic_vector(17 downto 0);
 
     signal sample_enable  : std_logic;
     signal output_active  : std_logic;
@@ -175,7 +209,7 @@ begin
     jh: component JtagHub
         generic map(
             MFF_LENGTH => 3,
-            FLOW_CONTROL_ENABLE => "0000000"
+            FLOW_CONTROL_ENABLE => "1000000"
         )
         port map(
             TMS        => TMS,
@@ -187,13 +221,14 @@ begin
             dn_lines_0 => dn_lines_la,
             dn_lines_1 => dn_lines_wfg,
             dn_lines_2 => dn_lines_iov,
-            dn_lines_3 => open,
+            dn_lines_3 => dn_lines_bm,
             dn_lines_4 => open,
             dn_lines_5 => open,
             dn_lines_6 => open,
             up_lines_0 => up_lines_la,
             up_lines_1 => up_lines_wfg,
-            up_lines_2 => up_lines_iov
+            up_lines_2 => up_lines_iov,
+            up_lines_3 => up_lines_bm
         );
 
     la: component LogicAnalyserTop
@@ -201,7 +236,7 @@ begin
             ADDR_WIDTH             => 5,
             ASYNC_RESET            => ASYNC_RESET,
             USE_EXT_TRIGGER        => false,
-            RUN_LENGTH_COMPRESSION => 9
+            RUN_LENGTH_COMPRESSION => 0
         )
         port map(
             clk           => clk,
@@ -268,7 +303,10 @@ begin
             data_out      => data_out_wfg,
             first_sample  => first_sample,
             sample_enable => '1',
-            output_active => output_active
+            output_active => output_active,
+            one_shot      => '0',
+            sync_out      => open,
+            sync_in       => '0'
         );
     test_iov: block
         signal probe_inputs_iov   : std_logic_vector(17 downto 0);
@@ -290,5 +328,65 @@ begin
             );
         probe_inputs_iov <= probe_outputs_iov & probe_outputs_iov;
     end block test_iov;
+
+    ba: block
+        signal reg    : std_logic_vector(31 downto 0) := (others => '0');
+        signal wr_dat : std_logic_vector(31 downto 0);
+        signal rd_dat : std_logic_vector(31 downto 0);
+        signal cyc    : std_logic;
+        signal stb    : std_logic;
+        signal ack    : std_logic;
+        signal we     : std_logic;
+        signal adr    : std_logic_vector(15 downto 0);
+        signal sel    : std_logic_vector(1 downto 0);
+        signal lock   : std_logic;
+    begin
+
+        bus_access: component WbMaster
+            generic map (
+                ASYNC_RESET => ASYNC_RESET
+            )
+            port map (
+                clk      => clk,
+                rst      => rst,
+                ce       => ce,
+                dn_lines => dn_lines_bm,
+                up_lines => up_lines_bm,
+                lock_o   => lock,
+                cyc_o    => cyc,
+                stb_o    => stb,
+                ack_i    => ack,
+                we_o     => we,
+                adr_o    => adr,
+                sel_o    => sel,
+                dat_o    => wr_dat,
+                dat_i    => rd_dat
+            );
+
+        rd_dat <= reg;
+        ack <= stb;
+
+        process(clk)
+        begin
+            if rising_edge(clk) then
+                if ce = '1' then
+                    if stb = '1' and cyc = '1' then
+                        if we = '1' then
+                            if sel(0) = '1' then
+                                reg( 7 downto 0) <= wr_dat( 7 downto 0);
+                                report "write to address " & integer'image(to_integer(unsigned(adr))) & " value: " &
+                                integer'image(to_integer(unsigned(wr_dat)));
+                            end if;
+                            if sel(1) = '1' then
+                                reg(15 downto 8) <= wr_dat(15 downto 8);
+                            end if;
+                        end if;
+                    end if;
+                end if;
+            end if;
+        end process;
+
+    end block;
+
 end architecture structure;
 
