@@ -108,9 +108,25 @@
 			<Option compile="1" />
 			<Option target="test" />
 		</Unit>
+		<Unit filename="octave/Makefile">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="octave/README">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
 		<Unit filename="python/BusAccessCxx.i">
 			<Option compile="1" />
 			<Option target="test" />
+		</Unit>
+		<Unit filename="python/Makefile">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="python/README">
+			<Option target="Debug" />
+			<Option target="Release" />
 		</Unit>
 		<Unit filename="test.c">
 			<Option compilerVar="CC" />
