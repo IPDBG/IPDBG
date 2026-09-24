@@ -3,3 +3,4 @@ e~tb_top.o
 e~tb_top.lst
 wave.ghw
 obj/
+.cache/
