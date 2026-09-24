@@ -12,7 +12,7 @@ Start the simulation:
 in a second terminal start OpenOCD:
 > openocd -f ipdbg_JtagSim.cfg
 
-Now you can connet to the logic analyzer:
+Now you can connect to the logic analyzer:
 > ... --driver=ipdbg-la:conn=tcp-raw/127.0.0.1/4242 ...
 
 
