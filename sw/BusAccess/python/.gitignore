@@ -1,4 +1,5 @@
-BusAccessCxx.o
-BusAccessCxx.cxx
+BusAccessCxx_wrap.cxx
+BusAccessCxx_wrap.o
 BusAccess.py
 _BusAccess.so
+__pycache__/

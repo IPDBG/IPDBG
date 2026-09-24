@@ -1,31 +1,41 @@
 #include "BusAccessCxx.h"
 #include "BusAccess.h"
 
+#include <stdexcept>
 
 IpdbgBusAccess::IpdbgBusAccess():
     handle_{IpdbgBusAccess_new()}
-{}
+{
+    if (!handle_)
+        throw std::runtime_error("unable to allocate bus access handle");
+}
 
 IpdbgBusAccess::~IpdbgBusAccess()
 {
-    if (!handle_)
-        return;
-
     IpdbgBusAccess_delete(handle_);
+}
+
+std::string IpdbgBusAccess::lastError()
+{
+    return IpdbgBusAccess_getLastError(handle_);
+}
+
+void IpdbgBusAccess::checkOpen()
+{
+    if (!isOpen())
+        throw std::runtime_error("not connected");
 }
 
 void IpdbgBusAccess::open(const std::string &ipAddrStr, const std::string &portNumberStr)
 {
-    int ret = IpdbgBusAccess_open(handle_, ipAddrStr.c_str(), portNumberStr.c_str());
-    if (ret != RET_OK)
-        throw -1;
+    if (IpdbgBusAccess_open(handle_, ipAddrStr.c_str(), portNumberStr.c_str()) != RET_OK)
+        throw std::runtime_error(lastError());
 }
 
 void IpdbgBusAccess::close()
 {
-    int ret = IpdbgBusAccess_close(handle_);
-    if (ret != RET_OK)
-        throw -1;
+    if (IpdbgBusAccess_close(handle_) != RET_OK)
+        throw std::runtime_error(lastError());
 }
 
 bool IpdbgBusAccess::isOpen()
@@ -33,14 +43,22 @@ bool IpdbgBusAccess::isOpen()
     return IpdbgBusAccess_isOpen(handle_);
 }
 
-template <enum BusAccessField Field>
-size_t getFieldSize(struct IpdbgBusAccessHandle *handle)
+namespace
 {
-    size_t result;
-    int ret = IpdbgBusAccess_getFieldSize(handle, Field, &result);
-    if (ret != RET_OK)
-        throw -1;
-    return result;
+    template <enum BusAccessField Field>
+    size_t getFieldSize(struct IpdbgBusAccessHandle *handle)
+    {
+        size_t result;
+        if (IpdbgBusAccess_getFieldSize(handle, Field, &result) != RET_OK)
+            throw std::runtime_error(IpdbgBusAccess_getLastError(handle));
+        return result;
+    }
+
+    void checkHelperResult(struct IpdbgBusAccessHandle *handle, int ret)
+    {
+        if (ret != RET_OK)
+            throw std::runtime_error(IpdbgBusAccess_getLastError(handle));
+    }
 }
 
 size_t IpdbgBusAccess::getAddressSize()
@@ -70,35 +88,25 @@ size_t IpdbgBusAccess::getMiscSize()
 
 void IpdbgBusAccess::setAxi4lAxprot(uint8_t arprot, uint8_t awprot)
 {
-    int ret = IpdbgAxi4lAccess_setAxprot(handle_, arprot, awprot);
-    if (ret != RET_OK)
-        throw -1;
+    checkHelperResult(handle_, IpdbgAxi4lAccess_setAxprot(handle_, arprot, awprot));
 }
 
 void IpdbgBusAccess::setApbPprot(uint8_t pprot)
 {
-    int ret = IpdbgApbAccess_setPprot(handle_, pprot);
-    if (ret != RET_OK)
-        throw -1;
+    checkHelperResult(handle_, IpdbgApbAccess_setPprot(handle_, pprot));
 }
 
 void IpdbgBusAccess::setAvalonDebugAccess(uint8_t debug)
 {
-    int ret = IpdbgAvalonAccess_setDebugAccess(handle_, debug);
-    if (ret != RET_OK)
-        throw -1;
+    checkHelperResult(handle_, IpdbgAvalonAccess_setDebugAccess(handle_, debug));
 }
 
 void IpdbgBusAccess::setAhbHprotHsize(uint8_t hprot, uint8_t hsize)
 {
-    int ret = IpdbgAhbAccess_setHprotHsize(handle_, hprot, hsize);
-    if (ret != RET_OK)
-        throw -1;
+    checkHelperResult(handle_, IpdbgAhbAccess_setHprotHsize(handle_, hprot, hsize));
 }
 
 void IpdbgBusAccess::setDtmResets(bool reset, bool hardreset)
 {
-    int ret = IpdbgDtm_setResets(handle_, reset, hardreset);
-    if (ret != RET_OK)
-        throw -1;
+    checkHelperResult(handle_, IpdbgDtm_setResets(handle_, reset, hardreset));
 }

@@ -13,9 +13,15 @@ public:
     IpdbgBusAccess();
     virtual ~IpdbgBusAccess();
 
+    // owns a C handle: not copyable
+    IpdbgBusAccess(const IpdbgBusAccess &) = delete;
+    IpdbgBusAccess &operator=(const IpdbgBusAccess &) = delete;
+
     void open(const std::string &ipAddrStr, const std::string &portNumberStr);
     void close();
     bool isOpen();
+
+    // all sizes in bits
     size_t getAddressSize();
     size_t getReadDataSize();
     size_t getWriteDataSize();
@@ -42,9 +48,12 @@ public:
 
     template <typename A, typename D>
     void read_modify_write(A address, std::function<D(D)> modifyFunction);
-private:
-    struct IpdbgBusAccessHandle *handle_;
 
+private:
+    void checkOpen();
+    std::string lastError(); // error message of the C library
+
+    struct IpdbgBusAccessHandle *handle_;
 };
 
 #include "BusAccessCxx.tpp"

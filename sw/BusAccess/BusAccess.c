@@ -1,7 +1,7 @@
 #include "BusAccess.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <stdarg.h>
 
 #ifdef _WIN32
     #include <winsock2.h>
@@ -37,10 +37,10 @@
 
 #define ROUND_UP(a, b) ((a + b - 1) / b)
 
-#define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
+static size_t max_size(size_t a, size_t b)
+{
+    return a > b ? a : b;
+}
 
 struct IpdbgBusAccessHandle
 {
@@ -60,46 +60,95 @@ struct IpdbgBusAccessHandle
 
     uint8_t *buffer;
     uint8_t *AddressShadow;
+
+    char lastError[256];
 };
 
-static int IpdbgBusAccess_send(int handle_socket, const uint8_t *buf, size_t len)
+static void IpdbgBusAccess_setError(struct IpdbgBusAccessHandle *handle, const char *format, ...)
 {
-    int out = 0;
+    va_list args;
+    va_start(args, format);
+    vsnprintf(handle->lastError, sizeof(handle->lastError), format, args);
+    va_end(args);
+}
 
-    out = send(handle_socket, (char*)buf, len, 0);
+static const char *IpdbgBusAccess_socketError(void)
+{
+#ifdef _WIN32
+    static char msg[32];
+    snprintf(msg, sizeof(msg), "WSA error %d", WSAGetLastError());
+    return msg;
+#else
+    return strerror(errno);
+#endif
+}
 
-    if (out < 0)
+/* clears the last error, returns RET_ERROR if the handle is invalid or (when requested) not connected */
+static int IpdbgBusAccess_begin(struct IpdbgBusAccessHandle *handle, bool mustBeOpen)
+{
+    if (!handle)
         return RET_ERROR;
 
-    if ((unsigned int)out < len)
-        printf("Only sent %d/%d bytes of data.", out, (int)len);
+    handle->lastError[0] = '\0';
+
+    if (mustBeOpen && handle->socket == INVALD_SOCKET)
+    {
+        IpdbgBusAccess_setError(handle, "not connected");
+        return RET_ERROR;
+    }
 
     return RET_OK;
 }
 
-static int IpdbgBusAccess_receive(int handle_socket, uint8_t *buf, int bufsize)
+static int IpdbgBusAccess_closeSocket(struct IpdbgBusAccessHandle *handle);
+
+static int IpdbgBusAccess_send(struct IpdbgBusAccessHandle *handle, const uint8_t *buf, size_t len)
 {
-    int received = 0;
+    size_t sent = 0;
 
-    while (received < bufsize)
+    while (sent < len)
     {
-        int len;
+        int out = send(handle->socket, (const char*)(buf + sent), len - sent, 0);
 
-        len = recv(handle_socket, (char*)(buf + received), bufsize - received, 0);
-
-        if (len < 0)
+        if (out <= 0)
         {
-            printf("Receive error: %d; len = %d\n", errno, len);
-            return len;
+            IpdbgBusAccess_setError(handle, "send failed (%s)", IpdbgBusAccess_socketError());
+            return RET_ERROR;
         }
-        else
-            received += len;
+
+        sent += (size_t)out;
     }
 
-    return received;
+    return RET_OK;
 }
 
-static int IpdbgBusAccess_sendWithEscaping(int handle_socket, const uint8_t *dataToSend, int length)
+/* receives exactly len bytes */
+static int IpdbgBusAccess_receive(struct IpdbgBusAccessHandle *handle, uint8_t *buf, size_t len)
+{
+    size_t received = 0;
+
+    while (received < len)
+    {
+        int n = recv(handle->socket, (char*)(buf + received), len - received, 0);
+
+        if (n < 0)
+        {
+            IpdbgBusAccess_setError(handle, "receive failed (%s)", IpdbgBusAccess_socketError());
+            return RET_ERROR;
+        }
+        if (n == 0)
+        {
+            IpdbgBusAccess_setError(handle, "connection closed by peer");
+            return RET_ERROR;
+        }
+
+        received += (size_t)n;
+    }
+
+    return RET_OK;
+}
+
+static int IpdbgBusAccess_sendWithEscaping(struct IpdbgBusAccessHandle *handle, const uint8_t *dataToSend, size_t length)
 {
     int ret;
     while (length--)
@@ -109,59 +158,49 @@ static int IpdbgBusAccess_sendWithEscaping(int handle_socket, const uint8_t *dat
         if (payload == RESET_SYMBOL || payload == ESCAPE_SYMBOL)
         {
             uint8_t escapeSymbol = ESCAPE_SYMBOL;
-            ret = IpdbgBusAccess_send(handle_socket, &escapeSymbol, 1);
+            ret = IpdbgBusAccess_send(handle, &escapeSymbol, 1);
             if (ret != RET_OK)
                 return ret;
         }
 
-        ret = IpdbgBusAccess_send(handle_socket, &payload, 1);
+        ret = IpdbgBusAccess_send(handle, &payload, 1);
         if (ret != RET_OK)
             return ret;
     }
     return RET_OK;
 }
 
-static int IpdbgBusAccess_sendReset(int handle_socket)
+static int IpdbgBusAccess_sendReset(struct IpdbgBusAccessHandle *handle)
 {
     uint8_t buf[2] = {RESET_SYMBOL, RESET_SYMBOL};
-    int ret = IpdbgBusAccess_send(handle_socket, buf, 2);
-    if (ret != 0)
-        printf("Error: sending reset failed\n");
+    return IpdbgBusAccess_send(handle, buf, 2);
+}
 
-    return ret;
+static int IpdbgBusAccess_sendCommand(struct IpdbgBusAccessHandle *handle, uint8_t command)
+{
+    return IpdbgBusAccess_send(handle, &command, 1);
 }
 
 static int IpdbgBusAccess_getSizes(struct IpdbgBusAccessHandle *handle)
 {
-    if (!handle || handle->socket == INVALD_SOCKET)
-        return RET_ERROR;
-
-    const size_t numSizes = 6;
-    const size_t answerLength = numSizes * 4;
+    enum { numSizes = 6, answerLength = numSizes * 4 };
     uint8_t buf[answerLength];
 
-    buf[0] = READ_WIDTHS_CMD;
-    int ret = IpdbgBusAccess_send(handle->socket, buf, 1);
-    if (ret != 0)
-    {
-        printf("Error: unable to send READ_WIDTHS_CMD command\n");
+    int ret = IpdbgBusAccess_sendCommand(handle, READ_WIDTHS_CMD);
+    if (ret != RET_OK)
         return ret;
-    }
 
-    int received = IpdbgBusAccess_receive(handle->socket, buf, answerLength);
-    if (received != answerLength)
-    {
-        printf("Error: response to READ_WIDTHS_CMD with wrong length\n");
-        return RET_ERROR;
-    }
+    ret = IpdbgBusAccess_receive(handle, buf, answerLength);
+    if (ret != RET_OK)
+        return ret;
 
     uint32_t tmp[numSizes];
     for (size_t i = 0; i < numSizes; ++i)
     {
-        tmp[i]  = (buf[i * 4]            & 0x000000ff) |
-                 ((buf[i * 4 + 1] <<  8) & 0x0000ff00) |
-                 ((buf[i * 4 + 2] << 16) & 0x00ff0000) |
-                 ((buf[i * 4 + 3] << 24) & 0xff000000);
+        tmp[i]  =  (uint32_t)buf[i * 4] |
+                  ((uint32_t)buf[i * 4 + 1] <<  8) |
+                  ((uint32_t)buf[i * 4 + 2] << 16) |
+                  ((uint32_t)buf[i * 4 + 3] << 24);
     }
     handle->Version        = tmp[0];
     handle->WriteDataWidth = tmp[1];
@@ -197,10 +236,8 @@ int API IpdbgBusAccess_delete(struct IpdbgBusAccessHandle *handle)
     if (!handle)
         return RET_ERROR;
 
-    int ret = IpdbgBusAccess_close(handle);
+    int ret = IpdbgBusAccess_closeSocket(handle);
 
-    free(handle->buffer);
-    free(handle->AddressShadow);
     free(handle);
 
     return ret;
@@ -208,45 +245,49 @@ int API IpdbgBusAccess_delete(struct IpdbgBusAccessHandle *handle)
 
 static size_t IpdbgBusAccess_getBuffeSize(struct IpdbgBusAccessHandle *handle)
 {
-    size_t res = max(handle->AddressWidthBytes, handle->ReadDataWidthBytes);
+    size_t res = max_size(handle->AddressWidthBytes, handle->ReadDataWidthBytes);
 
-    res = max(res, handle->WriteDataWidthBytes);
-    res = max(res, handle->MiscDataWidthBytes);
-    res = max(res, handle->StrobeWidthBytes);
+    res = max_size(res, handle->WriteDataWidthBytes);
+    res = max_size(res, handle->MiscDataWidthBytes);
+    res = max_size(res, handle->StrobeWidthBytes);
 
     return res;
 }
 
 static int IpdbgBusAccess_sendAddress(struct IpdbgBusAccessHandle *handle, const uint8_t *address)
 {
-    if (!handle || handle->socket == INVALD_SOCKET)
-        return RET_ERROR;
-
     if (handle->AddressWidthBytes == 0)
         return RET_OK;
 
-    *handle->buffer = SET_ADDR_CMD;
-
-    int ret = IpdbgBusAccess_send(handle->socket, handle->buffer, 1);
+    int ret = IpdbgBusAccess_sendCommand(handle, SET_ADDR_CMD);
     if (ret != RET_OK)
-    {
-        printf("Error: unable to send SET_ADDR_CMD command\n");
         return ret;
-    }
 
-    return IpdbgBusAccess_sendWithEscaping(handle->socket, address, handle->AddressWidthBytes);
+    return IpdbgBusAccess_sendWithEscaping(handle, address, handle->AddressWidthBytes);
 }
 
 int API IpdbgBusAccess_open(struct IpdbgBusAccessHandle *handle, const char *ipAddrStr, const char *portNumberStr)
 {
-    if (!handle || handle->socket != INVALD_SOCKET)
+    if (IpdbgBusAccess_begin(handle, false) != RET_OK)
         return RET_ERROR;
+
+    if (handle->socket != INVALD_SOCKET)
+    {
+        IpdbgBusAccess_setError(handle, "already connected");
+        return RET_ERROR;
+    }
+
+    if (!ipAddrStr || !portNumberStr)
+    {
+        IpdbgBusAccess_setError(handle, "no host or port given");
+        return RET_ERROR;
+    }
 
 #ifdef _WIN32
     static WSADATA wsaData;
     if (WSAStartup(0x0202, &wsaData) != 0)
     {
-        printf("WSAStartup failed, could not find Winsock 2.2 dll!");
+        IpdbgBusAccess_setError(handle, "WSAStartup failed, could not find Winsock 2.2 dll");
         return RET_ERROR;
     }
 #endif
@@ -259,13 +300,28 @@ int API IpdbgBusAccess_open(struct IpdbgBusAccessHandle *handle, const char *ipA
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    getaddrinfo(ipAddrStr, portNumberStr, &hints, &results);
+    int gaiRet = getaddrinfo(ipAddrStr, portNumberStr, &hints, &results);
+    if (gaiRet != 0)
+    {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        IpdbgBusAccess_setError(handle, "unable to resolve %s:%s (%s)", ipAddrStr, portNumberStr, gai_strerror(gaiRet));
+        return RET_ERROR;
+    }
+
+    const char *connectError = "no address found";
 
     for (res = results; res; res = res->ai_next)
     {
         if ((handle->socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
+        {
+            handle->socket = INVALD_SOCKET;
+            connectError = IpdbgBusAccess_socketError();
             continue;
+        }
         if (connect(handle->socket, res->ai_addr, res->ai_addrlen) != 0) {
+            connectError = IpdbgBusAccess_socketError();
             close(handle->socket);
             handle->socket = INVALD_SOCKET;
             continue;
@@ -280,47 +336,60 @@ int API IpdbgBusAccess_open(struct IpdbgBusAccessHandle *handle, const char *ipA
 #ifdef _WIN32
         WSACleanup();
 #endif
-        printf("Error: unable to open socket!\n");
+        IpdbgBusAccess_setError(handle, "unable to connect to %s:%s (%s)", ipAddrStr, portNumberStr, connectError);
         return RET_ERROR;
     }
 
-    int ret = IpdbgBusAccess_sendReset(handle->socket);
+    size_t bufferSize;
+    int ret = IpdbgBusAccess_sendReset(handle);
     if (ret != RET_OK)
-        return ret;
+        goto error;
 
     ret = IpdbgBusAccess_getSizes(handle);
     if (ret != RET_OK)
-        return ret;
+        goto error;
 
-    size_t bufferSize = IpdbgBusAccess_getBuffeSize(handle);
+    ret = RET_ERROR;
+    bufferSize = IpdbgBusAccess_getBuffeSize(handle);
     if (bufferSize == 0)
-        return RET_ERROR;
+    {
+        IpdbgBusAccess_setError(handle, "bus master reports no fields");
+        goto error;
+    }
 
     handle->buffer = (uint8_t *)malloc(bufferSize + 1); // 1 for the acknowledge
-    if (!handle->buffer)
+    // at least 1 byte, so the pointer is valid for address width 0 as well
+    handle->AddressShadow = (uint8_t *)calloc(1, max_size(handle->AddressWidthBytes, 1));
+    if (!handle->buffer || !handle->AddressShadow)
     {
-        printf("Error: unable to allocate buffer memory!\n");
-        return RET_ERROR;
+        IpdbgBusAccess_setError(handle, "unable to allocate buffer memory");
+        goto error;
     }
 
-    handle->AddressShadow = (uint8_t *)calloc(1, handle->AddressWidthBytes);
-    if (!handle->AddressShadow)
-    {
-        free(handle->buffer);
-        handle->buffer = NULL;
-        printf("Error: unable to allocate buffer memory!\n");
-        return RET_ERROR;
-    }
+    ret = IpdbgBusAccess_sendAddress(handle, handle->AddressShadow);
+    if (ret != RET_OK)
+        goto error;
 
-    return IpdbgBusAccess_sendAddress(handle, handle->AddressShadow);
+    return RET_OK;
+
+error:
+    // don't leave a half opened connection behind (frees the buffers as well)
+    IpdbgBusAccess_closeSocket(handle);
+    return ret;
 }
 
 int API IpdbgBusAccess_close(struct IpdbgBusAccessHandle *handle)
 {
-    if (!handle)
+    if (IpdbgBusAccess_begin(handle, false) != RET_OK)
         return RET_ERROR;
 
-    if (!IpdbgBusAccess_isOpen(handle))
+    return IpdbgBusAccess_closeSocket(handle);
+}
+
+/* closes the connection and frees the buffers, does not clear the last error */
+static int IpdbgBusAccess_closeSocket(struct IpdbgBusAccessHandle *handle)
+{
+    if (handle->socket == INVALD_SOCKET)
         return RET_OK;
 
 #ifdef _WIN32
@@ -333,7 +402,13 @@ int API IpdbgBusAccess_close(struct IpdbgBusAccessHandle *handle)
     }
 #endif
 
-    int ret = (close(handle->socket) >= 0) ? RET_OK : RET_ERROR;
+    int ret = RET_OK;
+    if (close(handle->socket) < 0)
+    {
+        if (handle->lastError[0] == '\0') // keep the original error when cleaning up after a failure
+            IpdbgBusAccess_setError(handle, "close failed (%s)", IpdbgBusAccess_socketError());
+        ret = RET_ERROR;
+    }
     handle->socket = INVALD_SOCKET;
     free(handle->buffer);
     handle->buffer = NULL;
@@ -357,9 +432,6 @@ int API IpdbgBusAccess_isOpen(struct IpdbgBusAccessHandle *handle)
 
 static int IpdbgBusAccess_setAddress(struct IpdbgBusAccessHandle *handle, const uint8_t *address)
 {
-    if (!handle || handle->socket == INVALD_SOCKET)
-        return RET_ERROR;
-
     if (handle->AddressWidthBytes == 0)
         return RET_OK;
 
@@ -377,87 +449,78 @@ static int IpdbgBusAccess_setAddress(struct IpdbgBusAccessHandle *handle, const 
 
 int API IpdbgBusAccess_write_ctrllock(struct IpdbgBusAccessHandle *handle, const uint8_t *address, const uint8_t *data, bool locked)
 {
-    if (!handle || handle->socket == INVALD_SOCKET || handle->WriteDataWidthBytes == 0)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
+        return RET_ERROR;
+
+    if (handle->WriteDataWidthBytes == 0)
     {
-        printf("preconditions failed\n");
+        IpdbgBusAccess_setError(handle, "bus master has no write data");
         return RET_ERROR;
     }
 
     int ret = IpdbgBusAccess_setAddress(handle, address);
     if (ret != RET_OK)
-    {
-        printf("failed to set address\n");
         return ret;
-    }
 
-    *handle->buffer = locked ? WRITE_CMD_LOCK : WRITE_CMD_UNLOCK;
-
-    ret = IpdbgBusAccess_send(handle->socket, handle->buffer, 1);
-    if (ret != 0)
-    {
-        printf("Error: unable to send WRITE_CMD command\n");
-        return ret;
-    }
-
-    ret = IpdbgBusAccess_sendWithEscaping(handle->socket, data, handle->WriteDataWidthBytes);
+    ret = IpdbgBusAccess_sendCommand(handle, locked ? WRITE_CMD_LOCK : WRITE_CMD_UNLOCK);
     if (ret != RET_OK)
-    {
-        printf("Error: BusAccess_sendWithEscaping() failed\n");
         return ret;
-    }
 
-    int received = IpdbgBusAccess_receive(handle->socket, handle->buffer, 1);
-    if (received != 1)
-    {
-        printf("Error: response to WRITE_CMD with wrong length\n");
-        return RET_ERROR;
-    }
+    ret = IpdbgBusAccess_sendWithEscaping(handle, data, handle->WriteDataWidthBytes);
+    if (ret != RET_OK)
+        return ret;
+
+    ret = IpdbgBusAccess_receive(handle, handle->buffer, 1);
+    if (ret != RET_OK)
+        return ret;
 
     if (handle->buffer[0] == ACK_RESP)
         return RET_ACK;
     if (handle->buffer[0] == NACK_RESP)
+    {
+        IpdbgBusAccess_setError(handle, "write answered with NAK");
         return RET_NAK;
+    }
 
+    IpdbgBusAccess_setError(handle, "invalid response 0x%02x to write", handle->buffer[0]);
     return RET_ERROR;
 }
 
 int API IpdbgBusAccess_read_ctrllock(struct IpdbgBusAccessHandle *handle,  const uint8_t *address, uint8_t *result, bool locked)
 {
-    if (!handle || handle->socket == INVALD_SOCKET || handle->ReadDataWidthBytes == 0)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
+        return RET_ERROR;
+
+    if (handle->ReadDataWidthBytes == 0)
     {
-        printf("preconditions failed\n");
+        IpdbgBusAccess_setError(handle, "bus master has no read data");
         return RET_ERROR;
     }
 
     int ret = IpdbgBusAccess_setAddress(handle, address);
     if (ret != RET_OK)
-    {
-        printf("failed to set address\n");
         return ret;
-    }
 
-    *handle->buffer = locked ? READ_CMD_LOCK : READ_CMD_UNLOCK;
-
-    ret = IpdbgBusAccess_send(handle->socket, handle->buffer, 1);
-    if (ret != 0)
-    {
-        printf("Error: unable to send READ_CMD command\n");
+    ret = IpdbgBusAccess_sendCommand(handle, locked ? READ_CMD_LOCK : READ_CMD_UNLOCK);
+    if (ret != RET_OK)
         return ret;
-    }
 
-    int received = IpdbgBusAccess_receive(handle->socket, handle->buffer, handle->ReadDataWidthBytes + 1);
-    if (received != (int)handle->ReadDataWidthBytes + 1)
-    {
-        printf("Error: response to READ_CMD with wrong length\n");
-        return RET_ERROR;
-    }
+    ret = IpdbgBusAccess_receive(handle, handle->buffer, handle->ReadDataWidthBytes + 1);
+    if (ret != RET_OK)
+        return ret;
 
     if (handle->buffer[0] == ACK_RESP)
         ret = RET_ACK;
     else if (handle->buffer[0] == NACK_RESP)
+    {
+        IpdbgBusAccess_setError(handle, "read answered with NAK");
         ret = RET_NAK;
+    }
     else
+    {
+        IpdbgBusAccess_setError(handle, "invalid response 0x%02x to read", handle->buffer[0]);
         return RET_ERROR;
+    }
 
     memcpy(result, &(handle->buffer[1]), handle->ReadDataWidthBytes);
 
@@ -476,64 +539,83 @@ int API IpdbgBusAccess_read(struct IpdbgBusAccessHandle *handle,  const uint8_t 
 
 int API IpdbgBusAccess_read_modify_write(struct IpdbgBusAccessHandle *handle, const uint8_t *address, void(*modify)(uint8_t *buffer))
 {
-    if (!handle || handle->socket == INVALD_SOCKET)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
         return RET_ERROR;
-    assert(handle->ReadDataWidth == handle->WriteDataWidth && "read and write data have to have the same width");
 
-    uint8_t buffer[handle->ReadDataWidth];
+    if (handle->ReadDataWidth != handle->WriteDataWidth)
+    {
+        IpdbgBusAccess_setError(handle, "read-modify-write requires read and write data of the same width");
+        return RET_ERROR;
+    }
+
+    uint8_t *buffer = (uint8_t *)malloc(max_size(handle->ReadDataWidthBytes, 1));
+    if (!buffer)
+    {
+        IpdbgBusAccess_setError(handle, "unable to allocate buffer memory");
+        return RET_ERROR;
+    }
 
     int ret = IpdbgBusAccess_read_ctrllock(handle, address, buffer, true);
 
     if (ret != RET_ACK)
     {
-        printf("read of read-modify-write failed\n");
+        free(buffer);
         return ret;
     }
     if (modify)
         modify(buffer);
 
-    return IpdbgBusAccess_write_ctrllock(handle, address, buffer, false);
+    ret = IpdbgBusAccess_write_ctrllock(handle, address, buffer, false);
+    free(buffer);
+    return ret;
 }
 
 int API IpdbgBusAccess_setMiscellaneous(struct IpdbgBusAccessHandle *handle, const uint8_t *data)
 {
-    if (!handle || handle->socket == INVALD_SOCKET || handle->MiscDataWidthBytes == 0)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
         return RET_ERROR;
 
-    *handle->buffer = SET_MISC_CMD;
-
-    int ret = IpdbgBusAccess_send(handle->socket, handle->buffer, 1);
-    if (ret != RET_OK)
+    if (handle->MiscDataWidthBytes == 0)
     {
-        printf("Error: unable to send SET_MISC_CMD command\n");
-        return ret;
+        IpdbgBusAccess_setError(handle, "bus master has no misc signals");
+        return RET_ERROR;
     }
 
-    return IpdbgBusAccess_sendWithEscaping(handle->socket, data, handle->MiscDataWidthBytes);
+    int ret = IpdbgBusAccess_sendCommand(handle, SET_MISC_CMD);
+    if (ret != RET_OK)
+        return ret;
+
+    return IpdbgBusAccess_sendWithEscaping(handle, data, handle->MiscDataWidthBytes);
 }
 
 int API IpdbgBusAccess_setStrobe(struct IpdbgBusAccessHandle *handle, const uint8_t *data)
 {
-    //
-    if (!handle || handle->socket == INVALD_SOCKET || handle->StrobeWidthBytes == 0)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
         return RET_ERROR;
 
-    *handle->buffer = SET_STRB_CMD;
-
-    int ret = IpdbgBusAccess_send(handle->socket, handle->buffer, 1);
-    if (ret != RET_OK)
+    if (handle->StrobeWidthBytes == 0)
     {
-        printf("Error: unable to send SET_STRB_CMD command\n");
-        return ret;
+        IpdbgBusAccess_setError(handle, "bus master has no strobe");
+        return RET_ERROR;
     }
 
-    return IpdbgBusAccess_sendWithEscaping(handle->socket, data, handle->StrobeWidthBytes);
+    int ret = IpdbgBusAccess_sendCommand(handle, SET_STRB_CMD);
+    if (ret != RET_OK)
+        return ret;
+
+    return IpdbgBusAccess_sendWithEscaping(handle, data, handle->StrobeWidthBytes);
 }
 
 int API IpdbgBusAccess_getFieldSize(struct IpdbgBusAccessHandle *handle, enum BusAccessField field, size_t *result)
 {
-    if (!handle || !result || handle->socket == INVALD_SOCKET)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
         return RET_ERROR;
+
+    if (!result)
+    {
+        IpdbgBusAccess_setError(handle, "no result pointer given");
+        return RET_ERROR;
+    }
 
     switch (field)
     {
@@ -544,23 +626,23 @@ int API IpdbgBusAccess_getFieldSize(struct IpdbgBusAccessHandle *handle, enum Bu
     default:
     case MISC:       *result = handle->MiscDataWidth;  break;
     }
-    return 0;
+    return RET_OK;
 }
 
 int API IpdbgAxi4lAccess_setAxprot(struct IpdbgBusAccessHandle *handle, uint8_t arprot, uint8_t awprot)
 {
-    if (!handle || handle->socket == INVALD_SOCKET)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
         return RET_ERROR;
 
     if (handle->MiscDataWidth != 6)
     {
-        printf("Error: probably not an AXI4 light master (width of arprot and awprot is not 3)\n");
+        IpdbgBusAccess_setError(handle, "probably not an AXI4-Lite master (width of arprot and awprot is not 3)");
         return RET_ERROR;
     }
 
     if (handle->WriteDataWidth != handle->ReadDataWidth)
     {
-        printf("Error: probably not an AXI4 light master (read has not the sane width as write)\n");
+        IpdbgBusAccess_setError(handle, "probably not an AXI4-Lite master (read has not the same width as write)");
         return RET_ERROR;
     }
 
@@ -570,18 +652,18 @@ int API IpdbgAxi4lAccess_setAxprot(struct IpdbgBusAccessHandle *handle, uint8_t 
 
 int API IpdbgApbAccess_setPprot(struct IpdbgBusAccessHandle *handle, uint8_t pprot)
 {
-    if (!handle || handle->socket == INVALD_SOCKET)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
         return RET_ERROR;
 
     if (handle->MiscDataWidth != 3)
     {
-        printf("Error: probably not an APB master (width of pprot is not 3)\n");
+        IpdbgBusAccess_setError(handle, "probably not an APB master (width of pprot is not 3)");
         return RET_ERROR;
     }
 
     if (handle->WriteDataWidth != handle->ReadDataWidth)
     {
-        printf("Error: probably not an APB master (read has not the sane width as write)\n");
+        IpdbgBusAccess_setError(handle, "probably not an APB master (read has not the same width as write)");
         return RET_ERROR;
     }
 
@@ -591,18 +673,18 @@ int API IpdbgApbAccess_setPprot(struct IpdbgBusAccessHandle *handle, uint8_t ppr
 
 int API IpdbgAvalonAccess_setDebugAccess(struct IpdbgBusAccessHandle *handle, uint8_t debug)
 {
-    if (!handle || handle->socket == INVALD_SOCKET)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
         return RET_ERROR;
 
     if (handle->MiscDataWidth != 1)
     {
-        printf("Error: probably not an Avalon master (debug width is not 1)\n");
+        IpdbgBusAccess_setError(handle, "probably not an Avalon master (debug width is not 1)");
         return RET_ERROR;
     }
 
     if (handle->WriteDataWidth != handle->ReadDataWidth)
     {
-        printf("Error: probably not an Avalon master (read has not the sane width as write)\n");
+        IpdbgBusAccess_setError(handle, "probably not an Avalon master (read has not the same width as write)");
         return RET_ERROR;
     }
 
@@ -612,7 +694,7 @@ int API IpdbgAvalonAccess_setDebugAccess(struct IpdbgBusAccessHandle *handle, ui
 
 int API IpdbgAhbAccess_setHprotHsize(struct IpdbgBusAccessHandle *handle, uint8_t hprot, uint8_t hsize)
 {
-    if (!handle || handle->socket == INVALD_SOCKET)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
         return RET_ERROR;
 
     const uint32_t hsize_width = 3;
@@ -620,13 +702,13 @@ int API IpdbgAhbAccess_setHprotHsize(struct IpdbgBusAccessHandle *handle, uint8_
 
     if (hprot_width != 0 && hprot_width != 4 && hprot_width != 7)
     {
-        printf("Error: probably not an Ahb master (width of hprot is not 0, 4 or 7)\n");
+        IpdbgBusAccess_setError(handle, "probably not an AHB master (width of hprot is not 0, 4 or 7)");
         return RET_ERROR;
     }
 
     if (handle->WriteDataWidth != handle->ReadDataWidth)
     {
-        printf("Error: probably not an Ahb master (read has not the sane width as write)\n");
+        IpdbgBusAccess_setError(handle, "probably not an AHB master (read has not the same width as write)");
         return RET_ERROR;
     }
 
@@ -639,7 +721,7 @@ int API IpdbgAhbAccess_setHprotHsize(struct IpdbgBusAccessHandle *handle, uint8_
 
     if (handle->WriteDataWidth < sz)
     {
-        printf("Error: hsize is bigger than write data bus\n");
+        IpdbgBusAccess_setError(handle, "hsize is bigger than write data bus");
         return RET_ERROR;
     }
 
@@ -653,24 +735,32 @@ int API IpdbgAhbAccess_setHprotHsize(struct IpdbgBusAccessHandle *handle, uint8_
 
 int API IpdbgDtm_setResets(struct IpdbgBusAccessHandle *handle, bool reset, bool hardreset)
 {
-    if (!handle || handle->socket == INVALD_SOCKET)
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
         return RET_ERROR;
 
     const uint32_t misc_width = 2; /* dmi-reset and dmi-hardreset*/
 
     if (handle->MiscDataWidth != misc_width)
     {
-        printf("Error: probably not an Dtm master (width of misc is not 2)\n");
+        IpdbgBusAccess_setError(handle, "probably not a RISC-V DTM (width of misc is not 2)");
         return RET_ERROR;
     }
 
     if (handle->WriteDataWidth != handle->ReadDataWidth)
     {
-        printf("Error: probably not an Dtm master (read has not the sane width as write)\n");
+        IpdbgBusAccess_setError(handle, "probably not a RISC-V DTM (read has not the same width as write)");
         return RET_ERROR;
     }
 
     uint8_t misc = (reset ? 1 : 0) | (hardreset ? 2 : 0);
 
     return IpdbgBusAccess_setMiscellaneous(handle, &misc);
+}
+
+const char API *IpdbgBusAccess_getLastError(struct IpdbgBusAccessHandle *handle)
+{
+    if (!handle)
+        return "invalid handle";
+
+    return handle->lastError;
 }

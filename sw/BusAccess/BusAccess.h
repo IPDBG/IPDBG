@@ -80,6 +80,10 @@ int API IpdbgBusAccess_read_ctrllock(struct IpdbgBusAccessHandle *handle, const 
 int API IpdbgBusAccess_setMiscellaneous(struct IpdbgBusAccessHandle *handle, const uint8_t *data);
 int API IpdbgBusAccess_setStrobe(struct IpdbgBusAccessHandle *handle, const uint8_t *data);
 
+/** Description of the last error, "" if the last call succeeded.
+ *  Valid until the next call with the same handle. Never NULL. **/
+const char API *IpdbgBusAccess_getLastError(struct IpdbgBusAccessHandle *handle);
+
 int API IpdbgBusAccess_getFieldSize(struct IpdbgBusAccessHandle *handle, enum BusAccessField, size_t *result);
 int API IpdbgBusAccess_write(struct IpdbgBusAccessHandle *handle, const uint8_t *address, const uint8_t *data);
 int API IpdbgBusAccess_read(struct IpdbgBusAccessHandle *handle, const uint8_t *address, uint8_t *result);
