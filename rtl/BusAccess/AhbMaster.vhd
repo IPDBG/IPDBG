@@ -20,7 +20,7 @@ entity AhbMaster is
         dn_lines  : in    ipdbg_dn_lines;
         up_lines  : out   ipdbg_up_lines;
 
-        -- apb interface
+        -- ahb interface
         haddr     : out   std_logic_vector;
         hwrite    : out   std_logic;
         hsize     : out   std_logic_vector(2 downto 0);
@@ -107,7 +107,7 @@ begin
     assert ADDRESS_WIDTH <= 32
         report "AMBA AHB address bus can be up to 32 bits wide."
         severity failure;
-    assert DATA_WIDTH = 1204 or DATA_WIDTH = 512 or DATA_WIDTH = 256 or DATA_WIDTH = 128 or
+    assert DATA_WIDTH = 1024 or DATA_WIDTH = 512 or DATA_WIDTH = 256 or DATA_WIDTH = 128 or
            DATA_WIDTH = 64 or DATA_WIDTH = 32 or DATA_WIDTH = 16 or DATA_WIDTH = 8
         report "hwdata and hrdata must have a width of 8, 16, 32, 64, 128, 256, 512 or 1024 bits."
         severity failure;
@@ -118,16 +118,15 @@ begin
     haddr   <= address;
     hwdata  <= write_data;
     hmaster <= MASTER_ID;
-    hburst  <= "000"; -- hburst: only single transfer busrt
+    hburst  <= "000"; -- hburst: only single transfer burst
     hsize   <= miscellaneous(hsize'length - 1 downto 0);
     hprot   <= miscellaneous(hprot'length - 1 + hsize'length downto hsize'length);
 
-    apb_control : block
+    ahb_control : block
         type     states        is (idle, addr, data);
         signal   state         : states;
         signal   arst, srst    : std_logic;
         signal   we            : std_logic;
-        signal   sel           : std_logic;
         constant HTRANS_IDLE   : std_logic_vector(1 downto 0) := "00";
         constant HTRANS_BUSY   : std_logic_vector(1 downto 0) := "01";
         constant HTRANS_NONSEQ : std_logic_vector(1 downto 0) := "10";

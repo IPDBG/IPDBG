@@ -17,7 +17,7 @@ entity AvalonMaster is
         dn_lines    : in    ipdbg_dn_lines;
         up_lines    : out   ipdbg_up_lines;
 
-        -- apb interface
+        -- avalon interface
         address     : out   std_logic_vector; -- max 64 bits
         byteenable  : out   std_logic_vector;
         debugaccess : out   std_logic;
@@ -89,13 +89,13 @@ begin
     assert writedata'length = readdata'length
         report "writedata and readdata must have the same width"
         severity failure;
-    assert DATA_WIDTH = 1204 or DATA_WIDTH = 512 or DATA_WIDTH = 256 or DATA_WIDTH = 128 or
+    assert DATA_WIDTH = 1024 or DATA_WIDTH = 512 or DATA_WIDTH = 256 or DATA_WIDTH = 128 or
            DATA_WIDTH = 64 or DATA_WIDTH = 32 or DATA_WIDTH = 16 or DATA_WIDTH = 8
         report "writedata and readdata must have a width of 8, 16, 32, 64, 128, 256, 512 or 1024 bits."
         severity failure;
 
     assert STROBE_WIDTH * 8 = DATA_WIDTH
-        report "The width of byteenable must be 1/8th of the width of hwdata"
+        report "The width of byteenable must be 1/8th of the width of writedata"
         severity failure;
 
     writedata   <= write_data;
@@ -108,11 +108,10 @@ begin
         byteenable <= strobe;
     end generate;
 
-    apb_control : block
+    avalon_control : block
         signal arst, srst : std_logic;
         signal wrt        : std_logic;
         signal rd         : std_logic;
-        signal lck        : std_logic;
     begin
         async_init : if ASYNC_RESET generate begin
             arst <= reset;

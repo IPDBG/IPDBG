@@ -70,13 +70,13 @@ architecture behavioral of RiscvDtm is
 
     signal   reset         : std_logic;
     signal   read_data_r   : std_logic_vector(DATA_WIDTH - 1 downto 0);
-    signal   strobe        : std_logic_vector(0 downto 0);
+    signal   strobe        : std_logic_vector(STROBE_WIDTH - 1 downto 0);
     signal   start_write   : std_logic;
     signal   start_read    : std_logic;
     signal   write_done    : std_logic;
     signal   read_done     : std_logic;
     signal   miscellaneous : std_logic_vector(1 downto 0);
-    alias    hradreset     : std_logic is miscellaneous(1);
+    alias    hardreset     : std_logic is miscellaneous(1);
 begin
     assert read_data'length = write_data'length
         report "read_data and write_data must have the same width"
@@ -87,9 +87,9 @@ begin
         severity error; -- don't break here.
 
     dmireset     <= miscellaneous(0);
-    dmihardreset <= hradreset;
+    dmihardreset <= hardreset;
 
-    wishbone_control : block
+    dtm_control : block
         signal   arst, srst : std_logic;
         signal   busy       : std_logic;
         signal   operation  : std_logic_vector(1 downto 0);
@@ -123,7 +123,7 @@ begin
             if arst = '1' then
                 reset_assignments;
             elsif rising_edge(clk) then
-                if srst = '1' or hradreset = '1' then
+                if srst = '1' or hardreset = '1' then
                     reset_assignments;
                 else
                     if ce = '1' then
@@ -165,7 +165,7 @@ begin
             W_DATA_WIDTH  => DATA_WIDTH,
             STROBE_WIDTH  => STROBE_WIDTH,
             MISC_WIDTH    => MISC_WIDTH,
-            MISC_INIT     => "0"
+            MISC_INIT     => "00"
         )
         port map (
             clk           => clk,
