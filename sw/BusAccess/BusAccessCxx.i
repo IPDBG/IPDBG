@@ -18,6 +18,9 @@
     }
 }
 
+/* export/import macro of the headers, not needed by SWIG */
+#define API
+
 %include "BusAccessCxx.h"
 
 %extend IpdbgBusAccess {

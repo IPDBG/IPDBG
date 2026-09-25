@@ -8,7 +8,8 @@ misc, ACK/NAK, locking) and the supported bus master cores.
 
 ## Requirements
 
-* Linux (only tested platform; patches for other systems are welcome)
+* Linux, or Windows with [MSYS2](https://www.msys2.org) (MinGW-w64 and the
+  MSYS2 Python)
 * Python 3 including development headers (`python3-devel` on Fedora,
   `python3-dev` on Debian/Ubuntu). Tested with Python 3.13.
 * SWIG
@@ -21,11 +22,17 @@ cd sw/BusAccess/python
 make
 ```
 
-This builds the library first if needed (see the
-[main README](../README.md#building)).
+This creates `BusAccess.py` and the extension module:
 
-This creates `BusAccess.py` and `_BusAccess.so`. `_BusAccess.so` finds
-`libBusAccess.so` on its own, so `LD_LIBRARY_PATH` is not needed.
+* Linux: `_BusAccess.so`. It links `libBusAccess.so` and builds it first if
+  needed (see the [main README](../README.md#building)). It finds the
+  library on its own, so `LD_LIBRARY_PATH` is not needed.
+* Windows: `_BusAccess` with the suffix reported by
+  `python3-config --extension-suffix`, e.g.
+  `_BusAccess.cp312-mingw_x86_64_ucrt_gnu.pyd`. The library is compiled into
+  the module, so no DLL has to be found at runtime. The module only works
+  with the MSYS2 Python it was built for, not with the Python from
+  python.org.
 
 To import the module from another directory, add `sw/BusAccess/python` to
 `PYTHONPATH`.

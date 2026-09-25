@@ -162,7 +162,7 @@ architecture structure of tb_top is
 
     signal first_sample   : std_logic;
     signal data_out_wfg   : std_logic_vector(15 downto 0);
-    signal data_in_la     : std_logic_vector(17 downto 0);
+    signal data_in_la     : std_logic_vector(15 downto 0);
 
     signal sample_enable  : std_logic;
     signal output_active  : std_logic;
@@ -233,7 +233,7 @@ begin
 
     la: component LogicAnalyserTop
         generic map(
-            ADDR_WIDTH             => 5,
+            ADDR_WIDTH             => 9,
             ASYNC_RESET            => ASYNC_RESET,
             USE_EXT_TRIGGER        => false,
             RUN_LENGTH_COMPRESSION => 0
@@ -259,34 +259,34 @@ begin
 --        end if;
 --    end process;
 
-    process
-        variable counter : integer range 0 to 3;
-    begin
-        --sample_enable <= '0';
-        data_in_la <= (others => '0');
-        wait until rst = '0';
-        wait until rising_edge(clk);
-        wait for T/5;
-        counter := 0;
-
-        while true loop
-            --sample_enable <= '0';
-            --wait for T;
-            --sample_enable <= '1';
-            if counter = 3 then
-                data_in_la <= std_logic_vector(unsigned(data_in_la) + 1);
-                counter := 0;
-            else
-                counter := counter + 1;
-            end if;
-            wait for T;
-        end loop;
-
-        wait;
-    end process;
+--    process
+--        variable counter : integer range 0 to 3;
+--    begin
+--        --sample_enable <= '0';
+--        data_in_la <= (others => '0');
+--        wait until rst = '0';
+--        wait until rising_edge(clk);
+--        wait for T/5;
+--        counter := 0;
+--
+--        while true loop
+--            --sample_enable <= '0';
+--            --wait for T;
+--            --sample_enable <= '1';
+--            if counter = 3 then
+--                data_in_la <= std_logic_vector(unsigned(data_in_la) + 1);
+--                counter := 0;
+--            else
+--                counter := counter + 1;
+--            end if;
+--            wait for T;
+--        end loop;
+--
+--        wait;
+--    end process;
 
     sample_enable <= '1';
-    --data_in_la <= data_out_wfg when output_active = '1' else x"0000";
+    data_in_la <= data_out_wfg when output_active = '1' else x"0000";
 
     wfg: component WaveformGeneratorTop
         generic map(

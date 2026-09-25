@@ -8,7 +8,7 @@ misc, ACK/NAK, locking) and the supported bus master cores.
 
 ## Requirements
 
-* Linux (only tested platform; patches for other systems are welcome)
+* Linux, or Windows with MinGW-w64 (e.g. [MSYS2](https://www.msys2.org))
 * GNU Octave including development files (`mkoctfile`; `octave-devel` on
   Fedora, `octave-dev` on Debian/Ubuntu). Tested with Octave 9.4.
 * SWIG
@@ -21,11 +21,13 @@ cd sw/BusAccess/octave
 make
 ```
 
-This builds the library first if needed (see the
-[main README](../README.md#building)).
+This creates `BusAccess.oct`.
 
-This creates `BusAccess.oct`. It finds `libBusAccess.so` on its own, so
-`LD_LIBRARY_PATH` is not needed.
+* Linux: the module links `libBusAccess.so` and builds it first if needed (see
+  the [main README](../README.md#building)). It finds the library on its
+  own, so `LD_LIBRARY_PATH` is not needed.
+* Windows: the library is compiled into `BusAccess.oct`, so no DLL has to be
+  found at runtime.
 
 To use the module from another directory, add `sw/BusAccess/octave` to the
 Octave search path, e.g. `addpath("<path>/sw/BusAccess/octave")`.

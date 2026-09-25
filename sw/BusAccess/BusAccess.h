@@ -9,7 +9,10 @@
     #include <windows.h>
 #endif
 
-#if defined __ELF__
+/* IPDBG_STATIC: the library sources are compiled directly into a program or module */
+#if defined IPDBG_STATIC
+    #define API
+#elif defined __ELF__
     #define API __attribute((visibility("default")))
 #elif defined EXPORT
     #define API __declspec(dllexport)

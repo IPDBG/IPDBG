@@ -83,7 +83,7 @@ configured as ROM.
 
 Requirements:
 
-* Linux (only tested platform; patches for other systems are welcome)
+* Linux, or Windows with MinGW-w64 (e.g. [MSYS2](https://www.msys2.org))
 * GCC/G++ (or Clang) with C++17 support, GNU make
 
 ```sh
@@ -91,7 +91,7 @@ cd sw/BusAccess
 make
 ```
 
-This builds the library into `bin/Release`:
+This builds the library into `bin/Release`. On Linux:
 
 | File                    | Purpose                                         |
 |-------------------------|-------------------------------------------------|
@@ -99,13 +99,29 @@ This builds the library into `bin/Release`:
 | `libBusAccess.so.0`     | Symlink, SONAME used by programs at runtime     |
 | `libBusAccess.so`       | Symlink used when linking                       |
 
-`make clean` removes the build output. The Code::Blocks project in this
+On Windows:
+
+| File                    | Purpose                                         |
+|-------------------------|-------------------------------------------------|
+| `libBusAccess.dll`      | The library (C API and C++ class)               |
+| `libBusAccess.dll.a`    | Import library used when linking                |
+
+`make test` builds the example program `bin/Release/test` (`test.exe` on
+Windows) from `test.c`; host and port are optional arguments (default
+`127.0.0.1 4245`). `make clean` removes the build output. The Code::Blocks project in this
 directory builds the same library (target *Release*).
 
 To use the library from your own program, add `sw/BusAccess` to the include
-path and link with `-L<path>/sw/BusAccess/bin/Release -lBusAccess`. At runtime
-the loader has to find `libBusAccess.so.0`, e.g. via
-`-Wl,-rpath,<path>/sw/BusAccess/bin/Release` or `LD_LIBRARY_PATH`.
+path and link with `-L<path>/sw/BusAccess/bin/Release -lBusAccess`.
+At runtime the library has to be found:
+
+* Linux: the loader has to find `libBusAccess.so.0`, e.g. via
+  `-Wl,-rpath,<path>/sw/BusAccess/bin/Release` or `LD_LIBRARY_PATH`.
+* Windows: `libBusAccess.dll` has to be in the directory of your program or
+  in `PATH`.
+
+The Python and Octave bindings can be built on Linux and on Windows with
+MSYS2.
 
 ## C API
 

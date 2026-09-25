@@ -1,0 +1,5 @@
+WaveformGeneratorCxx_wrap.cxx
+WaveformGeneratorCxx_wrap.o
+WaveformGenerator.py
+_WaveformGenerator.so
+__pycache__/

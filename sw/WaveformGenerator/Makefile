@@ -1,8 +1,8 @@
-# IPDBG BusAccess library (C API + C++ class)
+# IPDBG WaveformGenerator library (C API + C++ class)
 #
 #   make          build the library into bin/Release
-#                 Linux:   libBusAccess.so (+ versioned names)
-#                 Windows: libBusAccess.dll and libBusAccess.dll.a (MinGW-w64, e.g. MSYS2)
+#                 Linux:   libWaveformGenerator.so (+ versioned names)
+#                 Windows: libWaveformGenerator.dll and libWaveformGenerator.dll.a (MinGW-w64, e.g. MSYS2)
 #   make test     build bin/Release/test (example program, see test.c)
 #   make clean    remove build output
 
@@ -20,18 +20,18 @@ CXXFLAGS ?= -O2 -g
 override CFLAGS   += -std=gnu11 -Wall -Wextra -MMD -MP
 override CXXFLAGS += -std=c++17 -Wall -Wextra -MMD -MP
 
-OBJS := $(OBJDIR)/BusAccess.o $(OBJDIR)/BusAccessCxx.o
+OBJS := $(OBJDIR)/WaveformGenerator.o $(OBJDIR)/WaveformGeneratorCxx.o
 
 ifeq ($(OS),Windows_NT)
-    LIB     := $(BINDIR)/libBusAccess.dll
-    IMPLIB  := $(BINDIR)/libBusAccess.dll.a
+    LIB     := $(BINDIR)/libWaveformGenerator.dll
+    IMPLIB  := $(BINDIR)/libWaveformGenerator.dll.a
     TEST    := $(BINDIR)/test.exe
     LIBS    := -lws2_32
     OUTPUTS := $(LIB) $(IMPLIB) $(TEST)
     # the DLL exports its functions, programs using it import them
     $(OBJS): override CPPFLAGS += -DEXPORT
 else
-    LIBNAME := libBusAccess.so
+    LIBNAME := libWaveformGenerator.so
     SONAME  := $(LIBNAME).$(VERSION_MAJOR)
     REAL    := $(LIBNAME).$(VERSION)
     LIB     := $(BINDIR)/$(LIBNAME)
@@ -54,7 +54,7 @@ $(LIB): $(OBJS) | $(BINDIR)
 
 # the DLL is found because test.exe is in the same directory
 $(TEST): $(OBJDIR)/test.o $(LIB)
-	$(CC) $< $(LDFLAGS) -L$(BINDIR) -lBusAccess -o $@
+	$(CC) $< $(LDFLAGS) -L$(BINDIR) -lWaveformGenerator -o $@
 
 else
 
@@ -69,7 +69,7 @@ $(BINDIR)/$(LIBNAME): $(BINDIR)/$(SONAME)
 
 # rpath: find the library next to the program, no LD_LIBRARY_PATH needed
 $(TEST): $(OBJDIR)/test.o $(LIB)
-	$(CC) $< $(LDFLAGS) -L$(BINDIR) -lBusAccess -Wl,-rpath,'$$ORIGIN' -o $@
+	$(CC) $< $(LDFLAGS) -L$(BINDIR) -lWaveformGenerator -Wl,-rpath,'$$ORIGIN' -o $@
 
 endif
 

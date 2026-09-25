@@ -1,3 +1,7 @@
+/* Example for the IPDBG BusAccess C API.
+ *
+ *   test [host [port]]      default: 127.0.0.1 4245
+ */
 #include <stdio.h>
 #include <unistd.h>
 #include "BusAccess.h"
@@ -5,8 +9,8 @@
 
 int main(int argc, char *argv[])
 {
-    char *addr = "127.0.0.1";
-    char *port = "4245";
+    const char *addr = argc > 1 ? argv[1] : "127.0.0.1";
+    const char *port = argc > 2 ? argv[2] : "4245";
 
     struct IpdbgBusAccessHandle *ba;
 
@@ -23,7 +27,8 @@ int main(int argc, char *argv[])
     int ret = IpdbgBusAccess_open(ba, addr, port);
     if (ret != RET_OK)
     {
-        printf("opening BusAccessor feature failed!\n");
+        printf("opening BusAccessor feature failed: %s\n", IpdbgBusAccess_getLastError(ba));
+        IpdbgBusAccess_delete(ba);
         return -1;
     }
 
@@ -45,11 +50,11 @@ int main(int argc, char *argv[])
         }
 
         if (ret == RET_OK)
-            printf("Field %s has size of %d\n", field, sz);
+            printf("Field %s has size of %zu\n", field, sz);
 
         else
         {
-            printf("failed to get size of field &s\n", field);
+            printf("failed to get size of field %s\n", field);
             return -2;
         }
 

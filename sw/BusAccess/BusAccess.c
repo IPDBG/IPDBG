@@ -1,13 +1,16 @@
+/* winsock2.h has to be included before windows.h (included by BusAccess.h) */
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #ifdef _MSC_VER
+        #pragma comment(lib, "ws2_32.lib") /* MSVC only, MinGW links -lws2_32 */
+    #endif
+#endif
+
 #include "BusAccess.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-
-#ifdef _WIN32
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib")
-#endif
 #include <string.h>
 #include <unistd.h>
 #ifndef _WIN32
@@ -34,6 +37,13 @@
 #define NACK_RESP        0x33
 
 #define INVALD_SOCKET      -1
+
+/* sockets are closed with closesocket() on Windows, close() does not work for them */
+#ifdef _WIN32
+    #define CLOSE_SOCKET closesocket
+#else
+    #define CLOSE_SOCKET close
+#endif
 
 #define ROUND_UP(a, b) ((a + b - 1) / b)
 
@@ -322,7 +332,7 @@ int API IpdbgBusAccess_open(struct IpdbgBusAccessHandle *handle, const char *ipA
         }
         if (connect(handle->socket, res->ai_addr, res->ai_addrlen) != 0) {
             connectError = IpdbgBusAccess_socketError();
-            close(handle->socket);
+            CLOSE_SOCKET(handle->socket);
             handle->socket = INVALD_SOCKET;
             continue;
         }
@@ -403,7 +413,7 @@ static int IpdbgBusAccess_closeSocket(struct IpdbgBusAccessHandle *handle)
 #endif
 
     int ret = RET_OK;
-    if (close(handle->socket) < 0)
+    if (CLOSE_SOCKET(handle->socket) < 0)
     {
         if (handle->lastError[0] == '\0') // keep the original error when cleaning up after a failure
             IpdbgBusAccess_setError(handle, "close failed (%s)", IpdbgBusAccess_socketError());

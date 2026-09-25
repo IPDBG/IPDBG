@@ -28,8 +28,9 @@ captures and process the data further – for example, a spectrum analyzer
 running FFTs on signals captured inside the FPGA.
 
 **Waveform Generator**
-Drive stimuli into your design, either from sigrok or from
-[GNU Octave](https://octave.org) functions. For example, generate a
+Drive stimuli into your design, either from sigrok or from your own
+programs using the C library and the C++, Python and
+[GNU Octave](https://octave.org) wrappers. For example, generate a
 waveform in Octave and send it to the generator:
 
 ```octave
@@ -42,8 +43,12 @@ for k = 1:numel(bytes)
 end
 scl = [scl 0 1 1 1];  sda = [sda 0 0 1 1];   % STOP (rising SDA while SCL high)
 wave = scl + 2*sda;
-IPDBG_WFG("127.0.0.1", "4243", wave)
-IPDBG_WFG("127.0.0.1", "4243", "start")
+WaveformGenerator;
+wfg = WaveformGenerator.IpdbgWaveformGenerator();
+wfg.open("127.0.0.1", "4243");
+wfg.write(wave);
+wfg.start();
+wfg.close();
 ```
 
 Looped back to the Logic Analyzer, the result shows up in PulseView:
