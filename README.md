@@ -137,8 +137,10 @@ everything above that is identical to real hardware:
 
 You need GHDL, [sigrok-cli](https://sigrok.org/wiki/Sigrok-cli) or
 [PulseView](https://sigrok.org/wiki/PulseView), and OpenOCD with the
-IPDBG server (0.12 or later) and the `remote_bitbang` adapter
-(`./configure --enable-remote-bitbang` if your build lacks it).
+IPDBG server and the `remote_bitbang` adapter
+(`./configure --enable-remote-bitbang` if your build lacks it). The
+configuration needs OpenOCD 1.0.0 or later, or OpenOCD from git including
+commit 52ea420 (*ipdbg: simplify command chains*).
 
 ```
 cd sw/CoSim
@@ -160,8 +162,19 @@ host `127.0.0.1`, port `4242`) or with sigrok-cli:
 sigrok-cli --driver=ipdbg-la:conn=tcp-raw/127.0.0.1/4242 --scan
 ```
 
-TODO: what the demo design shows in the Logic Analyzer and which ports
-IoView and the Waveform Generator use.
+The demo design provides all four tools, each on its own port:
+
+| Port | Tool               |
+|------|--------------------|
+| 4242 | Logic Analyzer     |
+| 4243 | Waveform Generator |
+| 4244 | IoView             |
+| 4245 | BusAccess          |
+
+The Logic Analyzer records the output of the Waveform Generator, so you
+can generate a waveform and capture it right away. The
+[CoSim README](sw/CoSim/README.md) describes the demo design and shows an
+example for each tool.
 
 ### On real hardware
 
