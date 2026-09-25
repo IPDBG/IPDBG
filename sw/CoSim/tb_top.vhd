@@ -372,14 +372,16 @@ begin
                 if ce = '1' then
                     if stb = '1' and cyc = '1' then
                         if we = '1' then
+                            -- 32 bit data, 2 bit sel: each sel bit selects 16 bits
                             if sel(0) = '1' then
-                                reg( 7 downto 0) <= wr_dat( 7 downto 0);
-                                report "write to address " & integer'image(to_integer(unsigned(adr))) & " value: " &
-                                integer'image(to_integer(unsigned(wr_dat)));
+                                reg(15 downto 0) <= wr_dat(15 downto 0);
                             end if;
                             if sel(1) = '1' then
-                                reg(15 downto 8) <= wr_dat(15 downto 8);
+                                reg(31 downto 16) <= wr_dat(31 downto 16);
                             end if;
+                            report "write to address " & integer'image(to_integer(unsigned(adr))) &
+                                   " value: 0x" & to_hstring(wr_dat) &
+                                   " sel: " & to_string(sel);
                         end if;
                     end if;
                 end if;
