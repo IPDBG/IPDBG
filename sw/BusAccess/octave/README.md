@@ -10,7 +10,7 @@ misc, ACK/NAK, locking) and the supported bus master cores.
 
 * Linux (only tested platform; patches for other systems are welcome)
 * GNU Octave including development files (`mkoctfile`; `octave-devel` on
-  Fedora, `liboctave-dev` on Debian/Ubuntu). Tested with Octave 9.4.
+  Fedora, `octave-dev` on Debian/Ubuntu). Tested with Octave 9.4.
 * SWIG
 * GCC/G++ with C++17 support, GNU make
 

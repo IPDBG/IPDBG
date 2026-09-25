@@ -5,9 +5,10 @@ It provides small debug cores that you instantiate in your design and
 host-side tools that connect to them – over JTAG, UART or other links,
 without requiring extra pins in most cases.
 
-The same cores and the same host tools work on FPGAs from Lattice, Intel,
-Efinix, Gowin, Microchip/Actel and others, so your debug infrastructure
-stays the same when you switch FPGA families.
+The same cores and the same host tools work on FPGAs from Lattice,
+Intel/Altera, Efinix, Gowin, Microchip/Actel, AMD/Xilinx, Cologne Chip 
+and others, so your debug infrastructure stays the same when you switch 
+FPGA families.
 
 ## Features
 
@@ -16,10 +17,6 @@ Capture internal signals with configurable triggers. Captures are displayed
 and analysed in [sigrok](https://sigrok.org) / PulseView, which gives you
 access to the full set of sigrok protocol decoders (SPI, I²C, UART, CAN, …)
 and an enum decoder for showing FSM states by name.
-
-![Logic Analyzer with protocol decoders in PulseView](docs/images/pulseview-decoders.png)
-*Protocol decoders stacked on a capture: the raw SPI signals are decoded
-into bytes and further into register reads and writes.*
 
 ![FSM states shown by name with the enum decoder](docs/images/pulseview-enum.png)
 *The enum decoder shows the state register of an FSM by its state names
@@ -36,13 +33,23 @@ Drive stimuli into your design, either from sigrok or from
 waveform in Octave and send it to the generator:
 
 ```octave
-% TODO: 4-5 lines of Octave
+bytes = [0x91 0x16 0x00];  ack = [0 0 1];     % read address 0x48, 22.0 °C; NACK after last byte
+scl = [1 1 1];  sda = [1 1 0];                % Idle, START (falling SDA while SCL high)
+for k = 1:numel(bytes)
+  for b = [bitget(bytes(k), 8:-1:1), ack(k)]  % MSB first, following ACK/NACK
+    scl = [scl 0 1 1 0];  sda = [sda b b b b];
+  end
+end
+scl = [scl 0 1 1 1];  sda = [sda 0 0 1 1];   % STOP (rising SDA while SCL high)
+wave = scl + 2*sda;
+IPDBG_WFG("127.0.0.1", "4243", wave)
+IPDBG_WFG("127.0.0.1", "4243", "start")
 ```
 
 Looped back to the Logic Analyzer, the result shows up in PulseView:
 
-![Waveform generated in Octave, captured with the Logic Analyzer](docs/images/wfg-octave-pulseview.png)
-*A UART frame generated in Octave, played by the Waveform Generator,
+![Waveform generated in Octave, captured with the Logic Analyzer](doc/pulseview_w_i2c_decoder.png)
+*An  I²C frame generated in Octave, played by the Waveform Generator,
 captured by the Logic Analyzer and decoded in PulseView.*
 
 **BusAccess**
@@ -54,7 +61,7 @@ the Python, C++ and Octave wrappers – ideal for scripted tests and bring-up.
 Read and set individual signals interactively: IoProbe is the IP core in
 the FPGA, IoView the host application.
 
-![IoView](docs/images/ioview.png)
+![IoView](doc/ioview.png)
 *IoView reading inputs and setting outputs of an IoProbe core.*
 
 ## Architecture
