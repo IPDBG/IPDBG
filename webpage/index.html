@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IPDBG – IP Debugger for FPGAs</title>
+<meta name="description" content="Vendor-independent, open source debug cores for FPGAs: logic analyzer, waveform generator, bus master and I/O probe, connected over JTAG, UART or your own transport.">
+<style>
+  :root {
+    --bg: #fbfbf9;
+    --fg: #1d1f21;
+    --muted: #5c6166;
+    --line: #dcdcd6;
+    --card: #ffffff;
+    --accent: #1f6feb;
+    --code-bg: #f0f0eb;
+    --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181b;
+      --fg: #e4e4e0;
+      --muted: #9a9fa5;
+      --line: #2e3237;
+      --card: #1d2024;
+      --accent: #58a6ff;
+      --code-bg: #23272c;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.6 var(--sans);
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+
+  header.top {
+    border-bottom: 1px solid var(--line);
+  }
+  header.top .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding-top: 14px; padding-bottom: 14px; flex-wrap: wrap;
+  }
+  .logo { font: 700 20px/1 var(--mono); letter-spacing: .02em; color: var(--fg); }
+  .logo span { color: var(--accent); }
+  nav a { margin-left: 20px; color: var(--muted); font-size: 15px; }
+  nav a:first-child { margin-left: 0; }
+  nav a:hover { color: var(--fg); text-decoration: none; }
+
+  .hero { padding-top: 56px; padding-bottom: 32px; }
+  .hero h1 {
+    font-size: clamp(28px, 5vw, 40px); line-height: 1.2; margin: 0 0 16px;
+    font-weight: 700; letter-spacing: -.01em;
+  }
+  .hero p { font-size: 18px; color: var(--muted); max-width: 680px; margin: 0 0 24px; }
+  .btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 9px 16px; border-radius: 6px;
+    border: 1px solid var(--line); color: var(--fg); background: var(--card);
+    font-size: 15px;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn:hover { text-decoration: none; filter: brightness(1.05); }
+
+  section { padding: 40px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 24px; margin: 0 0 8px; }
+  .lead { color: var(--muted); margin: 0 0 24px; max-width: 720px; }
+
+  .diagram {
+    background: #fff; border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px; overflow-x: auto;
+  }
+  .diagram img { display: block; width: 100%; min-width: 640px; height: auto; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 20px; border-top: 4px solid var(--c);
+  }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card p { margin: 0 0 10px; color: var(--muted); font-size: 15px; }
+  .card .more { font-size: 14px; }
+  .c-la  { --c: #2563eb; }
+  .c-wfg { --c: #059669; }
+  .c-bus { --c: #d97706; }
+  .c-io  { --c: #9333ea; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { width: 160px; font-weight: 600; white-space: nowrap; }
+  .note { font-size: 14px; color: var(--muted); margin-top: 10px; }
+
+  .transports { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+  .transports div { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; background: var(--card); }
+  .transports b { display: block; margin-bottom: 4px; }
+  .transports span { color: var(--muted); font-size: 14px; }
+
+  pre {
+    background: var(--code-bg); border-radius: 6px; padding: 14px 16px;
+    overflow-x: auto; font: 14px/1.5 var(--mono); margin: 0 0 12px;
+  }
+  code { font-family: var(--mono); font-size: .92em; }
+  pre .c { color: var(--muted); }
+
+  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
+  .shots figure { margin: 0; }
+  .shots figure.wide { grid-column: 1 / -1; }
+  .shots img {
+    display: block; width: 100%; height: auto; border-radius: 6px;
+    border: 1px solid var(--line); background: #2b2b2b;
+  }
+  .shots figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  @media (max-width: 720px) { .shots { grid-template-columns: 1fr; } }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  @media (max-width: 720px) {
+    .grid, .transports { grid-template-columns: 1fr; }
+    nav a { margin-left: 14px; }
+    th { width: auto; white-space: normal; }
+    .hero { padding-top: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#">IP<span>DBG</span></a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#devices">Devices</a>
+      <a href="#start">Get started</a>
+      <a href="https://github.com/IPDBG/IPDBG">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <h1>Debug cores for FPGAs,<br>independent of the vendor.</h1>
+    <p>
+      IPDBG provides small debug cores for your design and host tools that
+      connect to them over JTAG, UART or your own transport, usually without
+      extra pins. The same cores and tools work on AMD/Xilinx, Intel, Lattice,
+      Efinix, Gowin and Microchip FPGAs.
+    </p>
+    <div class="btns">
+      <a class="btn primary" href="https://github.com/IPDBG/IPDBG#quick-start">Get started</a>
+      <a class="btn" href="https://github.com/IPDBG/IPDBG">Source on GitHub</a>
+    </div>
+  </div>
+
+  <section id="architecture">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <p class="lead">
+        Each host tool talks to exactly one core in the FPGA over its own TCP
+        port. A bridge carries all connections over one physical link, and a hub
+        in the FPGA distributes them to the cores. Several tools can run at the
+        same time.
+      </p>
+      <div class="diagram">
+        <img src="architecture.svg" alt="Host tools connect over TCP to a bridge (OpenOCD for JTAG or a UART bridge), which reaches the transport interface and hub in the FPGA; the hub connects to the Logic Analyzer, Waveform Generator, BusAccess and IoProbe cores.">
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>Features</h2>
+      <p class="lead">Four cores, each with its host-side counterpart.</p>
+      <div class="grid">
+        <div class="card c-la">
+          <h3>Logic Analyzer</h3>
+          <p>
+            Capture internal signals with triggers and analyse them in
+            sigrok / PulseView, with all sigrok protocol decoders and FSM
+            states shown by name. Scriptable through the libsigrok C/C++ API
+            and Python bindings.
+          </p>
+          <a class="more" href="https://github.com/IPDBG/IPDBG#features">Details →</a>
+        </div>
+        <div class="card c-wfg">
+          <h3>Waveform Generator</h3>
+          <p>
+            Play waveforms into your design from sigrok or from a C
+            library with C++, Python and Octave bindings. Repeated or one-shot,
+            optionally double-buffered for glitch-free updates.
+          </p>
+          <a class="more" href="https://github.com/IPDBG/IPDBG/blob/master/sw/WaveformGenerator/README.md">Documentation →</a>
+        </div>
+        <div class="card c-bus">
+          <h3>BusAccess</h3>
+          <p>
+            Bus master for AXI4-Lite, Wishbone, AHB, APB, Avalon and RISC-V
+            DMI. Read and write registers from a C library or its C++, Python
+            and Octave bindings, for scripted tests and bring-up.
+          </p>
+          <a class="more" href="https://github.com/IPDBG/IPDBG/blob/master/sw/BusAccess/README.md">Documentation →</a>
+        </div>
+        <div class="card c-io">
+          <h3>IoView / IoProbe</h3>
+          <p>
+            Read and set individual signals interactively: IoProbe is the core
+            in the FPGA, IoView the host application.
+          </p>
+          <a class="more" href="https://github.com/IPDBG/IPDBG/blob/master/sw/CoSim/README.md#ioview">Try it in the co-simulation →</a>
+        </div>
+      </div>
+      <div class="shots">
+        <figure class="wide">
+          <a href="pulseview-enum.png"><img src="pulseview-enum.png" loading="lazy" alt="PulseView showing an SPI master FSM: the states decoded by name, the SPI transfers and the ADXL345 register accesses"></a>
+          <figcaption>An SPI master FSM reading an ADXL345: the enum decoder shows the FSM states by name, the SPI and ADXL345 decoders the transfers.</figcaption>
+        </figure>
+        <figure class="wide">
+          <a href="pulseview_w_i2c_decoder.png"><img src="pulseview_w_i2c_decoder.png" loading="lazy" alt="PulseView decoding an I2C read from an LM75 temperature sensor"></a>
+          <figcaption>An I²C frame generated in Octave, played by the Waveform Generator, captured by the Logic Analyzer and decoded as an LM75 temperature.</figcaption>
+        </figure>
+        <figure>
+          <a href="ioview.png"><img src="ioview.png" loading="lazy" alt="IoView window with input LEDs and output check boxes"></a>
+          <figcaption>IoView reading inputs and setting outputs of an IoProbe core.</figcaption>
+        </figure>
+        <figure>
+          <figcaption style="margin-top:0">
+            All screenshots were taken with the co-simulation, no hardware
+            needed. The scripts are in
+            <a href="https://github.com/IPDBG/IPDBG/tree/master/sw/CoSim/examples">sw/CoSim/examples</a>.
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="devices">
+    <div class="wrap">
+      <h2>Supported devices</h2>
+      <p class="lead">JTAG through the vendor's user scan chain, so no extra pins are needed.</p>
+      <table>
+        <tr><th>AMD/Xilinx</th><td>Spartan-3, -6, -7, Virtex-4, -6, 7 Series, Zynq-7000, UltraScale*, UltraScale+*</td></tr>
+        <tr><th>Intel/Altera</th><td>Arria II/II GZ/V/V GZ, Cyclone III/IV/IV E/V/10 LP, MAX V, MAX 10, Stratix III/V</td></tr>
+        <tr><th>Lattice</th><td>ECP2, ECP3, ECP5, Certus</td></tr>
+        <tr><th>Efinix</th><td>Trion, Titanium</td></tr>
+        <tr><th>Gowin</th><td>GW1N</td></tr>
+        <tr><th>Microchip/Actel</th><td>ProASIC3</td></tr>
+      </table>
+      <p class="note">* Same BSCANE2 primitive as the 7 Series; less tested so far.</p>
+
+      <div class="transports">
+        <div><b>Generic JTAG</b><span>Soft JTAG on 4 user I/Os, for any other FPGA.</span></div>
+        <div><b>UART</b><span>2 user I/Os. SPI and I²C are planned.</span></div>
+        <div><b>Your own</b><span>E.g. a microcontroller running lwIP in front of a memory-mapped FPGA.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <h2>Get started</h2>
+      <p class="lead">
+        Try it without hardware: the co-simulation replaces the FPGA and the
+        JTAG adapter with GHDL, and everything above it stays the same.
+      </p>
+<pre><span class="c"># terminal 1</span>
+cd sw/CoSim &amp;&amp; make &amp;&amp; ./CoSim
+
+<span class="c"># terminal 2</span>
+cd sw/CoSim &amp;&amp; openocd -f ipdbg_JtagSim.cfg
+
+<span class="c"># then connect</span>
+sigrok-cli --driver=ipdbg-la:conn=tcp-raw/127.0.0.1/4242 --scan</pre>
+      <p>
+        The demo design serves all four cores (ports 4242–4245) and loops the
+        Waveform Generator back into the Logic Analyzer.
+        <a href="https://github.com/IPDBG/IPDBG/blob/master/sw/CoSim/README.md">CoSim documentation →</a>
+      </p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      IPDBG · Hardware: CERN-OHL-W-2.0 · Software: MPL-2.0
+    </div>
+    <div>
+      <a href="https://github.com/IPDBG/IPDBG/issues">Issues</a> ·
+      <a href="https://github.com/IPDBG/IPDBG/pulls">Pull requests</a> ·
+      <a href="https://github.com/IPDBG/IPDBG">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
