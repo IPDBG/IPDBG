@@ -52,6 +52,9 @@ wfg.start();
 wfg.close();
 ```
 
+See the [WaveformGenerator documentation](sw/WaveformGenerator/README.md)
+for the C API and the bindings.
+
 Looped back to the Logic Analyzer, the result shows up in PulseView:
 
 ![Waveform generated in Octave, captured with the Logic Analyzer](doc/pulseview_w_i2c_decoder.png)
@@ -59,9 +62,10 @@ Looped back to the Logic Analyzer, the result shows up in PulseView:
 captured by the Logic Analyzer and decoded in PulseView.*
 
 **BusAccess**
-A bus master core for AXI4-Lite, Wishbone, AHB, APB and Avalon.
+A bus master core for AXI4-Lite, Wishbone, AHB, APB, Avalon and RISC-V DMI.
 Read and write registers of your design from a PC using the C library or
-the Python, C++ and Octave wrappers – ideal for scripted tests and bring-up.
+the C++, Python and Octave bindings – ideal for scripted tests and bring-up.
+See the [BusAccess documentation](sw/BusAccess/README.md).
 
 **IoView / IoProbe**
 Read and set individual signals interactively: IoProbe is the IP core in
@@ -191,7 +195,10 @@ TODO: example for one common board.
 | Directory | Contents |
 |-----------|----------|
 | [`rtl/`](https://github.com/IPDBG/IPDBG/tree/master/rtl) | VHDL IP cores and transport interfaces |
-| [`sw/`](https://github.com/IPDBG/IPDBG/tree/master/sw)   | Host software and libraries |
+| [`sw/BusAccess`](sw/BusAccess/README.md) | BusAccess library with C++, Python and Octave bindings |
+| [`sw/WaveformGenerator`](sw/WaveformGenerator/README.md) | WaveformGenerator library with C++, Python and Octave bindings |
+| [`sw/IoView`](sw/IoView) | IoView host application |
+| [`sw/CoSim`](sw/CoSim/README.md) | Co-simulation with GHDL, try IPDBG without hardware |
 
 The IPDBG server for JTAG is part of [OpenOCD](https://openocd.org),
 the Logic Analyzer driver is part of [libsigrok](https://sigrok.org).
