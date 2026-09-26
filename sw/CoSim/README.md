@@ -112,6 +112,34 @@ sigrok-cli --driver=ipdbg-la:conn=tcp-raw/127.0.0.1/4242 --samples 512 -o ramp.s
 The [main README](../../README.md#features) shows a more elaborate example:
 an I²C frame generated in Octave and decoded in PulseView.
 
+### Protocol decoders: an SPI master FSM
+
+[`examples/spi_demo.m`](examples/spi_demo.m) lets the Waveform Generator
+play the signals of an SPI master FSM that reads an ADXL345 accelerometer:
+first the device ID, then the X, Y and Z values. With the Octave bindings
+(see [`sw/WaveformGenerator/octave`](../WaveformGenerator/octave/README.md)):
+
+```octave
+cd sw/CoSim/examples
+addpath("../../WaveformGenerator/octave")
+spi_demo
+```
+
+Capture 500 samples with the Logic Analyzer in PulseView and add these
+decoders:
+
+| Channels  | Signal       | Decoder |
+|-----------|--------------|---------|
+| D2..D0    | FSM state    | *Numbers and State*, interpretation `enum`, mapping file [`examples/spi_demo_states.json`](examples/spi_demo_states.json) (absolute path) |
+| D3        | busy         | – |
+| D4        | CS#          | *SPI*: CS# = D4, CLK = D5, MOSI = D6, MISO = D7, CPOL = 1, CPHA = 1; stack *ADXL345* on it |
+| D5        | SCLK         | |
+| D6        | MOSI         | |
+| D7        | MISO         | |
+| D10..D8   | byte counter | *Numbers and State*, interpretation `unsigned` |
+
+The main README shows the result.
+
 ### IoView
 
 Start IoView, choose *IoView-IP* → *Connect* and enter host `127.0.0.1`
@@ -143,6 +171,7 @@ The write is reported in the output of `./CoSim`.
 | `JtagAdapter.vhd`   | JTAG adapter driven by the `remote_bitbang` protocol |
 | `main.cpp`          | TCP server for `remote_bitbang`, starts the GHDL simulation |
 | `ipdbg_JtagSim.cfg` | OpenOCD configuration |
+| `examples/`         | Scripts for the tools, see [Protocol decoders](#protocol-decoders-an-spi-master-fsm) |
 | `Makefile`          | Build |
 | `CoSim.cbp`         | Code::Blocks project |
 

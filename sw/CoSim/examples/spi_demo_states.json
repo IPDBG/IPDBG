@@ -1,0 +1,7 @@
+{
+  "IDLE": 0,
+  "SELECT": 1,
+  "CMD": 2,
+  "DATA": 3,
+  "DESELECT": 4
+}

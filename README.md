@@ -6,8 +6,8 @@ host-side tools that connect to them – over JTAG, UART or other links,
 without requiring extra pins in most cases.
 
 The same cores and the same host tools work on FPGAs from Lattice,
-Intel/Altera, Efinix, Gowin, Microchip/Actel, AMD/Xilinx, Cologne Chip 
-and others, so your debug infrastructure stays the same when you switch 
+Intel/Altera, Efinix, Gowin, Microchip/Actel, AMD/Xilinx, Cologne Chip
+and others, so your debug infrastructure stays the same when you switch
 FPGA families.
 
 ## Features
@@ -18,9 +18,10 @@ and analysed in [sigrok](https://sigrok.org) / PulseView, which gives you
 access to the full set of sigrok protocol decoders (SPI, I²C, UART, CAN, …)
 and an enum decoder for showing FSM states by name.
 
-![FSM states shown by name with the enum decoder](docs/images/pulseview-enum.png)
-*The enum decoder shows the state register of an FSM by its state names
-instead of raw bit patterns.*
+![FSM states shown by name with the enum decoder](doc/pulseview-enum.png)
+*The enum decoder shows the states of an FSM by name, the SPI and ADXL345
+decoders the transfers. Recorded with the [CoSim demo](sw/CoSim/README.md):
+the Waveform Generator plays the signals, the Logic Analyzer captures them.*
 
 The Logic Analyzer can also be controlled from your own programs through
 the libsigrok C/C++ API or its Python bindings: configure triggers, start
