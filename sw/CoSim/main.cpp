@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <string.h>
 
 #define PORT 3421
@@ -40,6 +41,8 @@ int init_socket(int *server_fd, struct sockaddr_in *address)
         printf("setsockopt failed");
         return -1;
     }
+    // Sending the single byte answers at once
+    setsockopt(*server_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
     address->sin_family = AF_INET;
     address->sin_addr.s_addr = INADDR_ANY;
     address->sin_port = htons(PORT);
