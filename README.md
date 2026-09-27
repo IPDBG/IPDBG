@@ -181,14 +181,23 @@ can generate a waveform and capture it right away. The
 [CoSim README](sw/CoSim/README.md) describes the demo design and shows an
 example for each tool.
 
-### On real hardware
+### On real hardware: Digilent Cmod S7
 
-The only thing that changes is the lower end of the chain: instead of the
-simulation you instantiate the IPDBG hub and the JTAG interface for your
-FPGA family in your design, and OpenOCD uses your JTAG adapter instead of
-`remote_bitbang`. The host tools stay exactly the same.
+[`rtl/demo/cmod-s7`](rtl/demo/cmod-s7/README.md) contains the same demo
+design for the
+[Digilent Cmod S7](https://digilent.com/reference/programmable-logic/cmod-s7/start)
+(Spartan-7 XC7S25). The free Vivado Standard edition supports this FPGA.
 
-TODO: example for one common board.
+```
+cd rtl/demo/cmod-s7
+vivado -mode batch -source build.tcl      # build the bitstream
+openocd -f demo.cfg                       # load it and start the IPDBG server
+```
+
+The cores are on the same ports as in the co-simulation (4242–4245), so
+all host tools and examples work unchanged. For your own design, instantiate
+the IPDBG hub and the JTAG interface for your FPGA family instead; the
+[JtagHub README](rtl/JtagHub/README.md) lists the files per family.
 
 ## Repository layout
 
