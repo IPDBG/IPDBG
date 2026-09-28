@@ -70,6 +70,7 @@ See the [BusAccess documentation](sw/BusAccess/README.md).
 **IoView / IoProbe**
 Read and set individual signals interactively: IoProbe is the IP core in
 the FPGA, IoView the host application.
+See the [IoView documentation](sw/IoView/README.md).
 
 ![IoView](doc/ioview.png)
 *IoView reading inputs and setting outputs of an IoProbe core.*
@@ -206,7 +207,7 @@ the IPDBG hub and the JTAG interface for your FPGA family instead; the
 | [`rtl/`](https://github.com/IPDBG/IPDBG/tree/master/rtl) | VHDL IP cores and transport interfaces |
 | [`sw/BusAccess`](sw/BusAccess/README.md) | BusAccess library with C++, Python and Octave bindings |
 | [`sw/WaveformGenerator`](sw/WaveformGenerator/README.md) | WaveformGenerator library with C++, Python and Octave bindings |
-| [`sw/IoView`](sw/IoView) | IoView host application |
+| [`sw/IoView`](sw/IoView/README.md) | IoView host application for the IoProbe core |
 | [`sw/CoSim`](sw/CoSim/README.md) | Co-simulation with GHDL, try IPDBG without hardware |
 
 The IPDBG server for JTAG is part of [OpenOCD](https://openocd.org),
