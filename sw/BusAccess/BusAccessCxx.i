@@ -21,6 +21,13 @@
     }
 }
 
+/* Octave: "x = Module.IpdbgBusAccess" without () gives the class, not an object;
+   calling a method on it would pass a null pointer: raise an error instead */
+%typemap(check) IpdbgBusAccess *self {
+    if (!$1)
+        SWIG_exception(SWIG_ValueError, "not an IpdbgBusAccess object, create one with IpdbgBusAccess()");
+}
+
 /* export/import macro of the headers, not needed by SWIG */
 #define API
 

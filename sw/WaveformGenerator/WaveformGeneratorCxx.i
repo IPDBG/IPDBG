@@ -103,6 +103,13 @@
 }
 #endif
 
+/* Octave: "x = Module.IpdbgWaveformGenerator" without () gives the class, not an object;
+   calling a method on it would pass a null pointer: raise an error instead */
+%typemap(check) IpdbgWaveformGenerator *self {
+    if (!$1)
+        SWIG_exception(SWIG_ValueError, "not an IpdbgWaveformGenerator object, create one with IpdbgWaveformGenerator()");
+}
+
 /* export/import macro of the headers, not needed by SWIG */
 #define API
 
