@@ -31,11 +31,10 @@ add_files [list \
     $rtl/WaveformGenerator/WaveformGeneratorController.vhd \
     $rtl/WaveformGenerator/WaveformGeneratorMemory.vhd \
     $rtl/WaveformGenerator/WaveformGeneratorTop.vhd \
-    $rtl/IoView/IoViewController.vhd \
-    $rtl/IoView/IoViewTop.vhd \
     $rtl/BusAccess/BusAccessController.vhd \
     $rtl/BusAccess/BusAccessStatemachine.vhd \
     $rtl/BusAccess/WbMaster.vhd \
+    $rtl/IoProbe/IoProbeTop.vhd \
     $here/top.vhd ]
 set_property top top [current_fileset]
 add_files -fileset constrs_1 $here/cmod-s7.xdc

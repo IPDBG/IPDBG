@@ -65,7 +65,7 @@ a JTAG hub:
 |------|--------------------|---------------|
 | 4242 | Logic Analyzer     | 16 channels, 512 samples, sampling every clock cycle |
 | 4243 | Waveform Generator | 16 bit, 512 samples, no double buffer |
-| 4244 | IoView             | 9 outputs, 18 inputs |
+| 4244 | IoProbe            | 9 outputs, 18 inputs, used with IoView |
 | 4245 | BusAccess          | Wishbone master (`WbMaster`), 16 bit address, 32 bit data, 2 bit `sel` |
 
 The cores are connected to each other, so you can see the effect of one
@@ -73,7 +73,7 @@ tool in another:
 
 * The Logic Analyzer records the output of the Waveform Generator. While
   the Waveform Generator is not playing, all channels are 0.
-* The IoView inputs are the outputs, twice: input bits 17..9 and 8..0 both
+* The IoProbe inputs are the outputs, twice: input bits 17..9 and 8..0 both
   show output bits 8..0.
 * Behind the Wishbone master is a single 32 bit register, which answers at
   every address. Each `sel` bit selects 16 bits of it. Every write is

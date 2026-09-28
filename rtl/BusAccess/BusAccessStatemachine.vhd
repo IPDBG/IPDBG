@@ -17,7 +17,8 @@ entity BusAccessStatemachine is
         W_DATA_WIDTH  : positive;
         STROBE_WIDTH  : natural;
         MISC_WIDTH    : natural;
-        MISC_INIT     : std_logic_vector
+        MISC_INIT     : std_logic_vector;
+        CORE_TYPE     : natural range 0 to 255 := 0 -- 0: bus master, 1: IoProbe, see VERSION_AND_ID
     );
     port (
         clk           : in    std_logic;
@@ -43,7 +44,16 @@ end entity BusAccessStatemachine;
 architecture behavioral of BusAccessStatemachine is
     signal   arst, srst          : std_logic;
     constant HOST_WORD_SIZE      : natural                       := 8;
-    constant VERSION_AND_ID      : std_logic_vector(31 downto 0) := x"0000001D";
+    -- First word of the answer to READ_WIDTHS_CMD, identifies the core to the host:
+    --   bits  7..0   protocol ID: x"1D" = BusAccess protocol
+    --   bits 15..8   protocol version: 0
+    --   bits 23..16  core type (generic CORE_TYPE): 0 = bus master, 1 = IoProbe
+    --   bits 31..24  reserved: 0
+    -- The host library checks the protocol ID and reports version and core type.
+    constant PROTOCOL_ID         : std_logic_vector(7 downto 0)  := x"1D";
+    constant PROTOCOL_VERSION    : std_logic_vector(7 downto 0)  := x"00";
+    constant VERSION_AND_ID      : std_logic_vector(31 downto 0) :=
+        x"00" & std_logic_vector(to_unsigned(CORE_TYPE, 8)) & PROTOCOL_VERSION & PROTOCOL_ID;
 
     pure function round_up (num : natural; den : positive) return natural is
     begin

@@ -108,7 +108,7 @@ architecture structure of top is
         );
     end component WaveformGeneratorTop;
 
-    component IOViewTop is
+    component IoProbeTop is
         generic(
             ASYNC_RESET : boolean := true
         );
@@ -122,7 +122,7 @@ architecture structure of top is
             probe_outputs        : out std_logic_vector;
             probe_outputs_update : out std_logic
         );
-    end component IOViewTop;
+    end component IoProbeTop;
 
     component WbMaster is
         generic (
@@ -171,7 +171,7 @@ architecture structure of top is
     signal la_probe   : std_logic_vector(15 downto 0);
     signal wfg_out    : std_logic_vector(15 downto 0);
 
-    signal io_view_rd : std_logic_vector(9 downto 0);
+    signal io_probe_rd : std_logic_vector(9 downto 0);
 
 begin
     jtag_hub_i : component JtagHub
@@ -242,7 +242,7 @@ begin
         );
 
 
-    io_probe_i : component IOViewTop
+    io_probe_i : component IoProbeTop
         generic map(
             ASYNC_RESET => false
         )
@@ -252,7 +252,7 @@ begin
             ce                   => '1',
             dn_lines             => dn_lines_2,
             up_lines             => up_lines_2,
-            probe_inputs         => io_view_rd,
+            probe_inputs         => io_probe_rd,
             probe_outputs        => leds,
             probe_outputs_update => open
         );
@@ -293,7 +293,7 @@ begin
 
         rd_dat     <= reg;
         ack        <= stb;
-        io_view_rd <= buttons & reg(7 downto 0);
+        io_probe_rd <= buttons & reg(7 downto 0);
 
         process(clk)
         begin

@@ -8,13 +8,13 @@
 set_property -dict { PACKAGE_PIN M9 IOSTANDARD LVCMOS33 } [get_ports { clk_pin }]
 create_clock -add -name sys_clk_pin -period 83.333 -waveform {0 41.667} [get_ports { clk_pin }]
 
-## LEDs, driven by the IoView outputs
+## LEDs, driven by the IoProbe outputs
 set_property -dict { PACKAGE_PIN E2    IOSTANDARD LVCMOS33 } [get_ports { leds[0] }]; #IO_L8P_T1_34 Sch=led[1]
 set_property -dict { PACKAGE_PIN K1    IOSTANDARD LVCMOS33 } [get_ports { leds[1] }]; #IO_L16P_T2_34 Sch=led[2]
 set_property -dict { PACKAGE_PIN J1    IOSTANDARD LVCMOS33 } [get_ports { leds[2] }]; #IO_L16N_T2_34 Sch=led[3]
 set_property -dict { PACKAGE_PIN E1    IOSTANDARD LVCMOS33 } [get_ports { leds[3] }]; #IO_L8N_T1_34 Sch=led[4]
 
-## Buttons, read by the IoView inputs 9..8
+## Buttons, read by the IoProbe inputs 9..8
 set_property -dict { PACKAGE_PIN D2 IOSTANDARD LVCMOS33 } [get_ports { buttons[0] }]; #IO_L6P_T0_34 Sch=btn[0]
 set_property -dict { PACKAGE_PIN D1 IOSTANDARD LVCMOS33 } [get_ports { buttons[1] }]; #IO_L6N_T0_VREF_34 Sch=btn[1]
 

@@ -15,7 +15,8 @@ entity BusAccessController is
         W_DATA_WIDTH  : positive;
         STROBE_WIDTH  : natural;
         MISC_WIDTH    : natural;
-        MISC_INIT     : std_logic_vector
+        MISC_INIT     : std_logic_vector;
+        CORE_TYPE     : natural range 0 to 255 := 0 -- 0: bus master, 1: IoProbe, see VERSION_AND_ID
     );
     port (
         clk           : in    std_logic;
@@ -64,7 +65,8 @@ architecture behavioral of BusAccessController is
             W_DATA_WIDTH  : positive;
             STROBE_WIDTH  : natural;
             MISC_WIDTH    : natural;
-            MISC_INIT     : std_logic_vector
+            MISC_INIT     : std_logic_vector;
+            CORE_TYPE     : natural range 0 to 255
         );
         port (
             clk           : in    std_logic;
@@ -117,7 +119,8 @@ begin
             W_DATA_WIDTH  => W_DATA_WIDTH,
             STROBE_WIDTH  => STROBE_WIDTH,
             MISC_WIDTH    => MISC_WIDTH,
-            MISC_INIT     => MISC_INIT
+            MISC_INIT     => MISC_INIT,
+            CORE_TYPE     => CORE_TYPE
         )
         port map (
             clk           => clk,

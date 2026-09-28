@@ -43,7 +43,7 @@ e~tb_top.o: $(OBJDIR)/tb_top.o \
     $(OBJDIR)/JtagAdapter.o $(OBJDIR)/JtagHub.o \
     $(OBJDIR)/LogicAnalyserTop.o $(OBJDIR)/LogicAnalyserMemory.o $(OBJDIR)/LogicAnalyserTrigger.o $(OBJDIR)/LogicAnalyserController.o $(OBJDIR)/LogicAnalyserRunLengthCoder.o \
     $(OBJDIR)/WaveformGeneratorController.o $(OBJDIR)/WaveformGeneratorMemory.o $(OBJDIR)/WaveformGeneratorTop.o \
-    $(OBJDIR)/IoViewTop.o $(OBJDIR)/IoViewController.o \
+    $(OBJDIR)/IoProbeTop.o \
     $(OBJDIR)/BusAccessController.o $(OBJDIR)/BusAccessStatemachine.o $(OBJDIR)/WbMaster.o \
     $(OBJDIR)/IpdbgEscaping.o $(OBJDIR)/pdpRam.o
 	$(GHDL) --bind $(GHDLBINDFLAGS) tb_top
@@ -84,9 +84,7 @@ $(OBJDIR)/WaveformGeneratorController.o: ../../rtl/WaveformGenerator/WaveformGen
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/WaveformGeneratorMemory.o: ../../rtl/WaveformGenerator/WaveformGeneratorMemory.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/IoViewTop.o: ../../rtl/IoView/IoViewTop.vhd $(OBJDIR)/ipdbg_interface_pkg.o
-	$(GHDL) -a $(GHDLFLAGS) $<
-$(OBJDIR)/IoViewController.o: ../../rtl/IoView/IoViewController.vhd
+$(OBJDIR)/IoProbeTop.o: ../../rtl/IoProbe/IoProbeTop.vhd $(OBJDIR)/ipdbg_interface_pkg.o $(OBJDIR)/BusAccessController.o
 	$(GHDL) -a $(GHDLFLAGS) $<
 $(OBJDIR)/BusAccessStatemachine.o: ../../rtl/BusAccess/BusAccessStatemachine.vhd
 	$(GHDL) -a $(GHDLFLAGS) $<

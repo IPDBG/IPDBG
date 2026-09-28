@@ -26,8 +26,7 @@
 		<Unit filename="../../rtl/BusAccess/BusAccessController.vhd" />
 		<Unit filename="../../rtl/BusAccess/BusAccessStatemachine.vhd" />
 		<Unit filename="../../rtl/BusAccess/WbMaster.vhd" />
-		<Unit filename="../../rtl/IoView/IoViewController.vhd" />
-		<Unit filename="../../rtl/IoView/IoViewTop.vhd" />
+		<Unit filename="../../rtl/IoProbe/IoProbeTop.vhd" />
 		<Unit filename="../../rtl/JtagHub/IpdbgTap_generic.vhd" />
 		<Unit filename="../../rtl/JtagHub/JtagCdc.vhd" />
 		<Unit filename="../../rtl/JtagHub/JtagHub.vhd" />
