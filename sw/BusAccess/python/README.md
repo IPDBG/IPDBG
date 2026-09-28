@@ -84,6 +84,8 @@ except RuntimeError as e:
 |---------------------------------------------|-----------------------------------------------|
 | `open(host, port)`                          | Connect to the IPDBG host server. Both arguments are strings. |
 | `close()`, `isOpen()`                       | Connection                                    |
+| `setTimeout(milliseconds)`                  | Timeout for every answer of the core, 0 waits forever (default 5000) |
+| `getCoreType()`, `getProtocolVersion()`     | Core identification; core types `CORE_TYPE_BUS_MASTER`, `CORE_TYPE_IOPROBE` |
 | `getAddressSize()`, `getReadDataSize()`, `getWriteDataSize()`, `getStrobeSize()`, `getMiscSize()` | Field widths in bits |
 | `write(address, data, locked=False)`        | Write access                                  |
 | `read(address, locked=False)`               | Read access, returns an `int`                 |

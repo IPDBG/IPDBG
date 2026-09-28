@@ -24,6 +24,10 @@
 /* export/import macro of the headers, not needed by SWIG */
 #define API
 
+/* core types, see getCoreType() (defined in BusAccess.h, which SWIG does not read) */
+#define CORE_TYPE_BUS_MASTER 0
+#define CORE_TYPE_IOPROBE    1
+
 %include "BusAccessCxx.h"
 
 %extend IpdbgBusAccess {

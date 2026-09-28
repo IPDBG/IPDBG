@@ -44,6 +44,11 @@ bool IpdbgWaveformGenerator::isOpen()
     return IpdbgWaveformGenerator_isOpen(handle_);
 }
 
+void IpdbgWaveformGenerator::setTimeout(unsigned int milliseconds)
+{
+    checkResult(IpdbgWaveformGenerator_setTimeout(handle_, milliseconds));
+}
+
 size_t IpdbgWaveformGenerator::getDataWidth()
 {
     size_t result;

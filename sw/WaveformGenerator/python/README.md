@@ -91,6 +91,7 @@ a `TypeError` for anything that is not a sequence of integers, an
 |---------------------------------------------|-----------------------------------------------|
 | `open(host, port)`                          | Connect to the IPDBG host server. Both arguments are strings. |
 | `close()`, `isOpen()`                       | Connection                                    |
+| `setTimeout(milliseconds)`                  | Timeout for every answer of the core, 0 waits forever (default 5000) |
 | `getDataWidth()`, `getAddressWidth()`       | Widths in bits                                |
 | `getMaxSamples()`                           | Size of the sample memory                     |
 | `isRunning()`, `hasDoubleBuffer()`          | Status of the core                            |

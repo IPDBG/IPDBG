@@ -61,6 +61,29 @@ start of a locked access and keeps it asserted until the end of the next
 unlocked access. This is used for atomic read-modify-write sequences. Only
 cores whose bus has a lock signal support it (Wishbone, AHB, Avalon).
 
+### Core identification
+
+The first word of the answer to the width query identifies the core:
+
+| Bits   | Field            | Value                                         |
+|--------|------------------|-----------------------------------------------|
+| 7..0   | Protocol ID      | `0x1D`: BusAccess protocol                    |
+| 15..8  | Protocol version | `0`                                           |
+| 23..16 | Core type        | `CORE_TYPE_BUS_MASTER` (0), `CORE_TYPE_IOPROBE` (1) |
+| 31..24 | Reserved         | `0`                                           |
+
+`open()` fails right away if the protocol ID does not match, e.g. when the
+port belongs to a different kind of core. The core type and the protocol
+version are available after `open()`.
+
+### Timeout
+
+The library waits at most 5 s for every answer of the core, including the
+width query in `open()`. If the core does not answer in time – wrong port,
+FPGA reconfigured, transport stuck – the call fails and the connection is
+closed, because the state of the protocol is unknown afterwards. Adjust the
+timeout to your transport with `setTimeout()`; 0 waits forever.
+
 ## Supported bus master cores
 
 The HDL cores are in [`rtl/BusAccess`](../../rtl/BusAccess).
@@ -136,7 +159,10 @@ Header: `BusAccess.h`
 | `IpdbgBusAccess_isOpen(handle)`                     | Non-zero if connected.                        |
 | `IpdbgBusAccess_close(handle)`                      | Close the connection.                         |
 | `IpdbgBusAccess_delete(handle)`                     | Close (if open) and free the handle.          |
+| `IpdbgBusAccess_setTimeout(handle, milliseconds)`   | Timeout for every answer of the core, see [Timeout](#timeout). Can be called before `open()`. |
 | `IpdbgBusAccess_getFieldSize(handle, field, &bits)` | Width of `ADDRESS`, `READ_DATA`, `WRITE_DATA`, `STROBE` or `MISC` in bits. |
+| `IpdbgBusAccess_getCoreType(handle, &type)`         | `CORE_TYPE_BUS_MASTER` or `CORE_TYPE_IOPROBE`, see [Core identification](#core-identification). |
+| `IpdbgBusAccess_getProtocolVersion(handle, &version)` | Protocol version of the core.              |
 | `IpdbgBusAccess_getLastError(handle)`               | Description of the error of the last call on this handle, `""` if it succeeded. Never `NULL`. |
 
 ### Accesses
@@ -242,6 +268,8 @@ integers instead of byte buffers. All errors, including a NAK, throw a
 | Method                                            | Description                                   |
 |---------------------------------------------------|-----------------------------------------------|
 | `open(host, port)`, `close()`, `isOpen()`         | Connection                                    |
+| `setTimeout(milliseconds)`                        | Timeout for every answer of the core          |
+| `getCoreType()`, `getProtocolVersion()`           | Core identification                           |
 | `getAddressSize()`, `getReadDataSize()`, `getWriteDataSize()`, `getStrobeSize()`, `getMiscSize()` | Field widths in bits |
 | `write(address, data, locked = false)`            | Write access                                  |
 | `read<A, D>(address, locked = false)`             | Read access, returns `D`                      |

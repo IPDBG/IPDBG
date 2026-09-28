@@ -42,6 +42,11 @@ int API IpdbgWaveformGenerator_open(struct IpdbgWaveformGeneratorHandle *handle,
 int API IpdbgWaveformGenerator_close(struct IpdbgWaveformGeneratorHandle *handle);
 int API IpdbgWaveformGenerator_isOpen(struct IpdbgWaveformGeneratorHandle *handle);
 
+/** Timeout for every answer of the core, including the width query in open(),
+ *  in milliseconds. 0 = wait forever. Default: 5000 ms.
+ *  After a timeout the connection is closed. **/
+int API IpdbgWaveformGenerator_setTimeout(struct IpdbgWaveformGeneratorHandle *handle, unsigned int milliseconds);
+
 /** Description of the last error, "" if the last call succeeded.
  *  Valid until the next call with the same handle. Never NULL. **/
 const char API *IpdbgWaveformGenerator_getLastError(struct IpdbgWaveformGeneratorHandle *handle);

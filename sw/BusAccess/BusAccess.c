@@ -22,6 +22,7 @@
     #include <arpa/inet.h>
     #include <netdb.h>
     #include <errno.h>
+    #include <sys/time.h>
 #endif
 
 #define RESET_SYMBOL     0xEE
@@ -38,6 +39,15 @@
 
 #define ACK_RESP         0x55
 #define NACK_RESP        0x33
+
+/* first word of the answer to READ_WIDTHS_CMD (VERSION_AND_ID in BusAccessStatemachine.vhd):
+ * bits 7..0 protocol ID, 15..8 protocol version, 23..16 core type */
+#define PROTOCOL_ID      0x1D
+#define GET_PROTOCOL_ID(versionAndId)      ((versionAndId) & 0xFF)
+#define GET_PROTOCOL_VERSION(versionAndId) (((versionAndId) >> 8) & 0xFF)
+#define GET_CORE_TYPE(versionAndId)        (((versionAndId) >> 16) & 0xFF)
+
+#define DEFAULT_TIMEOUT_MS 5000
 
 #define INVALD_SOCKET      -1
 
@@ -57,7 +67,7 @@ static size_t max_size(size_t a, size_t b)
 
 struct IpdbgBusAccessHandle
 {
-    uint32_t Version;
+    uint32_t VersionAndId;
     uint32_t AddressWidth;
     uint32_t ReadDataWidth;
     uint32_t WriteDataWidth;
@@ -70,6 +80,7 @@ struct IpdbgBusAccessHandle
     uint32_t StrobeWidthBytes;
 
     int socket;
+    unsigned int timeoutMs; // 0: wait forever
 
     uint8_t *buffer;
     uint8_t *AddressShadow;
@@ -115,6 +126,41 @@ static int IpdbgBusAccess_begin(struct IpdbgBusAccessHandle *handle, bool mustBe
 
 static int IpdbgBusAccess_closeSocket(struct IpdbgBusAccessHandle *handle);
 
+static bool IpdbgBusAccess_isTimeout(void)
+{
+#ifdef _WIN32
+    return WSAGetLastError() == WSAETIMEDOUT;
+#else
+    return errno == EAGAIN || errno == EWOULDBLOCK;
+#endif
+}
+
+/* after a timeout the state of the protocol is unknown: close the connection */
+static int IpdbgBusAccess_timeout(struct IpdbgBusAccessHandle *handle)
+{
+    IpdbgBusAccess_setError(handle, "timeout: no answer from the core within %u ms, connection closed", handle->timeoutMs);
+    IpdbgBusAccess_closeSocket(handle);
+    return RET_ERROR;
+}
+
+static int IpdbgBusAccess_applyTimeout(struct IpdbgBusAccessHandle *handle)
+{
+#ifdef _WIN32
+    DWORD tv = handle->timeoutMs; // 0: no timeout
+#else
+    struct timeval tv;            // 0: no timeout
+    tv.tv_sec  = handle->timeoutMs / 1000;
+    tv.tv_usec = (handle->timeoutMs % 1000) * 1000;
+#endif
+    if (setsockopt(handle->socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv)) != 0 ||
+        setsockopt(handle->socket, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof(tv)) != 0)
+    {
+        IpdbgBusAccess_setError(handle, "unable to set the timeout (%s)", IpdbgBusAccess_socketError());
+        return RET_ERROR;
+    }
+    return RET_OK;
+}
+
 static int IpdbgBusAccess_send(struct IpdbgBusAccessHandle *handle, const uint8_t *buf, size_t len)
 {
     size_t sent = 0;
@@ -123,6 +169,8 @@ static int IpdbgBusAccess_send(struct IpdbgBusAccessHandle *handle, const uint8_
     {
         int out = send(handle->socket, (const char*)(buf + sent), len - sent, 0);
 
+        if (out < 0 && IpdbgBusAccess_isTimeout())
+            return IpdbgBusAccess_timeout(handle);
         if (out <= 0)
         {
             IpdbgBusAccess_setError(handle, "send failed (%s)", IpdbgBusAccess_socketError());
@@ -144,6 +192,8 @@ static int IpdbgBusAccess_receive(struct IpdbgBusAccessHandle *handle, uint8_t *
     {
         int n = recv(handle->socket, (char*)(buf + received), len - received, 0);
 
+        if (n < 0 && IpdbgBusAccess_isTimeout())
+            return IpdbgBusAccess_timeout(handle);
         if (n < 0)
         {
             IpdbgBusAccess_setError(handle, "receive failed (%s)", IpdbgBusAccess_socketError());
@@ -203,7 +253,21 @@ static int IpdbgBusAccess_getSizes(struct IpdbgBusAccessHandle *handle)
     if (ret != RET_OK)
         return ret;
 
-    ret = IpdbgBusAccess_receive(handle, buf, answerLength);
+    // first the version/ID word: other cores (e.g. an IoView core of an older
+    // IPDBG version) answer differently, don't wait for 24 bytes from them
+    ret = IpdbgBusAccess_receive(handle, buf, 4);
+    if (ret != RET_OK)
+        return ret;
+
+    const uint32_t versionAndId = (uint32_t)buf[0] | ((uint32_t)buf[1] << 8) |
+                                  ((uint32_t)buf[2] << 16) | ((uint32_t)buf[3] << 24);
+    if (GET_PROTOCOL_ID(versionAndId) != PROTOCOL_ID)
+    {
+        IpdbgBusAccess_setError(handle, "unexpected answer 0x%08x to the width query: not a BusAccess core", versionAndId);
+        return RET_ERROR;
+    }
+
+    ret = IpdbgBusAccess_receive(handle, &buf[4], answerLength - 4);
     if (ret != RET_OK)
         return ret;
 
@@ -215,7 +279,7 @@ static int IpdbgBusAccess_getSizes(struct IpdbgBusAccessHandle *handle)
                   ((uint32_t)buf[i * 4 + 2] << 16) |
                   ((uint32_t)buf[i * 4 + 3] << 24);
     }
-    handle->Version        = tmp[0];
+    handle->VersionAndId   = tmp[0];
     handle->WriteDataWidth = tmp[1];
     handle->ReadDataWidth  = tmp[2];
     handle->AddressWidth   = tmp[3];
@@ -240,6 +304,7 @@ struct IpdbgBusAccessHandle API *IpdbgBusAccess_new()
         return NULL;
 
     handle->socket = INVALD_SOCKET;
+    handle->timeoutMs = DEFAULT_TIMEOUT_MS;
 
     return handle;
 }
@@ -354,7 +419,11 @@ int API IpdbgBusAccess_open(struct IpdbgBusAccessHandle *handle, const char *ipA
     }
 
     size_t bufferSize;
-    int ret = IpdbgBusAccess_sendReset(handle);
+    int ret = IpdbgBusAccess_applyTimeout(handle);
+    if (ret != RET_OK)
+        goto error;
+
+    ret = IpdbgBusAccess_sendReset(handle);
     if (ret != RET_OK)
         goto error;
 
@@ -768,6 +837,49 @@ int API IpdbgDtm_setResets(struct IpdbgBusAccessHandle *handle, bool reset, bool
     uint8_t misc = (reset ? 1 : 0) | (hardreset ? 2 : 0);
 
     return IpdbgBusAccess_setMiscellaneous(handle, &misc);
+}
+
+int API IpdbgBusAccess_setTimeout(struct IpdbgBusAccessHandle *handle, unsigned int milliseconds)
+{
+    if (IpdbgBusAccess_begin(handle, false) != RET_OK)
+        return RET_ERROR;
+
+    handle->timeoutMs = milliseconds;
+
+    if (handle->socket == INVALD_SOCKET)
+        return RET_OK; // applied in open()
+
+    return IpdbgBusAccess_applyTimeout(handle);
+}
+
+int API IpdbgBusAccess_getCoreType(struct IpdbgBusAccessHandle *handle, unsigned int *coreType)
+{
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
+        return RET_ERROR;
+
+    if (!coreType)
+    {
+        IpdbgBusAccess_setError(handle, "no result pointer given");
+        return RET_ERROR;
+    }
+
+    *coreType = GET_CORE_TYPE(handle->VersionAndId);
+    return RET_OK;
+}
+
+int API IpdbgBusAccess_getProtocolVersion(struct IpdbgBusAccessHandle *handle, unsigned int *version)
+{
+    if (IpdbgBusAccess_begin(handle, true) != RET_OK)
+        return RET_ERROR;
+
+    if (!version)
+    {
+        IpdbgBusAccess_setError(handle, "no result pointer given");
+        return RET_ERROR;
+    }
+
+    *version = GET_PROTOCOL_VERSION(handle->VersionAndId);
+    return RET_OK;
 }
 
 const char API *IpdbgBusAccess_getLastError(struct IpdbgBusAccessHandle *handle)

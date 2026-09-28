@@ -25,6 +25,9 @@ public:
     API void close();
     API bool isOpen();
 
+    // timeout for every answer of the core, including open(); 0: wait forever
+    API void setTimeout(unsigned int milliseconds);
+
     // widths in bits
     API size_t getDataWidth();
     API size_t getAddressWidth();

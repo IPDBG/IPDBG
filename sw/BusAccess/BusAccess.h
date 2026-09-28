@@ -46,6 +46,10 @@ enum BusAccessField
 #define RET_NAK    1
 #define RET_ACK    2
 
+/** core types, see IpdbgBusAccess_getCoreType() **/
+#define CORE_TYPE_BUS_MASTER 0
+#define CORE_TYPE_IOPROBE    1
+
 /** axi4l AxPROT and apb pprot flags:  **/
 #define UnprivilegedAccess  0x0
 #define PrivilegedAccess    0x1
@@ -85,6 +89,15 @@ int API IpdbgBusAccess_write_ctrllock(struct IpdbgBusAccessHandle *handle, const
 int API IpdbgBusAccess_read_ctrllock(struct IpdbgBusAccessHandle *handle, const uint8_t *address, uint8_t *result, bool locked);
 int API IpdbgBusAccess_setMiscellaneous(struct IpdbgBusAccessHandle *handle, const uint8_t *data);
 int API IpdbgBusAccess_setStrobe(struct IpdbgBusAccessHandle *handle, const uint8_t *data);
+
+/** Timeout for every answer of the core, including the width query in open(),
+ *  in milliseconds. 0 = wait forever. Default: 5000 ms.
+ *  After a timeout the connection is closed. **/
+int API IpdbgBusAccess_setTimeout(struct IpdbgBusAccessHandle *handle, unsigned int milliseconds);
+
+/** Fields of the version/ID word reported by the core, available after open(). **/
+int API IpdbgBusAccess_getCoreType(struct IpdbgBusAccessHandle *handle, unsigned int *coreType);
+int API IpdbgBusAccess_getProtocolVersion(struct IpdbgBusAccessHandle *handle, unsigned int *version);
 
 /** Description of the last error, "" if the last call succeeded.
  *  Valid until the next call with the same handle. Never NULL. **/

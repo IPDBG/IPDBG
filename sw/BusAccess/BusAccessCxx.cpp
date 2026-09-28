@@ -46,6 +46,28 @@ bool IpdbgBusAccess::isOpen()
     return IpdbgBusAccess_isOpen(handle_);
 }
 
+void IpdbgBusAccess::setTimeout(unsigned int milliseconds)
+{
+    if (IpdbgBusAccess_setTimeout(handle_, milliseconds) != RET_OK)
+        throw std::runtime_error(lastError());
+}
+
+unsigned int IpdbgBusAccess::getCoreType()
+{
+    unsigned int result;
+    if (IpdbgBusAccess_getCoreType(handle_, &result) != RET_OK)
+        throw std::runtime_error(lastError());
+    return result;
+}
+
+unsigned int IpdbgBusAccess::getProtocolVersion()
+{
+    unsigned int result;
+    if (IpdbgBusAccess_getProtocolVersion(handle_, &result) != RET_OK)
+        throw std::runtime_error(lastError());
+    return result;
+}
+
 namespace
 {
     template <enum BusAccessField Field>

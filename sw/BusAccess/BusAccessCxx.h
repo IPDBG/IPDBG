@@ -26,6 +26,13 @@ public:
     API void close();
     API bool isOpen();
 
+    // timeout for every answer of the core, including open(); 0: wait forever
+    API void setTimeout(unsigned int milliseconds);
+
+    // fields of the version/ID word of the core (CORE_TYPE_BUS_MASTER, CORE_TYPE_IOPROBE)
+    API unsigned int getCoreType();
+    API unsigned int getProtocolVersion();
+
     // all sizes in bits
     API size_t getAddressSize();
     API size_t getReadDataSize();

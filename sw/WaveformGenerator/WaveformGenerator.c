@@ -22,6 +22,7 @@
     #include <arpa/inet.h>
     #include <netdb.h>
     #include <errno.h>
+    #include <sys/time.h>
 #endif
 
 #define RESET_SYMBOL                0xEE
@@ -38,6 +39,8 @@
 /* sent by the core while receiving samples (every 64 bytes) and after the last sample */
 #define WRITE_PROGRESS_RESP         0xFA
 #define WRITE_DONE_RESP             0xFB
+
+#define DEFAULT_TIMEOUT_MS          5000
 
 #define STATUS_ENABLED              0x01
 #define STATUS_DOUBLE_BUFFER        0x02
@@ -61,6 +64,7 @@ struct IpdbgWaveformGeneratorHandle
     uint32_t AddressWidthBytes;
 
     int socket;
+    unsigned int timeoutMs; // 0: wait forever
 
     char lastError[256];
 };
@@ -103,6 +107,41 @@ static int IpdbgWaveformGenerator_begin(struct IpdbgWaveformGeneratorHandle *han
 
 static int IpdbgWaveformGenerator_closeSocket(struct IpdbgWaveformGeneratorHandle *handle);
 
+static bool IpdbgWaveformGenerator_isTimeout(void)
+{
+#ifdef _WIN32
+    return WSAGetLastError() == WSAETIMEDOUT;
+#else
+    return errno == EAGAIN || errno == EWOULDBLOCK;
+#endif
+}
+
+/* after a timeout the state of the protocol is unknown: close the connection */
+static int IpdbgWaveformGenerator_timeout(struct IpdbgWaveformGeneratorHandle *handle)
+{
+    IpdbgWaveformGenerator_setError(handle, "timeout: no answer from the core within %u ms, connection closed", handle->timeoutMs);
+    IpdbgWaveformGenerator_closeSocket(handle);
+    return RET_ERROR;
+}
+
+static int IpdbgWaveformGenerator_applyTimeout(struct IpdbgWaveformGeneratorHandle *handle)
+{
+#ifdef _WIN32
+    DWORD tv = handle->timeoutMs; // 0: no timeout
+#else
+    struct timeval tv;            // 0: no timeout
+    tv.tv_sec  = handle->timeoutMs / 1000;
+    tv.tv_usec = (handle->timeoutMs % 1000) * 1000;
+#endif
+    if (setsockopt(handle->socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv)) != 0 ||
+        setsockopt(handle->socket, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof(tv)) != 0)
+    {
+        IpdbgWaveformGenerator_setError(handle, "unable to set the timeout (%s)", IpdbgWaveformGenerator_socketError());
+        return RET_ERROR;
+    }
+    return RET_OK;
+}
+
 static int IpdbgWaveformGenerator_send(struct IpdbgWaveformGeneratorHandle *handle, const uint8_t *buf, size_t len)
 {
     size_t sent = 0;
@@ -111,6 +150,8 @@ static int IpdbgWaveformGenerator_send(struct IpdbgWaveformGeneratorHandle *hand
     {
         int out = send(handle->socket, (const char*)(buf + sent), len - sent, 0);
 
+        if (out < 0 && IpdbgWaveformGenerator_isTimeout())
+            return IpdbgWaveformGenerator_timeout(handle);
         if (out <= 0)
         {
             IpdbgWaveformGenerator_setError(handle, "send failed (%s)", IpdbgWaveformGenerator_socketError());
@@ -132,6 +173,8 @@ static int IpdbgWaveformGenerator_receive(struct IpdbgWaveformGeneratorHandle *h
     {
         int n = recv(handle->socket, (char*)(buf + received), len - received, 0);
 
+        if (n < 0 && IpdbgWaveformGenerator_isTimeout())
+            return IpdbgWaveformGenerator_timeout(handle);
         if (n < 0)
         {
             IpdbgWaveformGenerator_setError(handle, "receive failed (%s)", IpdbgWaveformGenerator_socketError());
@@ -232,6 +275,7 @@ struct IpdbgWaveformGeneratorHandle API *IpdbgWaveformGenerator_new()
         return NULL;
 
     handle->socket = INVALD_SOCKET;
+    handle->timeoutMs = DEFAULT_TIMEOUT_MS;
 
     return handle;
 }
@@ -322,7 +366,11 @@ int API IpdbgWaveformGenerator_open(struct IpdbgWaveformGeneratorHandle *handle,
         return RET_ERROR;
     }
 
-    int ret = IpdbgWaveformGenerator_sendReset(handle);
+    int ret = IpdbgWaveformGenerator_applyTimeout(handle);
+    if (ret != RET_OK)
+        goto error;
+
+    ret = IpdbgWaveformGenerator_sendReset(handle);
     if (ret != RET_OK)
         goto error;
 
@@ -545,6 +593,19 @@ int API IpdbgWaveformGenerator_stop(struct IpdbgWaveformGeneratorHandle *handle)
 int API IpdbgWaveformGenerator_oneShot(struct IpdbgWaveformGeneratorHandle *handle)
 {
     return IpdbgWaveformGenerator_control(handle, ONE_SHOT_CMD);
+}
+
+int API IpdbgWaveformGenerator_setTimeout(struct IpdbgWaveformGeneratorHandle *handle, unsigned int milliseconds)
+{
+    if (IpdbgWaveformGenerator_begin(handle, false) != RET_OK)
+        return RET_ERROR;
+
+    handle->timeoutMs = milliseconds;
+
+    if (handle->socket == INVALD_SOCKET)
+        return RET_OK; // applied in open()
+
+    return IpdbgWaveformGenerator_applyTimeout(handle);
 }
 
 const char API *IpdbgWaveformGenerator_getLastError(struct IpdbgWaveformGeneratorHandle *handle)

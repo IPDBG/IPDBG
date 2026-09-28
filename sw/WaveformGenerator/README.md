@@ -41,6 +41,17 @@ defined in the HDL, so the same host code works for any configuration:
 | Data width    | width of the `data_out` port   | Bits per sample                                 |
 | Address width | generic `ADDR_WIDTH`           | The sample memory holds 2^`ADDR_WIDTH` samples  |
 
+### Timeout
+
+The library waits at most 5 s for every answer of the core, including the
+width query in `open()`. If the core does not answer in time – wrong port,
+FPGA reconfigured, transport stuck – the call fails and the connection is
+closed, because the state of the protocol is unknown afterwards. Adjust the
+timeout to your transport with `setTimeout()`; 0 waits forever.
+
+While samples are written, the core reports its progress every 64 bytes, so
+even large waveforms over slow transports stay within the timeout.
+
 ### Playback
 
 A waveform is a sequence of 1 to 2^`ADDR_WIDTH` samples. The core outputs
@@ -156,6 +167,7 @@ Header: `WaveformGenerator.h`
 | `IpdbgWaveformGenerator_isOpen(handle)`                | Non-zero if connected.                        |
 | `IpdbgWaveformGenerator_close(handle)`                 | Close the connection. The core keeps playing. |
 | `IpdbgWaveformGenerator_delete(handle)`                | Close (if open) and free the handle.          |
+| `IpdbgWaveformGenerator_setTimeout(handle, milliseconds)` | Timeout for every answer of the core, see [Timeout](#timeout). Can be called before `open()`. |
 | `IpdbgWaveformGenerator_getLastError(handle)`          | Description of the error of the last call on this handle, `""` if it succeeded. Never `NULL`. |
 
 ### Core information
@@ -245,6 +257,7 @@ throw a `std::runtime_error` with a descriptive message.
 | Method                                            | Description                                   |
 |---------------------------------------------------|-----------------------------------------------|
 | `open(host, port)`, `close()`, `isOpen()`         | Connection                                    |
+| `setTimeout(milliseconds)`                        | Timeout for every answer of the core          |
 | `getDataWidth()`, `getAddressWidth()`             | Widths in bits                                |
 | `getMaxSamples()`                                 | Size of the sample memory                     |
 | `isRunning()`, `hasDoubleBuffer()`                | Status of the core                            |
