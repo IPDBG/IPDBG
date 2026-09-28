@@ -216,11 +216,17 @@ the Logic Analyzer driver is part of [libsigrok](https://sigrok.org).
 
 - Hardware (`rtl/`): [CERN-OHL-W-2.0](https://ohwr.org/cern_ohl_w_v2.txt)
 - Software (`sw/`): [MPL-2.0](https://www.mozilla.org/MPL/2.0/)
+- Documentation (README files, `doc/`, `webpage/`): [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
 In short: you can use IPDBG in closed-source designs and products.
 If you distribute a product that contains modified IPDBG files, the
 modifications to those files must be made available – the rest of your
 design stays yours. See the license texts for the binding terms.
+
+Every source file states its license in an `SPDX-License-Identifier`
+header, see [`LICENSE`](LICENSE) and the full texts in
+[`LICENSES/`](LICENSES). New files get the same two header lines as the
+other files in their directory.
 
 ## Contributing and support
 

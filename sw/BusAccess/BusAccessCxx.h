@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: MPL-2.0
+
 #ifndef BUSACCESS_HPP_INCLUDED
 #define BUSACCESS_HPP_INCLUDED
 

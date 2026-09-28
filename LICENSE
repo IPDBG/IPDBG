@@ -1,0 +1,22 @@
+Copyright (c) The IPDBG authors, see AUTHORS
+
+IPDBG is licensed per directory:
+
+  rtl/   Hardware description (VHDL, Verilog, constraints, build scripts)
+         CERN Open Hardware Licence Version 2 - Weakly Reciprocal
+         SPDX-License-Identifier: CERN-OHL-W-2.0
+         Full text: LICENSES/CERN-OHL-W-2.0.txt
+
+  sw/    Host software (libraries, bindings, applications, co-simulation)
+         Mozilla Public License 2.0
+         SPDX-License-Identifier: MPL-2.0
+         Full text: LICENSES/MPL-2.0.txt
+
+  Documentation: README files, doc/ and webpage/
+         Creative Commons Attribution 4.0 International
+         SPDX-License-Identifier: CC-BY-4.0
+         Full text: LICENSES/CC-BY-4.0.txt
+
+Each source file states its license in an SPDX-License-Identifier header.
+Files that carry their own copyright or license notice (e.g. third-party
+code) are covered by that notice instead.

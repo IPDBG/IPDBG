@@ -1,3 +1,6 @@
+% SPDX-FileCopyrightText: The IPDBG authors
+% SPDX-License-Identifier: MPL-2.0
+
 % Demo pattern for a PulseView screenshot (CoSim): an SPI master FSM reading
 % an ADXL345 accelerometer. The Waveform Generator (port 4243) plays it, the
 % Logic Analyzer (port 4242) records it.

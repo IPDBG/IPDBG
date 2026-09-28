@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: MPL-2.0
+
 #ifndef IOVIEWPROTOCOL_H_INCLUDED
 #define IOVIEWPROTOCOL_H_INCLUDED
 

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The IPDBG authors
+# SPDX-License-Identifier: CERN-OHL-W-2.0
+
 ## IPDBG demo for the Digilent Cmod S7 (XC7S25-1CSGA225C)
 ## Pins from the Digilent master XDC (Cmod-S7-25-Master.xdc)
 

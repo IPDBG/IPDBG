@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The IPDBG authors
+# SPDX-License-Identifier: MPL-2.0
+
 
 
 CXX=g++

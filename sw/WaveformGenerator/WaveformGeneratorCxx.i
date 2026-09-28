@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: MPL-2.0
+
 /* SWIG interface for the IPDBG WaveformGenerator C++ class, shared by the Python and Octave bindings. */
 %module WaveformGenerator
 

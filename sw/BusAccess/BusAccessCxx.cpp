@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: MPL-2.0
+
 #include "BusAccessCxx.h"
 #include "BusAccess.h"
 

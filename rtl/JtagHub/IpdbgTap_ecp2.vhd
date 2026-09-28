@@ -1,3 +1,6 @@
+-- SPDX-FileCopyrightText: The IPDBG authors
+-- SPDX-License-Identifier: CERN-OHL-W-2.0
+
 library ieee;
 use ieee.std_logic_1164.all;
 

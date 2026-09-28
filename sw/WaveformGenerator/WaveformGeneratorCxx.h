@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: MPL-2.0
+
 #ifndef WAVEFORMGENERATOR_HPP_INCLUDED
 #define WAVEFORMGENERATOR_HPP_INCLUDED
 

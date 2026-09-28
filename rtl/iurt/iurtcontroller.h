@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: CERN-OHL-W-2.0
+
 #ifndef IPDBG_URT_CONTROLLER_H_
 #define IPDBG_URT_CONTROLLER_H_
 

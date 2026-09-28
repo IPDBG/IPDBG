@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The IPDBG authors
+# SPDX-License-Identifier: CERN-OHL-W-2.0
+
 # Builds the IPDBG demo for the Digilent Cmod S7.
 #
 #   vivado -mode batch -source build.tcl

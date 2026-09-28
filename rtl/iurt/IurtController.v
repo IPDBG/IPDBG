@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: CERN-OHL-W-2.0
+
 
 module IurtController
     #(parameter     ASYNC_RESET = 0)

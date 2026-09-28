@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: MPL-2.0
+
 /* Example for the IPDBG BusAccess C API.
  *
  *   test [host [port]]      default: 127.0.0.1 4245

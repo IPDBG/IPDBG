@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The IPDBG authors
+# SPDX-License-Identifier: MPL-2.0
+
 # Python bindings for IPDBG WaveformGenerator
 #
 #   make          build WaveformGenerator.py and the extension module _WaveformGenerator

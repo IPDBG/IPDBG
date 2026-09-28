@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: MPL-2.0
+
 /* winsock2.h has to be included before windows.h (included by BusAccess.h) */
 #ifdef _WIN32
     #include <winsock2.h>

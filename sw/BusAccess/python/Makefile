@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The IPDBG authors
+# SPDX-License-Identifier: MPL-2.0
+
 # Python bindings for IPDBG BusAccess
 #
 #   make          build BusAccess.py and the extension module _BusAccess

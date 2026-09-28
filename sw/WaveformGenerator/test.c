@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: MPL-2.0
+
 /* Example for the IPDBG WaveformGenerator C API:
  * writes a sawtooth that covers the full data width and starts the generator.
  *

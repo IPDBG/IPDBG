@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The IPDBG authors
+# SPDX-License-Identifier: MPL-2.0
+
 # IPDBG WaveformGenerator library (C API + C++ class)
 #
 #   make          build the library into bin/Release

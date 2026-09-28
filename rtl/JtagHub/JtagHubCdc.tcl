@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The IPDBG authors
+# SPDX-License-Identifier: CERN-OHL-W-2.0
+
 # function clock to jtag clock TCK:
 
 set dsts { CDC/jtag_dr.shift_register.gen_ffs[0].dr_ffs/FF

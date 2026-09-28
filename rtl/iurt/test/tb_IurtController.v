@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: CERN-OHL-W-2.0
+
 `timescale 1us/1ns
 
 module tb_iurtcontroller(); // Testbench has no inputs, outputs
