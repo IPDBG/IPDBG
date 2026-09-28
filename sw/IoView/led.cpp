@@ -60,20 +60,23 @@ void awxLed::Blink()
 void awxLed::DrawOnBitmap()
 {
     wxSize s = GetClientSize();
-    if((m_bitmap->GetWidth() != s.GetWidth()) || (m_bitmap->GetHeight() != s.GetHeight()))
+    if (s.x <= 0 || s.y <= 0)
+        return;
+    if ((m_bitmap->GetWidth() != s.GetWidth()) || (m_bitmap->GetHeight() != s.GetHeight()))
     {
-	   m_bitmap->Create(s.x,s.y);
+	   m_bitmap->Create(s.x, s.y);
     }
     wxMemoryDC dc;
     dc.SelectObject(*m_bitmap);
 
-    wxBrush brush(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE), wxSOLID);
+    wxBrush brush(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE), wxBRUSHSTYLE_SOLID);
     dc.SetBackground(brush);
     dc.Clear();
 
-    if(m_state == awxLED_BLINK)
+    if (m_state == awxLED_BLINK)
         dc.DrawIcon(*m_icons[m_blink],m_x,m_y);
-    else dc.DrawIcon(*m_icons[m_state & 1],m_x,m_y);
+    else
+        dc.DrawIcon(*m_icons[m_state & 1],m_x,m_y);
 
     dc.SelectObject(wxNullBitmap);
 };

@@ -142,9 +142,10 @@ The main README shows the result.
 
 ### IoView
 
-Start IoView, choose *IoView-IP* → *Connect* and enter host `127.0.0.1`
-and port `4244`. IoView remembers the port for the next start. Every
-output you set shows up twice at the inputs.
+Start IoView (see [`sw/IoView`](../IoView)), choose *IoProbe* →
+*Connect* and confirm host `127.0.0.1` and port `4244`, the defaults.
+IoView remembers host and port for the next start. Every output you set
+shows up twice at the inputs.
 
 ### BusAccess
 

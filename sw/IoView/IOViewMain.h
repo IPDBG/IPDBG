@@ -23,6 +23,7 @@ public:
 
     virtual void visualizeInputs(uint8_t *buffer, size_t len);
     virtual void setPortWidths(unsigned int inputs, unsigned int outputs);
+    virtual void setConnectionStatus(const wxString &text);
     virtual void setOutput(uint8_t *buffer, size_t len);
 
 private:

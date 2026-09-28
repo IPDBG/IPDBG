@@ -12,7 +12,6 @@
 #define __NONAME_H__
 
 #include <wx/artprov.h>
-#include <wx/xrc/xmlres.h>
 #include <wx/string.h>
 #include <wx/sizer.h>
 #include <wx/statbox.h>
@@ -22,7 +21,6 @@
 #include <wx/colour.h>
 #include <wx/settings.h>
 #include <wx/panel.h>
-#include <wx/socket.h>
 #include <wx/textctrl.h>
 
 #include "IOViewObserver.h"

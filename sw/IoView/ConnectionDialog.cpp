@@ -47,8 +47,8 @@ ConnectionDialog::ConnectionDialog(wxWindow* parent, wxString *addr, wxString *p
     BoxSizer4 = new wxBoxSizer(wxVERTICAL);
     StaticText2 = new wxStaticText(this, ID_STATICTEXT2, _("Port:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
     BoxSizer4->Add(StaticText2, 0, wxALL|wxALIGN_LEFT, 5);
-    textCtrlPort = new wxTextCtrl(this, ID_TEXTCTRL2, _("4243"), wxDefaultPosition, wxDefaultSize, 0, wxTextValidator(wxFILTER_DIGITS, port), _T("ID_TEXTCTRL2"));
-    textCtrlPort->SetToolTip(_("TCP port of JtagHost connected to IO ViewController (default: 4243)"));
+    textCtrlPort = new wxTextCtrl(this, ID_TEXTCTRL2, _("4244"), wxDefaultPosition, wxDefaultSize, 0, wxTextValidator(wxFILTER_DIGITS, port), _T("ID_TEXTCTRL2"));
+    textCtrlPort->SetToolTip(_("TCP port of the IoProbe core (default: 4244)"));
     BoxSizer4->Add(textCtrlPort, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer2->Add(BoxSizer4, 1, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer1->Add(BoxSizer2, 1, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);

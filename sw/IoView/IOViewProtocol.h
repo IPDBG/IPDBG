@@ -6,16 +6,21 @@
 
 #include <wx/timer.h>
 #include <wx/config.h>
+#include <vector>
 #include "IOViewObserver.h"
 #include "IOViewProtocolI.h"
 
-class wxSocketClient;
+struct IpdbgBusAccessHandle;
 
+// Connection to an IoProbe core through libBusAccess (sw/BusAccess):
+// inputs = read data, outputs = write data, polled 50 ms after the previous read.
+// All accesses are synchronous: if the core does not answer, the GUI waits
+// for the timeout of the library (5 s), then the connection is closed.
 class IOViewProtocol: public wxTimer, public IOViewProtocolI
 {
 public:
     IOViewProtocol(IOViewProtocolObserver *obs);
-    virtual ~IOViewProtocol(){};
+    virtual ~IOViewProtocol();
 
     virtual void open()override;
     virtual void close()override;
@@ -23,30 +28,22 @@ public:
     virtual void setOutput(uint8_t *buffer, size_t len)override;
 
 private:
-    enum IOViewIPCommands:uint8_t
-    {
-        /*INOUT_Auslesen*/
-        ReadPortWidths = 0xAB,
-        ReadInput = 0xAA,
-        WriteOutput = 0xBB,
-        Reset = 0xee,
-        Escape = 0x55
-    };
-    void writeEscaping(uint8_t *buffer, size_t len);
-    wxSocketClient *client;
-    enum {
-        SOCKET_ID = 10,
-    };
-    IOViewProtocolObserver *protocolObserver;
-    unsigned int NumberOfOutputs;
-    unsigned int NumberOfInputs;
+    void Notify()override; // from the timer: read the inputs
 
-    virtual void Notify();
+    wxString lastError();
+    void failNow(const wxString &message); // close the connection, then show the message
+    // same, but later: the failed access may run in an event handler of a
+    // control that closing the connection deletes
+    void fail(const wxString &message);
+
+    IOViewProtocolObserver *protocolObserver;
+    struct IpdbgBusAccessHandle *handle;
+    unsigned int numberOfInputs;
+    unsigned int numberOfOutputs;
+    std::vector<uint8_t> inputBuffer;
+    bool failing; // fail() called, connection not yet closed
 
     wxConfig config;
-    wxString lastIp;
-    wxString lastPort;
-
 };
 
 

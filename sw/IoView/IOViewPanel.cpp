@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
 #include <wx/msgdlg.h>
+#include <cassert>
+#include <cmath>
+#include <cstdio>
 #include <string>
 
 #include "IOViewPanel.h"

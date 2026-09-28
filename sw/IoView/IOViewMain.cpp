@@ -36,17 +36,16 @@ IOViewFrame::IOViewFrame(wxFrame *frame, const wxString& title):
     wxMenu* ioviewMenu = new wxMenu(_T(""));
     ioviewMenu->Append(idMenuConnect, _("Connect"), _(""));
     ioviewMenu->Append(idMenuDisconnect, _("Disconnect"), _(""));
-    mbar->Append(ioviewMenu, "IoView-IP");
+    mbar->Append(ioviewMenu, _("IoProbe"));
 
     wxMenu* helpMenu = new wxMenu(_T(""));
     helpMenu->Append(idMenuAbout, _("&About\tF1"), _("Show info about this application"));
     mbar->Append(helpMenu, _("&Help"));
 
     SetMenuBar(mbar);
-    // create a status bar with some information about the used wxWidgets version
-    CreateStatusBar(2);
-    SetStatusText(_("Hello to I/O-View"),0);
-    SetStatusText(_("Disconnected"), 1);
+    // status bar, one field: connection status (menu help texts are shown there, too)
+    CreateStatusBar(1);
+    SetStatusText(_("Disconnected"));
 
     protocol = new IOViewProtocol(this);
 
@@ -90,6 +89,19 @@ void IOViewFrame::setPortWidths(unsigned int inputs, unsigned int outputs)
 {
     mainPanel->initInputs(inputs);
     mainPanel->initOutputs(outputs);
+
+    // after connecting: large enough for all LEDs and check boxes
+    // (on disconnect the size is kept)
+    if (inputs > 0 || outputs > 0)
+    {
+        mainPanel->InvalidateBestSize();
+        Fit();
+    }
+}
+
+void IOViewFrame::setConnectionStatus(const wxString &text)
+{
+    SetStatusText(text);
 }
 
 void IOViewFrame::setOutput(uint8_t *buffer, size_t len)
@@ -101,8 +113,6 @@ void IOViewFrame::OnConnect(wxCommandEvent &event)
 {
     if(!protocol->isOpen())
         protocol->open();
-    if(protocol->isOpen())
-        SetStatusText(_("Connected"), 1);
 }
 
 void IOViewFrame::OnUpdateConnect(wxUpdateUIEvent &event)
@@ -114,8 +124,6 @@ void IOViewFrame::OnDisconnect(wxCommandEvent &event)
 {
     if(protocol->isOpen())
         protocol->close();
-    if(!protocol->isOpen())
-        SetStatusText(_("Disconnected"), 1);
 }
 
 void IOViewFrame::OnUpdateDisconnect(wxUpdateUIEvent &event)
