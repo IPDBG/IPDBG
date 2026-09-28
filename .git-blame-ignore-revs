@@ -1,0 +1,16 @@
+# Commits that git blame should skip.
+#
+# These commits only change formatting (e.g. line endings), not content.
+# Skipping them makes git blame show the commit that last changed a line
+# for real.
+#
+# GitHub uses this file automatically. For git blame on the command line:
+#
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Add the full hash of the commit and a comment describing it.
+
+
+# normalize line endings to LF
+f697e22f4af2331aad97d0db6bbf1e5b2196f765
+
