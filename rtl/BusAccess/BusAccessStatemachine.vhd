@@ -150,7 +150,8 @@ architecture behavioral of BusAccessStatemachine is
     signal   write_busy          : std_logic;
     signal   wait_response       : std_logic;
     signal   resp_pending        : std_logic;
-    signal   read_data_reg       : std_logic_vector(R_DATA_WIDTH - 1 downto 0);
+    -- whole bytes, zero extended: every transmitted byte is complete, also for R_DATA_WIDTH < 8
+    signal   read_data_reg       : std_logic_vector(R_DATA_WIDTH_BYTES * HOST_WORD_SIZE - 1 downto 0);
 begin
     async_init : if ASYNC_RESET generate
     begin
@@ -327,7 +328,8 @@ begin
                                 else
                                     up_lines.uplink_data <= NACK_RESP;
                                 end if;
-                                read_data_reg <= read_data;
+                                read_data_reg                                <= (others => '0');
+                                read_data_reg(read_data'length - 1 downto 0) <= read_data;
                                 if dn_lines.uplink_ready = '1' then
                                     up_lines.uplink_valid <= '1';
                                     handshake_state       <= shift;
@@ -412,15 +414,16 @@ begin
     end process;
 
     rx_regs : block
-        constant MAX_BITS_TO_RECEIVE : natural := calc_max_bits_to_receive;
-        signal   rx_sr               : std_logic_vector(MAX_BITS_TO_RECEIVE - 1 downto 0);
+        -- whole bytes: the bytes arrive least significant byte first and are
+        -- shifted in from the top, the fields are taken from SR_BASE_IDX upwards
+        signal   rx_sr               : std_logic_vector(MAX_BYTES_RECEIVE * HOST_WORD_SIZE - 1 downto 0);
     begin
-        gen_small : if MAX_BITS_TO_RECEIVE <= 8 generate
+        gen_small : if MAX_BYTES_RECEIVE <= 1 generate
         begin
             rx_sr <= data_in_reg(rx_sr'range);
         end generate;
 
-        gen_big : if MAX_BITS_TO_RECEIVE > 8 generate
+        gen_big : if MAX_BYTES_RECEIVE > 1 generate
         begin
             rx_sr(rx_sr'left downto rx_sr'left - 7) <= data_in_reg;
             process (clk)
