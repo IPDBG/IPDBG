@@ -8,11 +8,11 @@ use ieee.numeric_std.all;
 library work;
 use work.ipdbg_interface_pkg.all;
 
-entity ipdbg_uart_tb  is
-end entity ipdbg_uart_tb;
+entity IpdbgUart_tb  is
+end entity IpdbgUart_tb;
 
-architecture test of ipdbg_uart_tb is
-    component ipdbg_uart is
+architecture test of IpdbgUart_tb is
+    component IpdbgUart is
         generic(
             CLOCKS_PER_ONE_SIXTEENTH_BIT : positive;
             NUM_META_FLOPS               : positive;
@@ -29,7 +29,7 @@ architecture test of ipdbg_uart_tb is
             dn_lines : out ipdbg_dn_lines;
             up_lines : in  ipdbg_up_lines
         );
-    end component ipdbg_uart;
+    end component IpdbgUart;
 
     component IoProbeTop is
         generic(
@@ -51,7 +51,7 @@ architecture test of ipdbg_uart_tb is
         );
     end component IoProbeTop;
 
-    component uart_tx is
+    component IpdbgUartTx is
         generic (
             CLOCKS_PER_ONE_SIXTEENTH_BIT : positive;
             PARITY                       : natural range 0 to 2; -- 0: none; 1: odd; 2: even
@@ -69,9 +69,9 @@ architecture test of ipdbg_uart_tb is
             data_valid : in  std_logic;
             data_ready : out std_logic
         );
-    end component uart_tx;
+    end component IpdbgUartTx;
 
-    component uart_rx is
+    component IpdbgUartRx is
         generic (
             CLOCKS_PER_ONE_SIXTEENTH_BIT : positive;
             NUM_META_FLOPS               : positive;
@@ -90,7 +90,7 @@ architecture test of ipdbg_uart_tb is
             data_ready : in  std_logic;
             data_err   : out std_logic
         );
-    end component uart_rx;
+    end component IpdbgUartRx;
 
     constant CLOCKS_PER_ONE_SIXTEENTH_BIT : positive := 16;
     constant NUM_META_FLOPS               : positive := 3;
@@ -177,7 +177,7 @@ begin
     end process;
 
 
-    uut: component ipdbg_uart
+    uut: component IpdbgUart
         generic map(
             CLOCKS_PER_ONE_SIXTEENTH_BIT => CLOCKS_PER_ONE_SIXTEENTH_BIT,
             NUM_META_FLOPS               => NUM_META_FLOPS,
@@ -210,7 +210,7 @@ begin
             probe_outputs_update => open
         );
 
-    tx: component uart_tx
+    tx: component IpdbgUartTx
         generic map(
             CLOCKS_PER_ONE_SIXTEENTH_BIT => CLOCKS_PER_ONE_SIXTEENTH_BIT,
             PARITY                       => PARITY,
@@ -229,7 +229,7 @@ begin
             data_ready => tx_data_ready
         );
 
-    rx: component uart_rx
+    rx: component IpdbgUartRx
         generic map(
             CLOCKS_PER_ONE_SIXTEENTH_BIT => CLOCKS_PER_ONE_SIXTEENTH_BIT,
             NUM_META_FLOPS               => NUM_META_FLOPS,

@@ -8,7 +8,7 @@ use ieee.numeric_std.all;
 library work;
 use work.ipdbg_interface_pkg.all;
 
-entity ipdbg_uart is
+entity IpdbgUart is
     generic(
         CLOCKS_PER_ONE_SIXTEENTH_BIT : positive;
         NUM_META_FLOPS               : positive;
@@ -25,10 +25,10 @@ entity ipdbg_uart is
         dn_lines : out ipdbg_dn_lines;
         up_lines : in  ipdbg_up_lines
     );
-end entity ipdbg_uart;
+end entity IpdbgUart;
 
-architecture behavioral of ipdbg_uart is
-    component uart_tx is
+architecture behavioral of IpdbgUart is
+    component IpdbgUartTx is
         generic (
             CLOCKS_PER_ONE_SIXTEENTH_BIT : positive;
             PARITY                       : natural range 0 to 2; -- 0: none; 1: odd; 2: even
@@ -46,9 +46,9 @@ architecture behavioral of ipdbg_uart is
             data_valid : in  std_logic;
             data_ready : out std_logic
         );
-    end component uart_tx;
+    end component IpdbgUartTx;
 
-    component uart_rx is
+    component IpdbgUartRx is
         generic (
             CLOCKS_PER_ONE_SIXTEENTH_BIT : positive;
             NUM_META_FLOPS               : positive;
@@ -67,7 +67,7 @@ architecture behavioral of ipdbg_uart is
             data_ready : in  std_logic;
             data_err   : out std_logic
         );
-    end component uart_rx;
+    end component IpdbgUartRx;
 
     signal srst, arst            : std_logic;
 
@@ -148,7 +148,7 @@ begin
         end if;
     end process;
 
-    tx: component uart_tx
+    tx: component IpdbgUartTx
         generic map(
             CLOCKS_PER_ONE_SIXTEENTH_BIT => CLOCKS_PER_ONE_SIXTEENTH_BIT,
             PARITY                       => PARITY,
@@ -167,7 +167,7 @@ begin
             data_ready => tx_data_ready
         );
 
-    rx: component uart_rx
+    rx: component IpdbgUartRx
         generic map(
             CLOCKS_PER_ONE_SIXTEENTH_BIT => CLOCKS_PER_ONE_SIXTEENTH_BIT,
             NUM_META_FLOPS               => NUM_META_FLOPS,

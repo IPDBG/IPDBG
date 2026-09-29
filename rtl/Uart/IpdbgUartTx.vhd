@@ -6,7 +6,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
 
-entity uart_tx is
+entity IpdbgUartTx is
     generic(
         CLOCKS_PER_ONE_SIXTEENTH_BIT : positive := 54;
         NUM_META_FLOPS               : positive := 3;
@@ -27,9 +27,9 @@ entity uart_tx is
         data_valid : in  std_logic;
         data_ready : out std_logic
     );
-end entity uart_tx;
+end entity IpdbgUartTx;
 
-architecture behavioral of uart_tx is
+architecture behavioral of IpdbgUartTx is
     signal arst, srst   : std_logic;
     constant DATA_WIDTH : natural := data'length;
 
