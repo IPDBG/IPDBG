@@ -1,0 +1,110 @@
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: CERN-OHL-W-2.0
+
+// Register space of Iurt: the eight registers of a 16450, 32 bit apart
+// (reg-shift = 2, reg-io-width = 4); bits 31..8 read 0.
+// RBR/THR/DLL and IER/DLM depend on LCR.DLAB and are implemented in
+// IurtCore.vhd (external); the other registers are generated.
+// user defined property of PeakRDL-regblock-vhdl (hdl-src/regblock_udps.rdl):
+// hwif_out..rd_swacc pulses when software reads the field
+property rd_swacc {
+    type = boolean;
+    component = field;
+};
+
+addrmap iurt {
+    name = "Iurt";
+    desc = "16450 compatible UART, the other end is a TCP port on the host (IPDBG).";
+    default regwidth = 32;
+    default accesswidth = 32;
+
+    external reg {
+        name = "RBR / THR / DLL";
+        desc = "DLAB = 0: read the received byte (RBR, clears LSR.DR),
+                write the byte to transmit (THR). DLAB = 1: divisor latch LSB
+                (stored, no effect).";
+        field { sw = rw; hw = rw; } data[7:0] = 0;
+    } rbr_thr_dll @ 0x00;
+
+    external reg {
+        name = "IER / DLM";
+        desc = "DLAB = 0: interrupt enable, bit 0 received data available,
+                bit 1 THR empty, bit 2 receiver line status, bit 3 modem
+                status (stored, never raised). DLAB = 1: divisor latch MSB
+                (stored, no effect).";
+        field { sw = rw; hw = rw; } data[7:0] = 0;
+    } ier_dlm @ 0x04;
+
+    reg {
+        name = "IIR";
+        desc = "Interrupt identification. Reading it while it reports THR
+                empty clears that interrupt. Writes (FCR) are ignored, there
+                is no FIFO.";
+        field { sw = r; hw = w; rd_swacc;
+                desc = "0: an interrupt is pending"; } no_int[0:0];
+        field { sw = r; hw = w;
+                desc = "3: receiver line status, 2: received data available,
+                        1: THR empty"; } id[2:1];
+    } iir @ 0x08;
+
+    reg {
+        name = "LCR";
+        desc = "Line control. Stored, only DLAB has an effect.";
+        field { sw = rw; hw = na; } wls[1:0] = 0;
+        field { sw = rw; hw = na; } stb[2:2] = 0;
+        field { sw = rw; hw = na; } pen[3:3] = 0;
+        field { sw = rw; hw = na; } eps[4:4] = 0;
+        field { sw = rw; hw = na; } sp[5:5] = 0;
+        field { sw = rw; hw = na; } bc[6:6] = 0;
+        field { sw = rw; hw = r;
+                desc = "Divisor latch access"; } dlab[7:7] = 0;
+    } lcr @ 0x0C;
+
+    reg {
+        name = "MCR";
+        desc = "Modem control. Stored, only reflected in MSR in loopback mode.";
+        field { sw = rw; hw = r; } dtr[0:0] = 0;
+        field { sw = rw; hw = r; } rts[1:1] = 0;
+        field { sw = rw; hw = r; } out1[2:2] = 0;
+        field { sw = rw; hw = r; } out2[3:3] = 0;
+        field { sw = rw; hw = r;
+                desc = "Loopback: MSR reflects MCR, the data is not looped back"; } loopback[4:4] = 0;
+    } mcr @ 0x10;
+
+    reg {
+        name = "LSR";
+        desc = "Line status. Writes are ignored.";
+        field { sw = r; hw = w;
+                desc = "Data ready: RBR holds a received byte"; } dr[0:0];
+        field { sw = r; hw = r; hwset; rclr;
+                desc = "Overrun: a byte was lost because RBR was full. Only
+                        without flow control of the hub. Cleared by reading LSR."; } oe[1:1] = 0;
+        field { sw = r; hw = na; } pe[2:2] = 0;
+        field { sw = r; hw = na; } fe[3:3] = 0;
+        field { sw = r; hw = na; } bi[4:4] = 0;
+        field { sw = r; hw = w;
+                desc = "THR empty"; } thre[5:5];
+        field { sw = r; hw = w;
+                desc = "Transmitter empty, same as THRE"; } temt[6:6];
+    } lsr @ 0x14;
+
+    reg {
+        name = "MSR";
+        desc = "Modem status. DCD, DSR and CTS are 1, in loopback mode they
+                reflect MCR. Writes are ignored.";
+        field { sw = r; hw = na; } dcts[0:0] = 0;
+        field { sw = r; hw = na; } ddsr[1:1] = 0;
+        field { sw = r; hw = na; } teri[2:2] = 0;
+        field { sw = r; hw = na; } ddcd[3:3] = 0;
+        field { sw = r; hw = w; } cts[4:4];
+        field { sw = r; hw = w; } dsr[5:5];
+        field { sw = r; hw = w; } ri[6:6];
+        field { sw = r; hw = w; } dcd[7:7];
+    } msr @ 0x18;
+
+    reg {
+        name = "SCR";
+        desc = "Scratch register";
+        field { sw = rw; hw = na; } data[7:0] = 0;
+    } scr @ 0x1C;
+};
