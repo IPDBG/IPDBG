@@ -163,12 +163,12 @@
       <h2>How it works</h2>
       <p class="lead">
         Each host tool talks to exactly one core in the FPGA over its own TCP
-        port. A bridge carries all connections over one physical link, and a hub
-        in the FPGA distributes them to the cores. Several tools can run at the
-        same time.
+        port. With JTAG, OpenOCD carries all connections over one physical link,
+        and a hub in the FPGA distributes them to the cores. Several tools can
+        run at the same time.
       </p>
       <div class="diagram">
-        <img src="architecture.svg" alt="Host tools connect over TCP to a bridge (OpenOCD for JTAG or a UART bridge), which reaches the transport interface and hub in the FPGA; the hub connects to the Logic Analyzer, Waveform Generator, BusAccess and IoProbe cores.">
+        <img src="architecture.svg" alt="Host tools connect over TCP to OpenOCD, which reaches the JTAG TAP and hub in the FPGA; the hub connects to the Logic Analyzer, Waveform Generator, BusAccess and IoProbe cores. Alternatively, one tool connects through a UART bridge and the UART transport to one core, without a hub.">
       </div>
     </div>
   </section>
@@ -255,7 +255,7 @@
 
       <div class="transports">
         <div><b>Generic JTAG</b><span>Soft JTAG on 4 user I/Os, for any other FPGA.</span></div>
-        <div><b>UART</b><span>2 user I/Os. SPI and I²C are planned.</span></div>
+        <div><b>UART</b><span>2 user I/Os per core. SPI and I²C are planned.</span></div>
         <div><b>Your own</b><span>E.g. a microcontroller running lwIP in front of a memory-mapped FPGA.</span></div>
       </div>
     </div>

@@ -80,9 +80,11 @@ See the [IoView documentation](sw/IoView/README.md).
 ![IPDBG architecture](doc/architecture.svg)
 
 Each host tool talks to exactly one IP core in the FPGA, over its own
-TCP port. A bridge forwards all of these connections over a single
-physical link: OpenOCD for JTAG, a UART bridge for UART. In the FPGA, the
-transport interface and the hub distribute the traffic to the cores.
+TCP port. With JTAG, OpenOCD forwards all of these connections over a
+single physical link, and in the FPGA the JtagHub distributes the
+traffic to the cores. The UART transport connects a single core; on the
+host, a TCP-to-serial bridge forwards the connection of one tool to the
+serial port.
 
 Because the host tools only see TCP, they work the same regardless of
 the FPGA family and the physical link – and several tools can be used
@@ -120,7 +122,8 @@ For any other FPGA: a soft JTAG interface on 4 regular I/O pins.
 
 ### UART
 
-Uses 2 user I/Os.
+[`rtl/Uart`](rtl/Uart): 2 user I/Os per IPDBG core, no hub. On the host,
+a TCP-to-serial bridge connects the host tool to the serial port.
 
 ### Planned
 
