@@ -75,6 +75,13 @@ See the [IoView documentation](sw/IoView/README.md).
 ![IoView](doc/ioview.png)
 *IoView reading inputs and setting outputs of an IoProbe core.*
 
+**Iurt**
+A serial console for the soft CPU in your FPGA, without extra pins: Iurt is
+a 16450-compatible UART on Wishbone, AXI4-Lite, APB, AHB-Lite, Avalon or
+OBI, and its other end is a TCP port on the host – connect any terminal.
+The existing 8250/16550 drivers of Linux, U-Boot or Zephyr work.
+See the [Iurt documentation](rtl/Iurt/README.md).
+
 ## Architecture
 
 ![IPDBG architecture](doc/architecture.svg)
@@ -171,7 +178,7 @@ host `127.0.0.1`, port `4242`) or with sigrok-cli:
 sigrok-cli --driver=ipdbg-la:conn=tcp-raw/127.0.0.1/4242 --scan
 ```
 
-The demo design provides all four tools, each on its own port:
+The demo design provides four of the tools, each on its own port:
 
 | Port | Tool               |
 |------|--------------------|

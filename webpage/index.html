@@ -90,6 +90,8 @@
   .c-wfg { --c: #059669; }
   .c-bus { --c: #d97706; }
   .c-io  { --c: #9333ea; }
+  .c-urt { --c: #0891b2; }
+  .card.wide { grid-column: 1 / -1; }
 
   table { width: 100%; border-collapse: collapse; font-size: 15px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -176,7 +178,7 @@
   <section id="features">
     <div class="wrap">
       <h2>Features</h2>
-      <p class="lead">Four cores, each with its host-side counterpart.</p>
+      <p class="lead">Five cores, each with its host-side counterpart.</p>
       <div class="grid">
         <div class="card c-la">
           <h3>Logic Analyzer</h3>
@@ -213,6 +215,16 @@
             in the FPGA, IoView the host application.
           </p>
           <a class="more" href="https://github.com/IPDBG/IPDBG/blob/master/sw/IoView/README.md">Documentation →</a>
+        </div>
+        <div class="card c-urt wide">
+          <h3>Iurt</h3>
+          <p>
+            A serial console for the soft CPU in your FPGA, without extra pins:
+            a 16450-compatible UART on Wishbone, AXI4-Lite, APB, AHB-Lite,
+            Avalon or OBI, whose other end is a TCP port on the host. The
+            existing 8250/16550 drivers of Linux, U&#8209;Boot and Zephyr work.
+          </p>
+          <a class="more" href="https://github.com/IPDBG/IPDBG/blob/master/rtl/Iurt/README.md">Documentation →</a>
         </div>
       </div>
       <div class="shots">
@@ -277,7 +289,7 @@ cd sw/CoSim &amp;&amp; openocd -f ipdbg_JtagSim.cfg
 <span class="c"># then connect</span>
 sigrok-cli --driver=ipdbg-la:conn=tcp-raw/127.0.0.1/4242 --scan</pre>
       <p>
-        The demo design serves all four cores (ports 4242–4245) and loops the
+        The demo design serves four cores (ports 4242–4245) and loops the
         Waveform Generator back into the Logic Analyzer.
         <a href="https://github.com/IPDBG/IPDBG/blob/master/sw/CoSim/README.md">CoSim documentation →</a>
       </p>
