@@ -90,8 +90,8 @@ Each host tool talks to exactly one IP core in the FPGA, over its own
 TCP port. With JTAG, OpenOCD forwards all of these connections over a
 single physical link, and in the FPGA the JtagHub distributes the
 traffic to the cores. The UART transport connects a single core; on the
-host, a TCP-to-serial bridge forwards the connection of one tool to the
-serial port.
+host, [UartBridge](sw/UartBridge/README.md) forwards the connection of one
+tool to the serial port.
 
 Because the host tools only see TCP, they work the same regardless of
 the FPGA family and the physical link – and several tools can be used
@@ -130,7 +130,8 @@ For any other FPGA: a soft JTAG interface on 4 regular I/O pins.
 ### UART
 
 [`rtl/Uart`](rtl/Uart): 2 user I/Os per IPDBG core, no hub. On the host,
-a TCP-to-serial bridge connects the host tool to the serial port.
+[UartBridge](sw/UartBridge/README.md) connects the host tool to the serial
+port.
 
 ### Planned
 
@@ -218,6 +219,7 @@ the IPDBG hub and the JTAG interface for your FPGA family instead; the
 | [`sw/BusAccess`](sw/BusAccess/README.md) | BusAccess library with C++, Python and Octave bindings |
 | [`sw/WaveformGenerator`](sw/WaveformGenerator/README.md) | WaveformGenerator library with C++, Python and Octave bindings |
 | [`sw/IoView`](sw/IoView/README.md) | IoView host application for the IoProbe core |
+| [`sw/UartBridge`](sw/UartBridge/README.md) | TCP to serial port bridge for the UART transport |
 | [`sw/CoSim`](sw/CoSim/README.md) | Co-simulation with GHDL, try IPDBG without hardware |
 
 The IPDBG server for JTAG is part of [OpenOCD](https://openocd.org),
