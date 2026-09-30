@@ -18,7 +18,9 @@ entity top is
     port(
         clk_pin : in  std_logic;
         leds    : out std_logic_vector(3 downto 0);
-        buttons : in  std_logic_vector(1 downto 0)
+        buttons : in  std_logic_vector(1 downto 0);
+        uart_tx : out std_logic; -- to the USB UART of the board (FTDI interface 1)
+        uart_rx : in  std_logic
     );
 end top;
 
@@ -124,6 +126,23 @@ architecture structure of top is
         );
     end component IoProbeTop;
 
+    component IpdbgUart is
+        generic(
+            CLOCKS_PER_ONE_SIXTEENTH_BIT : positive;
+            NUM_META_FLOPS               : positive;
+            ASYNC_RESET                  : boolean
+        );
+        port(
+            clk      : in  std_logic;
+            rst      : in  std_logic;
+            ce       : in  std_logic;
+            txd      : out std_logic;
+            rxd      : in  std_logic;
+            dn_lines : out ipdbg_dn_lines;
+            up_lines : in  ipdbg_up_lines
+        );
+    end component IpdbgUart;
+
     component WbMaster is
         generic (
             ASYNC_RESET : boolean
@@ -172,6 +191,9 @@ architecture structure of top is
     signal wfg_out    : std_logic_vector(15 downto 0);
 
     signal io_probe_rd : std_logic_vector(9 downto 0);
+
+    -- 100 MHz / (16 * 54) = 115741 baud, 0.5 % above 115200
+    constant UART_CLOCKS_PER_ONE_SIXTEENTH_BIT : positive := 54;
 
 begin
     jtag_hub_i : component JtagHub
@@ -312,6 +334,47 @@ begin
             end if;
         end process;
 
+    end block;
+
+    -- a second IoProbe on the USB UART of the board, through IpdbgUart and
+    -- sw/UartBridge on the host: 8 outputs, 10 inputs = buttons & outputs
+    uart: block
+        signal dn_lines_uart : ipdbg_dn_lines;
+        signal up_lines_uart : ipdbg_up_lines;
+        signal outputs       : std_logic_vector(7 downto 0);
+        signal inputs        : std_logic_vector(9 downto 0);
+    begin
+        uart_i : component IpdbgUart
+            generic map(
+                CLOCKS_PER_ONE_SIXTEENTH_BIT => UART_CLOCKS_PER_ONE_SIXTEENTH_BIT,
+                NUM_META_FLOPS               => MFF_LENGTH,
+                ASYNC_RESET                  => ASYNC_RESET
+            )
+            port map(
+                clk      => clk,
+                rst      => rst,
+                ce       => '1',
+                txd      => uart_tx,
+                rxd      => uart_rx,
+                dn_lines => dn_lines_uart,
+                up_lines => up_lines_uart
+            );
+
+        uart_probe_i : component IoProbeTop
+            generic map(
+                ASYNC_RESET => ASYNC_RESET
+            )
+            port map(
+                clk                  => clk,
+                rst                  => rst,
+                ce                   => '1',
+                dn_lines             => dn_lines_uart,
+                up_lines             => up_lines_uart,
+                probe_inputs         => inputs,
+                probe_outputs        => outputs,
+                probe_outputs_update => open
+            );
+        inputs <= buttons & outputs;
     end block;
 
     clocking_and_reset : block

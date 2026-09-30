@@ -35,6 +35,9 @@ add_files [list \
     $rtl/BusAccess/BusAccessStatemachine.vhd \
     $rtl/BusAccess/WbMaster.vhd \
     $rtl/IoProbe/IoProbeTop.vhd \
+    $rtl/Uart/IpdbgUartTx.vhd \
+    $rtl/Uart/IpdbgUartRx.vhd \
+    $rtl/Uart/IpdbgUart.vhd \
     $here/top.vhd ]
 set_property top top [current_fileset]
 add_files -fileset constrs_1 $here/cmod-s7.xdc

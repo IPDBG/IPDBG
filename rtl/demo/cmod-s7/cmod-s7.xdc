@@ -18,6 +18,10 @@ set_property -dict { PACKAGE_PIN E1    IOSTANDARD LVCMOS33 } [get_ports { leds[3
 set_property -dict { PACKAGE_PIN D2 IOSTANDARD LVCMOS33 } [get_ports { buttons[0] }]; #IO_L6P_T0_34 Sch=btn[0]
 set_property -dict { PACKAGE_PIN D1 IOSTANDARD LVCMOS33 } [get_ports { buttons[1] }]; #IO_L6N_T0_VREF_34 Sch=btn[1]
 
+## USB UART (FTDI interface 1), used by IpdbgUart; names of the board from the FPGA's view
+set_property -dict { PACKAGE_PIN L12 IOSTANDARD LVCMOS33 } [get_ports { uart_tx }]; #IO_L6N_T0_D08_VREF_14 Sch=uart_rxd_out
+set_property -dict { PACKAGE_PIN K15 IOSTANDARD LVCMOS33 } [get_ports { uart_rx }]; #IO_L5N_T0_D07_14 Sch=uart_txd_in
+
 ## JTAG clock of the BSCANE2 primitive in the JTAG hub
 create_clock -add -name drck -period 50 -waveform {0 25} [get_pins { jtag_hub_i/TT/BSCAN_7Series_inst/DRCK }]
 

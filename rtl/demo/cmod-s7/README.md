@@ -80,13 +80,50 @@ The cores are connected to each other and to the board:
 
 Differences to the co-simulation: more sample memory in the Waveform
 Generator, IoProbe on the LEDs, buttons and the register instead of a
-loopback, and writes to the register are not printed anywhere.
+loopback, writes to the register are not printed anywhere, and a second
+IoProbe on the UART (see below).
+
+## A second IoProbe on the UART
+
+The design also connects a second IoProbe to the USB UART of the board
+(FTDI interface 1), through the UART transport
+[`IpdbgUart`](../../Uart) instead of the JTAG hub:
+
+| | |
+|-|-|
+| Baudrate | 115200 (115741 exactly: 100 MHz / (16 × 54)), 8N1 |
+| IoProbe | 8 outputs, 10 inputs: inputs 9..8 show the two buttons, inputs 7..0 the outputs |
+
+On the host, [UartBridge](../../../sw/UartBridge/README.md) forwards a TCP
+port to the serial port. It runs independently of OpenOCD, both can be used
+at the same time:
+
+```sh
+UartBridge --list                        # find the port of the board
+UartBridge /dev/ttyUSB1 115200 4246      # Linux, usually the second ttyUSB of the board
+UartBridge COM5 115200 4246              # Windows, the COM port of interface 1
+```
+
+Then connect IoView to `127.0.0.1` port `4246`: every output you set shows
+up at the inputs 7..0, the buttons at 9..8. The BusAccess library works
+the same way, e.g. from Python:
+
+```python
+import BusAccess
+
+ba = BusAccess.IpdbgBusAccess()
+ba.open("127.0.0.1", "4246")
+print(ba.getCoreType(), ba.getReadDataSize(), ba.getWriteDataSize())  # 1 10 8
+ba.write(0, 0xa5)
+print(hex(ba.read(0)))    # 0xa5, plus 0x100/0x200 while a button is pressed
+ba.close()
+```
 
 ## Files
 
 | File          | Content |
 |---------------|---------|
-| `top.vhd`     | Demo design: MMCM, JTAG hub and the four IPDBG cores |
+| `top.vhd`     | Demo design: MMCM, JTAG hub and the four IPDBG cores, IoProbe on the UART |
 | `cmod-s7.xdc` | Pins and constraints |
 | [`../../JtagHub/JtagHubCdc.tcl`](../../JtagHub/JtagHubCdc.tcl) | Clock domain crossing constraints of the JTAG hub, used for the implementation only |
 | `build.tcl`   | Creates the Vivado project and builds the bitstream |
