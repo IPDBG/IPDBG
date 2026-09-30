@@ -141,6 +141,13 @@ On Windows:
 `make test` builds the example program `bin/Release/test` (`test.exe` on
 Windows, see [Example](#example)). `make clean` removes the build output.
 
+The Code::Blocks project `WaveformGenerator.cbp` builds with the Makefile;
+its targets are *library*, *test*, *python* and *octave* (the bindings,
+like `make python` and `make octave`); the virtual target *All* builds all
+four. On Windows, set the make program of the compiler in Code::Blocks to
+the `make` of MSYS2 (*Settings → Compiler → Toolchain executables → Make
+program*).
+
 To use the library from your own program, add `sw/WaveformGenerator` to the
 include path and link with
 `-L<path>/sw/WaveformGenerator/bin/Release -lWaveformGenerator`.

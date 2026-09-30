@@ -3,13 +3,13 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="BusAccess" />
+		<Option title="WaveformGenerator" />
 		<Option makefile_is_custom="1" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="library">
-				<Option output="bin/Release/libBusAccess" prefix_auto="0" extension_auto="1" />
+				<Option output="bin/Release/libWaveformGenerator" prefix_auto="0" extension_auto="1" />
 				<Option type="3" />
 				<Option compiler="gcc" />
 				<MakeCommands>
@@ -35,7 +35,7 @@
 				</MakeCommands>
 			</Target>
 			<Target title="python">
-				<Option output="python/_BusAccess" prefix_auto="0" extension_auto="1" />
+				<Option output="python/_WaveformGenerator" prefix_auto="0" extension_auto="1" />
 				<Option type="4" />
 				<Option compiler="gcc" />
 				<MakeCommands>
@@ -48,7 +48,7 @@
 				</MakeCommands>
 			</Target>
 			<Target title="octave">
-				<Option output="octave/BusAccess" prefix_auto="0" extension_auto="1" />
+				<Option output="octave/WaveformGenerator" prefix_auto="0" extension_auto="1" />
 				<Option type="4" />
 				<Option compiler="gcc" />
 				<MakeCommands>
@@ -64,22 +64,16 @@
 		<VirtualTargets>
 			<Add alias="All" targets="library;test;python;octave;" />
 		</VirtualTargets>
-		<Unit filename="../../rtl/BusAccess/AhbMaster.vhd" />
-		<Unit filename="../../rtl/BusAccess/ApbMaster.vhd" />
-		<Unit filename="../../rtl/BusAccess/AvalonMaster.vhd" />
-		<Unit filename="../../rtl/BusAccess/Axi4lMaster.vhd" />
-		<Unit filename="../../rtl/BusAccess/BusAccessController.vhd" />
-		<Unit filename="../../rtl/BusAccess/BusAccessStatemachine.vhd" />
-		<Unit filename="../../rtl/BusAccess/RiscvDtm.vhd" />
-		<Unit filename="../../rtl/BusAccess/WbMaster.vhd" />
-		<Unit filename="BusAccess.c" />
-		<Unit filename="BusAccess.h" />
-		<Unit filename="BusAccessCxx.cpp" />
-		<Unit filename="BusAccessCxx.h" />
-		<Unit filename="BusAccessCxx.i" />
-		<Unit filename="BusAccessCxx.tpp" />
+		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorController.vhd" />
+		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorMemory.vhd" />
+		<Unit filename="../../rtl/WaveformGenerator/WaveformGeneratorTop.vhd" />
 		<Unit filename="Makefile" />
 		<Unit filename="README.md" />
+		<Unit filename="WaveformGenerator.c" />
+		<Unit filename="WaveformGenerator.h" />
+		<Unit filename="WaveformGeneratorCxx.cpp" />
+		<Unit filename="WaveformGeneratorCxx.h" />
+		<Unit filename="WaveformGeneratorCxx.i" />
 		<Unit filename="octave/Makefile" />
 		<Unit filename="octave/README.md" />
 		<Unit filename="python/Makefile" />

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<!-- Builds with the Makefile (make, make clean); on Windows use the make of MSYS2. -->
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="IoView" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="all">
+				<Option output="bin/Release/IoView" prefix_auto="0" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<MakeCommands>
+					<Build command="$make -f $makefile all" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean" />
+					<DistClean command="$make -f $makefile clean" />
+					<AskRebuildNeeded command="$make -q -f $makefile all" />
+					<SilentBuild command="$make -f $makefile all &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="../../rtl/IoProbe/IoProbeTop.vhd" />
+		<Unit filename="ConnectionDialog.cpp" />
+		<Unit filename="ConnectionDialog.h" />
+		<Unit filename="IOViewApp.cpp" />
+		<Unit filename="IOViewApp.h" />
+		<Unit filename="IOViewMain.cpp" />
+		<Unit filename="IOViewMain.h" />
+		<Unit filename="IOViewObserver.h" />
+		<Unit filename="IOViewPanel.cpp" />
+		<Unit filename="IOViewPanel.h" />
+		<Unit filename="IOViewProtocol.cpp" />
+		<Unit filename="IOViewProtocol.h" />
+		<Unit filename="IOViewProtocolI.h" />
+		<Unit filename="Makefile" />
+		<Unit filename="README.md" />
+		<Unit filename="led.cpp" />
+		<Unit filename="led.h" />
+		<Unit filename="leds.xpm" />
+		<Unit filename="resource.rc" />
+		<Extensions>
+			<wxsmith version="1">
+				<resources>
+					<wxDialog wxs="wxsmith/ConnectionDialog.wxs" src="ConnectionDialog.cpp" hdr="ConnectionDialog.h" fwddecl="0" i18n="1" name="ConnectionDialog" language="CPP" />
+				</resources>
+			</wxsmith>
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

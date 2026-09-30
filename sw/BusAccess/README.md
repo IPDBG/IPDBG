@@ -131,8 +131,14 @@ On Windows:
 
 `make test` builds the example program `bin/Release/test` (`test.exe` on
 Windows) from `test.c`; host and port are optional arguments (default
-`127.0.0.1 4245`). `make clean` removes the build output. The Code::Blocks project in this
-directory builds the same library (target *Release*).
+`127.0.0.1 4245`). `make clean` removes the build output.
+
+The Code::Blocks project `BusAccess.cbp` builds with the Makefile; its
+targets are *library*, *test*, *python* and *octave* (the bindings, like
+`make python` and `make octave`); the virtual target *All* builds all four.
+On Windows, set the make program of the compiler in Code::Blocks to the
+`make` of MSYS2 (*Settings → Compiler → Toolchain executables → Make
+program*).
 
 To use the library from your own program, add `sw/BusAccess` to the include
 path and link with `-L<path>/sw/BusAccess/bin/Release -lBusAccess`.

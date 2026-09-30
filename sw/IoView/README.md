@@ -58,6 +58,12 @@ explicitly, e.g. `make WX_CONFIG=wx-config-3.2`.
 
 `make clean` removes the build output.
 
+The Code::Blocks project `IoView.cbp` builds with the Makefile (target
+*all*). On Windows, set the make program of the compiler in Code::Blocks to
+the `make` of MSYS2 (*Settings → Compiler → Toolchain executables → Make
+program*). The connection dialog can be edited there with wxSmith
+(`wxsmith/ConnectionDialog.wxs`).
+
 ## Usage
 
 1. Start the IPDBG host server, e.g. OpenOCD with the IPDBG server for the

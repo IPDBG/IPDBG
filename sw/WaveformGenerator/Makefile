@@ -6,8 +6,11 @@
 #   make          build the library into bin/Release
 #                 Linux:   libWaveformGenerator.so (+ versioned names)
 #                 Windows: libWaveformGenerator.dll and libWaveformGenerator.dll.a (MinGW-w64, e.g. MSYS2)
+#   make library  same as make
 #   make test     build bin/Release/test (example program, see test.c)
-#   make clean    remove build output
+#   make python   build the Python bindings (make -C python)
+#   make octave   build the Octave bindings (make -C octave)
+#   make clean    remove build output (not the one of the bindings)
 
 VERSION_MAJOR := 0
 VERSION       := $(VERSION_MAJOR).1.0
@@ -44,11 +47,16 @@ else
     override CXXFLAGS += -fPIC
 endif
 
-.PHONY: all test clean
+.PHONY: all library test python octave clean
 
 all: $(LIB)
 
+library: $(LIB)
+
 test: $(TEST)
+
+python octave:
+	$(MAKE) -C $@
 
 ifeq ($(OS),Windows_NT)
 
