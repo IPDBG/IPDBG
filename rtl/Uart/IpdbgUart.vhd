@@ -1,6 +1,11 @@
 -- SPDX-FileCopyrightText: The IPDBG authors
 -- SPDX-License-Identifier: CERN-OHL-W-2.0
 
+-- IPDBG UART transport: connects one IPDBG core to a UART, e.g. a
+-- USB-serial adapter; on the host, sw/UartBridge forwards a TCP port to it.
+-- Fixed frame format 8N1: 8 data bits, no parity, 1 stop bit.
+-- baudrate = clk frequency / (16 * CLOCKS_PER_ONE_SIXTEENTH_BIT)
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -12,8 +17,6 @@ entity IpdbgUart is
     generic(
         CLOCKS_PER_ONE_SIXTEENTH_BIT : positive;
         NUM_META_FLOPS               : positive;
-        PARITY                       : natural range 0 to 2; -- 0: none; 1: odd; 2: even
-        STOP_BITS                    : natural range 1 to 3; -- 1, 1.5, 2
         ASYNC_RESET                  : boolean
     );
     port(
@@ -154,8 +157,8 @@ begin
     tx: component IpdbgUartTx
         generic map(
             CLOCKS_PER_ONE_SIXTEENTH_BIT => CLOCKS_PER_ONE_SIXTEENTH_BIT,
-            PARITY                       => PARITY,
-            STOP_BITS                    => STOP_BITS,
+            PARITY                       => 0, -- 8N1
+            STOP_BITS                    => 1,
             ASYNC_RESET                  => ASYNC_RESET,
             HW_HS                        => false
         )
@@ -174,7 +177,7 @@ begin
         generic map(
             CLOCKS_PER_ONE_SIXTEENTH_BIT => CLOCKS_PER_ONE_SIXTEENTH_BIT,
             NUM_META_FLOPS               => NUM_META_FLOPS,
-            PARITY                       => PARITY,
+            PARITY                       => 0, -- 8N1
             ASYNC_RESET                  => ASYNC_RESET,
             HW_HS                        => false
         )

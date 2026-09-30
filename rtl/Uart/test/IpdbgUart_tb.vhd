@@ -16,8 +16,6 @@ architecture test of IpdbgUart_tb is
         generic(
             CLOCKS_PER_ONE_SIXTEENTH_BIT : positive;
             NUM_META_FLOPS               : positive;
-            PARITY                       : natural range 0 to 2; -- 0: none; 1: odd; 2: even
-            STOP_BITS                    : natural range 1 to 3; -- 1, 1.5, 2
             ASYNC_RESET                  : boolean
         );
         port(
@@ -208,8 +206,6 @@ begin
         generic map(
             CLOCKS_PER_ONE_SIXTEENTH_BIT => CLOCKS_PER_ONE_SIXTEENTH_BIT,
             NUM_META_FLOPS               => NUM_META_FLOPS,
-            PARITY                       => PARITY,
-            STOP_BITS                    => STOP_BITS,
             ASYNC_RESET                  => ASYNC_RESET
         )
         port map(

@@ -54,19 +54,12 @@ UartBridge --list
 |--------|---------|
 | `--list` | List the serial ports with description, USB vendor/product ID and serial number, then exit |
 | `--bind <address>` | IPv4 address to listen on; default `127.0.0.1`, `0.0.0.0` for all interfaces |
-| `--parity none\|odd\|even` | Parity, default `none` |
-| `--stopbits 1\|2` | Stop bits, default 1 |
 | `-h`, `--help` | Help |
 
-The serial settings must match the generics of `IpdbgUart`:
-
-| Generic | UartBridge |
-|---------|------------|
-| `CLOCKS_PER_ONE_SIXTEENTH_BIT` | baudrate = clock frequency / (16 × `CLOCKS_PER_ONE_SIXTEENTH_BIT`) |
-| `PARITY` 0 / 1 / 2 | `--parity none` / `odd` / `even` |
-| `STOP_BITS` 1 / 3 | `--stopbits 1` / `2`; 1.5 stop bits (`STOP_BITS` = 2) are not supported by libserialport |
-
-8 data bits and no flow control are fixed.
+The frame format is fixed to 8N1 (8 data bits, no parity, 1 stop bit), no
+flow control, like `IpdbgUart`. The baudrate must match the generic
+`CLOCKS_PER_ONE_SIXTEENTH_BIT` of `IpdbgUart`: baudrate = clock frequency /
+(16 × `CLOCKS_PER_ONE_SIXTEENTH_BIT`).
 
 Find the port of your board, then start the bridge, e.g. for an IoProbe core
 behind the UART:

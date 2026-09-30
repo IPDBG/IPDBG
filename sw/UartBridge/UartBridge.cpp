@@ -3,7 +3,8 @@
 
 // UartBridge: TCP <-> serial port bridge for the IPDBG UART transport
 // (rtl/Uart, IpdbgUart). IpdbgUart connects a single IPDBG core, there is no
-// hub, so the bridge forwards the bytes 1:1 in both directions.
+// hub, so the bridge forwards the bytes 1:1 in both directions. The frame
+// format is fixed to 8N1, like IpdbgUart.
 //
 // One client at a time: while a client is connected, further connections are
 // closed right away. After the client disconnects, the bridge waits for the
@@ -55,8 +56,6 @@ struct Options {
     int baudrate = 0;
     int tcpPort = 0;
     std::string bind = "127.0.0.1";
-    sp_parity parity = SP_PARITY_NONE;
-    int stopbits = 1;
 };
 
 struct sp_port *port = nullptr;
@@ -70,14 +69,12 @@ void usage(const char *prog)
         "       %s --list\n"
         "\n"
         "Forwards a TCP port to a serial port, for the IPDBG UART transport\n"
-        "(rtl/Uart). The serial settings must match the generics of IpdbgUart.\n"
+        "(rtl/Uart). 8 data bits, no parity, 1 stop bit (8N1), no flow control.\n"
         "\n"
         "Options:\n"
         "  --list                 list the serial ports and exit\n"
         "  --bind <address>       IPv4 address to listen on (default 127.0.0.1,\n"
         "                         0.0.0.0 for all interfaces)\n"
-        "  --parity none|odd|even parity (default none)\n"
-        "  --stopbits 1|2         stop bits (default 1)\n"
         "  -h, --help             show this help\n"
         "\n"
         "Example: %s /dev/ttyUSB1 115200 4242\n"
@@ -117,29 +114,6 @@ bool parseOptions(int argc, char **argv, Options *o, bool *list)
             if (!v)
                 return false;
             o->bind = v;
-        } else if (a == "--parity") {
-            const char *v = value("--parity");
-            if (!v)
-                return false;
-            std::string p = v;
-            if (p == "none")
-                o->parity = SP_PARITY_NONE;
-            else if (p == "odd")
-                o->parity = SP_PARITY_ODD;
-            else if (p == "even")
-                o->parity = SP_PARITY_EVEN;
-            else {
-                std::fprintf(stderr, "invalid parity '%s' (none, odd, even)\n", v);
-                return false;
-            }
-        } else if (a == "--stopbits") {
-            const char *v = value("--stopbits");
-            if (!v)
-                return false;
-            if (!parseInt(v, 1, 2, &o->stopbits)) {
-                std::fprintf(stderr, "invalid stop bits '%s' (1 or 2)\n", v);
-                return false;
-            }
         } else if (!a.empty() && a[0] == '-') {
             std::fprintf(stderr, "unknown option '%s'\n", a.c_str());
             return false;
@@ -227,8 +201,8 @@ bool openSerial(const Options &o)
     }
     return check(sp_set_baudrate(port, o.baudrate), "setting the baudrate") &&
            check(sp_set_bits(port, 8), "setting 8 data bits") &&
-           check(sp_set_parity(port, o.parity), "setting the parity") &&
-           check(sp_set_stopbits(port, o.stopbits), "setting the stop bits") &&
+           check(sp_set_parity(port, SP_PARITY_NONE), "disabling the parity") &&
+           check(sp_set_stopbits(port, 1), "setting 1 stop bit") &&
            check(sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE), "disabling flow control");
 }
 
@@ -395,9 +369,8 @@ int main(int argc, char **argv)
     if (listenFd == INVALID_SOCKET)
         return 1;
 
-    const char *parity = o.parity == SP_PARITY_ODD ? "odd" : o.parity == SP_PARITY_EVEN ? "even" : "no";
-    std::printf("UartBridge: %s, %d baud, 8 data bits, %s parity, %d stop bit(s) <-> TCP %s:%d\n",
-                o.device.c_str(), o.baudrate, parity, o.stopbits, o.bind.c_str(), o.tcpPort);
+    std::printf("UartBridge: %s, %d baud, 8N1 <-> TCP %s:%d\n",
+                o.device.c_str(), o.baudrate, o.bind.c_str(), o.tcpPort);
     std::printf("waiting for a connection\n");
     std::fflush(stdout);
 
