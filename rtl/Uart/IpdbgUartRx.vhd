@@ -139,7 +139,7 @@ begin
                 smpl <= '-';
                 data_err <= '-';
                 rx_reg <= (others => '-');
-                data <= (others => '-');
+                data <= (data'range => '-');
                 data_valid <= '0';
                 rts <= '1';
             end procedure reset_assignments;

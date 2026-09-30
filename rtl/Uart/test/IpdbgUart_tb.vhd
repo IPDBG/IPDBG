@@ -117,6 +117,7 @@ architecture test of IpdbgUart_tb is
     signal rx_data                        : std_logic_vector(7 downto 0);
     signal rx_data_valid                  : std_logic;
     signal rx_data_ready                  : std_logic;
+    signal done                           : boolean := false;
 begin
 
     process begin
@@ -124,6 +125,9 @@ begin
         wait for T / 2;
         clk <= '1';
         wait for T / 2;
+        if done then
+            wait;
+        end if;
     end process;
     process begin
         rst <= '1';
@@ -137,6 +141,29 @@ begin
 
 
     rx_data_ready <= '1';
+
+    -- the IoProbe answers the width query (0xAB) with 24 bytes in one burst,
+    -- each 32 bit word least significant byte first: VERSION_AND_ID (protocol
+    -- ID 0x1D, version 0, core type 1), write data width 8, read data width 8,
+    -- address, misc and strobe width 0
+    check: process
+        type bytes_t is array (0 to 23) of std_logic_vector(7 downto 0);
+        constant expected : bytes_t := (
+            x"1D", x"00", x"01", x"00",  x"08", x"00", x"00", x"00",
+            x"08", x"00", x"00", x"00",  x"00", x"00", x"00", x"00",
+            x"00", x"00", x"00", x"00",  x"00", x"00", x"00", x"00");
+    begin
+        for i in expected'range loop
+            wait until rising_edge(clk) and rx_data_valid = '1';
+            assert rx_data = expected(i)
+                report "byte " & integer'image(i) & ": 0x" & to_hstring(rx_data) &
+                       ", expected 0x" & to_hstring(expected(i))
+                severity failure;
+        end loop;
+        report "IpdbgUart_tb: passed";
+        done <= true;
+        wait;
+    end process;
 
     process begin
         wait until rst = '0';

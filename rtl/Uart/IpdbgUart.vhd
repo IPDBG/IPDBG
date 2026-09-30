@@ -92,7 +92,10 @@ begin
         srst <= rst;
     end generate sync_init;
 
-    dn_lines_uplink_ready <= tx_data_ready;
+    -- a byte is only taken while the register is empty and the transmitter is
+    -- idle; tx_data_ready is registered, so it is still '1' in the cycle after
+    -- tx_data_valid was set
+    dn_lines_uplink_ready <= tx_data_ready and not tx_data_valid;
     up: process(arst, clk)
         procedure reset_assignments is begin
             tx_data <= (others => '-');
@@ -106,12 +109,12 @@ begin
                 reset_assignments;
             else
                 if ce = '1' then
-                    tx_data_valid <= '0';
-                    if tx_data_ready = '1' then
-                        if up_lines.uplink_valid = '1' then
-                            tx_data <= up_lines.uplink_data;
-                            tx_data_valid <= '1';
-                        end if;
+                    if tx_data_valid = '1' and tx_data_ready = '1' then
+                        tx_data_valid <= '0'; -- taken by the transmitter
+                    end if;
+                    if dn_lines_uplink_ready = '1' and up_lines.uplink_valid = '1' then
+                        tx_data <= up_lines.uplink_data;
+                        tx_data_valid <= '1';
                     end if;
                 end if;
             end if;
