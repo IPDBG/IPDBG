@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IPDBG – IP Debugger for FPGAs</title>
-<meta name="description" content="Vendor-independent, open source debug cores for FPGAs: logic analyzer, waveform generator, bus master, I/O probe and a UART for soft CPUs, connected over JTAG, UART or your own transport.">
+<meta name="description" content="Free, open source debug cores for FPGAs of any vendor: logic analyzer, waveform generator, bus master, I/O probe and serial console.">
 <style>
   :root {
     --bg: #fbfbf9;
@@ -60,6 +60,7 @@
   }
   .hero p { font-size: 18px; color: var(--muted); max-width: 680px; margin: 0 0 24px; }
   .btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero p.license { font-size: 14px; margin: 16px 0 0; }
   .btn {
     display: inline-block; padding: 9px 16px; border-radius: 6px;
     border: 1px solid var(--line); color: var(--fg); background: var(--card);
@@ -147,7 +148,7 @@
 
 <main>
   <div class="wrap hero">
-    <h1>Debug cores for FPGAs,<br>independent of the vendor.</h1>
+    <h1>Open source debug cores for FPGAs,<br>independent of the vendor.</h1>
     <p>
       IPDBG provides small debug cores for your design and host tools that
       connect to them over JTAG, UART or your own transport, usually without
@@ -158,6 +159,10 @@
       <a class="btn primary" href="https://github.com/IPDBG/IPDBG#quick-start">Get started</a>
       <a class="btn" href="https://github.com/IPDBG/IPDBG">Source on GitHub</a>
     </div>
+    <p class="license">
+      Free and open source: hardware under CERN&#8209;OHL&#8209;W&#8209;2.0, software under
+      MPL&#8209;2.0. Use it in your own designs, commercial ones included.
+    </p>
   </div>
 
   <section id="architecture">
