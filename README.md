@@ -207,7 +207,11 @@ openocd -f demo.cfg                       # load it and start the IPDBG server
 ```
 
 The cores are on the same ports as in the co-simulation (4242–4245), so
-all host tools and examples work unchanged. For your own design, instantiate
+all host tools and examples work unchanged. In addition, a second IoProbe
+is connected to the USB UART of the board; with
+[UartBridge](sw/UartBridge/README.md) it shows how the UART transport works,
+see the [demo README](rtl/demo/cmod-s7/README.md#a-second-ioprobe-on-the-uart).
+For your own design, instantiate
 the IPDBG hub and the JTAG interface for your FPGA family instead; the
 [JtagHub README](rtl/JtagHub/README.md) lists the files per family.
 
