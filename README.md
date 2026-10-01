@@ -123,6 +123,9 @@ no JTAG involved at all.
 7 Series and are expected to work, but have seen less testing so far.
 Feedback is welcome.
 
+Which files to use for your family and how to set up OpenOCD:
+[JtagHub README](rtl/JtagHub/README.md).
+
 ### Generic JTAG on user I/Os
 
 For any other FPGA: a soft JTAG interface on 4 regular I/O pins.
