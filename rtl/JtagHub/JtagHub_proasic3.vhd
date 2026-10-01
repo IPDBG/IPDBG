@@ -13,6 +13,13 @@ entity JtagHub is
         FLOW_CONTROL_ENABLE : std_logic_vector(6 downto 0)
     );
     port(
+        -- connect to top-level ports with the same names, see IpdbgTap_proasic3.vhd
+        TCK        : in  std_logic;
+        TMS        : in  std_logic;
+        TDI        : in  std_logic;
+        TDO        : out std_logic;
+        TRST       : in  std_logic;
+
         clk        : in  std_logic;
         ce         : in  std_logic;
 
@@ -74,7 +81,7 @@ architecture structure of JtagHub is
             TMS     : in  std_logic;
             TDI     : in  std_logic;
             TDO     : out std_logic;
-            TRSTB   : in  std_logic;
+            TRST    : in  std_logic;
 
             capture : out std_logic;
             drclk   : out std_logic;
@@ -101,7 +108,7 @@ begin
             TMS     => TMS,
             TDI     => TDI,
             TDO     => TDO,
-            TRSTB   => TRSTB,
+            TRST    => TRST,
             capture => CAPTURE,
             drclk   => DRCLK,
             user    => USER,

@@ -12,7 +12,7 @@ entity IpdbgTap is
         TMS     : in  std_logic;
         TDI     : in  std_logic;
         TDO     : out std_logic;
-        TRSTB   : in  std_logic;
+        TRST    : in  std_logic;
 
         capture : out std_logic;
         drclk   : out std_logic;
@@ -31,7 +31,7 @@ architecture proascic3 of IpdbgTap is
             TMS    : in std_logic;
             TDI    : in std_logic;
             TCK    : in std_logic;
-            TRSTB  : in std_logic;
+            TRST   : in std_logic;
             URSTB  : out std_logic;
             UDRCK  : out std_logic;
             UDRCAP : out std_logic;
@@ -59,19 +59,19 @@ begin
         port map(
             -- must be routed to the top level and connected to
             -- ports named TCK, TMS, TDI, TDO, and
-            -- TRSTB. There is no need to connect them to io pins
+            -- TRST. There is no need to connect them to io pins
             TMS    => TMS,
             TDI    => TDI,
             TCK    => TCK,
             TDO    => TDO,
-            TRSTB  => TRSTB,
+            TRST   => TRST,
 
             URSTB  => open,
             UDRCK  => drclk,
             UDRCAP => capture,
             UDRSH  => shift,
             UDRUPD => update,
-            UTDI   => tdi,
+            UTDI   => tdi_o,
             UTDO   => tdo_i,
             UIREG0 => uireg(0),
             UIREG1 => uireg(1),
