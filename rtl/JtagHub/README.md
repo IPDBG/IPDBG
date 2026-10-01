@@ -45,7 +45,10 @@ The hub consists of three parts: the hub entity, the clock domain crossing
 `JtagCdc.vhd` (all variants) and a TAP file with the vendor's JTAG
 primitive. All TAP files define the entity `IpdbgTap`; add exactly one of
 them to your project. The flip-flops of the clock domain crossing come
-from `rtl/common/dffpc_<family>.vhd`.
+from `rtl/common/dffpc_<family>.vhd`, which instantiates a flip-flop
+primitive of the vendor. Without the primitive, the clock domain crossing
+does not work reliably. `dffpc_behav.vhd` is for simulation only, **never**
+use it for synthesis.
 
 | Vendor | Family | Hub | TAP file | `dffpc` |
 |--------|--------|-----|----------|---------|
@@ -63,7 +66,7 @@ from `rtl/common/dffpc_<family>.vhd`.
 | Gowin | GW1N, GW2A | `JtagHub_4ext.vhd` | `IpdbgTap_gowin.vhd` | `dffpc_gowin.vhd` |
 | Efinix | Trion, Titanium | `JtagHub_efinix.vhd` | – (JTAG user TAP of the Efinity interface designer) | `dffpc_efinix.vhd` |
 | Microchip (Microsemi) | ProASIC3 | `JtagHub_proasic3.vhd` | `IpdbgTap_proasic3.vhd` | `dffpc_proasic3.vhd` |
-| any | soft TAP on user I/Os | `JtagHub_4ext.vhd` | `IpdbgTap_generic.vhd` | `dffpc_behav.vhd` |
+| any | soft TAP on user I/Os | `JtagHub_4ext.vhd` | `IpdbgTap_generic.vhd` | the `dffpc` of the vendor; for another vendor, write one that instantiates a flip-flop primitive |
 
 ¹ Same `BSCANE2` primitive as the 7 Series; less tested so far.
 
