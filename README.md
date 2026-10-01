@@ -115,9 +115,9 @@ no JTAG involved at all.
 | Lattice         | ECP2, ECP3, ECP5, Certus |
 | Intel           | Arria II, Arria II GZ, Arria V, Arria V GZ, Cyclone III, Cyclone IV, Cyclone IV E, Cyclone V, Cyclone 10 LP, MAX V, MAX 10, Stratix III, Stratix V |
 | Efinix          | Trion, Titanium |
-| Gowin           | GW1N |
+| Gowin           | GW1N, GW2A |
 | Microchip/Actel | ProASIC3 |
-| AMD/Xilinx      | Spartan-3, Spartan-6, Spartan-7, Virtex-4, Virtex-6, 7 Series (Artix-7, Kintex-7, Virtex-7), Zynq-7000, UltraScale¹, UltraScale+¹ |
+| AMD/Xilinx      | Spartan-3, Spartan-6, Spartan-7, Virtex-6, 7 Series (Artix-7, Kintex-7, Virtex-7), Zynq-7000, UltraScale¹, UltraScale+¹ |
 
 ¹ UltraScale and UltraScale+ use the same `BSCANE2` primitive as the
 7 Series and are expected to work, but have seen less testing so far.

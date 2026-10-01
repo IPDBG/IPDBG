@@ -53,8 +53,9 @@ from `rtl/common/dffpc_<family>.vhd`.
 | | Spartan-6 | `JtagHub.vhd` | `IpdbgTap_xc6s.vhd` | `dffpc_xc6.vhd` |
 | | Virtex-6 | `JtagHub.vhd` | `IpdbgTap_xc6v.vhd` | `dffpc_xc6.vhd` |
 | | 7 Series, Zynq-7000 | `JtagHub.vhd` | `IpdbgTap_xc7.vhd` | `dffpc_xc7.vhd` |
+| | UltraScale, UltraScale+ ¹ | `JtagHub.vhd` | `IpdbgTap_xc7.vhd` | `dffpc_xc7.vhd` |
 | Intel (Altera) | virtual JTAG, all families with `sld_virtual_jtag` | `JtagHub.vhd` | `IpdbgTap_intel_vjtag.vhd` | `dffpc_intel.vhd` |
-| | Arria II, Arria II GZ, Arria V, Arria V GZ, Cyclone III, Cyclone IV, Cyclone IV E, Cyclone V, Cyclone 10 LP, MAX II, MAX V, MAX 10, Stratix III, Stratix V | `JtagHub_4ext.vhd` | `IpdbgTap_intel.vhd` and `IpdbgTapJtag_<family>.vhd` | `dffpc_intel.vhd` |
+| | Arria II, Arria II GZ, Arria V, Arria V GZ, Cyclone III, Cyclone IV, Cyclone IV E, Cyclone V, Cyclone 10 LP, MAX V, MAX 10, Stratix III, Stratix V | `JtagHub_4ext.vhd` | `IpdbgTap_intel.vhd` and `IpdbgTapJtag_<family>.vhd` | `dffpc_intel.vhd` |
 | Lattice | ECP2 | `JtagHub_4ext.vhd` | `IpdbgTap_ecp2.vhd` | `dffpc_ecp.vhd` |
 | | ECP3 | `JtagHub_4ext.vhd` | `IpdbgTap_ecp3.vhd` | `dffpc_ecp.vhd` |
 | | ECP5 | `JtagHub_4ext.vhd` | `IpdbgTap_ecp5.vhd` | `dffpc_ecp.vhd` |
@@ -63,6 +64,8 @@ from `rtl/common/dffpc_<family>.vhd`.
 | Efinix | Trion, Titanium | `JtagHub_efinix.vhd` | – (JTAG user TAP of the Efinity interface designer) | `dffpc_efinix.vhd` |
 | Microchip (Microsemi) | ProASIC3 | `JtagHub_proasic3.vhd` | `IpdbgTap_proasic3.vhd` | `dffpc_proasic3.vhd` |
 | any | soft TAP on user I/Os | `JtagHub_4ext.vhd` | `IpdbgTap_generic.vhd` | `dffpc_behav.vhd` |
+
+¹ Same `BSCANE2` primitive as the 7 Series; less tested so far.
 
 The variants differ in the extra ports:
 
