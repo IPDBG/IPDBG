@@ -129,11 +129,24 @@ set_property USED_IN_IMPLEMENTATION true  $cdc
 set_property PROCESSING_ORDER       LATE  $cdc
 ```
 
+## Host setup for JTAG
+
+1. Install [OpenOCD](https://openocd.org) 1.0.0 or later, or a git version
+   including commit 52ea420 (*ipdbg: simplify command chains*).
+2. Linux: allow access to the JTAG adapter without root with the udev
+   rules of OpenOCD,
+   [`contrib/60-openocd.rules`](https://github.com/openocd-org/openocd/blob/master/contrib/60-openocd.rules).
+   Copy the file to `/etc/udev/rules.d/` and add yourself to the group
+   `plugdev`. Some distribution packages of OpenOCD install it already.
+3. Windows: most adapters need the WinUSB or libusbK driver, installed
+   with [Zadig](https://zadig.akeo.ie). See
+   [`README.Windows.md`](https://github.com/openocd-org/openocd/blob/master/README.Windows.md)
+   of OpenOCD, and the [Cmod S7 demo](../demo/cmod-s7/README.md) for an
+   example with an FTDI-based board.
+
 ## OpenOCD
 
-OpenOCD 1.0.0 or later, or a git version including commit 52ea420
-(*ipdbg: simplify command chains*). Create the hub, then start one server
-per core:
+Create the hub, then start one server per core:
 
 ```tcl
 # with the pld driver of the device: OpenOCD knows the USER instruction
