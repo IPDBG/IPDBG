@@ -86,7 +86,7 @@ The variants differ in the extra ports:
   `UPDATE`, the signals of the JTAG user TAP that you create in the
   Efinity interface designer. Their names in your top level start with
   the instance name you give the JTAG user TAP there.
-* `JtagHub_proasic3.vhd`: `TCK`, `TMS`, `TDI`, `TDO`, `TRST` of the
+* `JtagHub_proasic3.vhd`: `TCK`, `TMS`, `TDI`, `TDO`, `TRSTB` of the
   `UJTAG` primitive. Connect them to top-level ports with exactly these
   names; they need no pin assignment.
 

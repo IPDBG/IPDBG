@@ -60,6 +60,8 @@ begin
             -- must be routed to the top level and connected to
             -- ports named TCK, TMS, TDI, TDO, and
             -- TRST. There is no need to connect them to io pins
+            -- The reset port is TRSTB, as Libero expects;
+            --  application note AC227 names it TRST
             TMS    => TMS,
             TDI    => TDI,
             TCK    => TCK,
