@@ -181,6 +181,24 @@ xc7.ipdbghub start -tool 1 -port 4243
 See the [OpenOCD manual](https://openocd.org/doc/html/Boundary-Scan-Commands.html),
 section *IPDBG: JTAG-Host server*, for all options.
 
+## Simulation
+
+`test/tb_JtagHub.vhd` tests `JtagCdc`, the part that all hub variants
+share, with a model of the TAP and of the ipdbg server of OpenOCD: data to
+and from the cores, flow control with slow cores (one of them behind
+`IpdbgClockDomainCrossing`), with and without `TDI_HAS_EXT_REGISTER`.
+`rtl/test/run.sh` runs it (see [`rtl/test`](../test/README.md)). By hand:
+
+```sh
+cd rtl
+ghdl -a --std=08 common/ipdbg_interface_pkg.vhd common/dffpc_behav.vhd \
+    JtagHub/JtagCdc.vhd common/IpdbgClockDomainCrossing.vhd JtagHub/test/tb_JtagHub.vhd
+ghdl --elab-run --std=08 tb_JtagHub -gTDI_HAS_EXT_REGISTER=false
+```
+
+The testbench ends with `tb_JtagHub: all tests passed` or stops at the
+first mismatch.
+
 ## License
 
 [CERN-OHL-W-2.0](https://ohwr.org/cern_ohl_w_v2.txt)

@@ -130,6 +130,16 @@ tb_iurt() {
 }
 check tb_Iurt tb_iurt
 
+tb_hub() {
+    local ext
+    analyze "$C/ipdbg_interface_pkg.vhd" "$C/dffpc_behav.vhd" "$J/JtagCdc.vhd" \
+        "$C/IpdbgClockDomainCrossing.vhd" "$J/test/tb_JtagHub.vhd" || return 1
+    for ext in false true; do
+        simulate tb_JtagHub "tb_JtagHub: all tests passed" -gTDI_HAS_EXT_REGISTER=$ext || return 1
+    done
+}
+check tb_JtagHub tb_hub
+
 tb_uart() {
     analyze "$C/ipdbg_interface_pkg.vhd" "$C/dffpc_behav.vhd" "$C/IpdbgEscaping.vhd" \
         "$RTL/BusAccess/BusAccessStatemachine.vhd" "$RTL/BusAccess/BusAccessController.vhd" \

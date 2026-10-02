@@ -13,6 +13,7 @@ GHDL=/path/to/ghdl rtl/test/run.sh
 |-------|--------------|
 | `hub-JtagHub`, `hub-JtagHub_4ext`, `hub-JtagHub_efinix`, `hub-JtagHub_proasic3` | Elaborates each hub variant with `JtagCdc` and a TAP, so a change of `JtagCdc` cannot break a variant unnoticed. The vendor libraries are empty stubs. |
 | `cores` | `elab_cores.vhd` instantiates every core, bus interface and transport once and runs it for 2 µs: catches elaboration errors and failed assertions, e.g. on unsupported widths. |
+| `tb_JtagHub` | [Hub testbench](../JtagHub/README.md#simulation): `JtagCdc` with a model of the TAP and of the OpenOCD host. Flow control with slow cores, one of them behind `IpdbgClockDomainCrossing` with its own clock, data to the host, with and without `TDI_HAS_EXT_REGISTER` |
 | `tb_Iurt` | [Iurt testbench](../Iurt/README.md#simulation), all 7 bus interfaces, each with synchronous and asynchronous reset |
 | `IpdbgUart_tb` | [UART testbench](../Uart/README.md#simulation) |
 
