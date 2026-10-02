@@ -100,6 +100,10 @@ begin
         signal hburst            : std_logic_vector(2 downto 0);
         signal hprot             : std_logic_vector(3 downto 0);
         signal hwstrb            : std_logic_vector(3 downto 0);
+        signal hburst_none       : std_logic_vector(0 downto 1); -- no hburst
+        signal hprot7            : std_logic_vector(6 downto 0);
+        signal haddr_2, hwdata_2 : std_logic_vector(31 downto 0);
+        signal hwstrb_2          : std_logic_vector(3 downto 0);
         signal av_addr           : std_logic_vector(31 downto 0);
         signal av_wdata          : std_logic_vector(127 downto 0);
         signal av_be             : std_logic_vector(15 downto 0);
@@ -129,6 +133,14 @@ begin
                      haddr => haddr, hwrite => open, hsize => open, hburst => hburst, hprot => hprot,
                      htrans => open, hmastlock => open, hwdata => hwdata, hready => '1', hresp => '0',
                      hrdata => x"00000000", hwstrb => hwstrb, hmaster => open);
+
+        -- AHB without hburst, hprot with 7 bits
+        ahb_2_i : entity work.AhbMaster
+            generic map(ASYNC_RESET => ASYNC_RESET, MASTER_ID => "0010")
+            port map(clk => clk, rst => rst, ce => '1', dn_lines => idle_dn, up_lines => up(22),
+                     haddr => haddr_2, hwrite => open, hsize => open, hburst => hburst_none, hprot => hprot7,
+                     htrans => open, hmastlock => open, hwdata => hwdata_2, hready => '1', hresp => '0',
+                     hrdata => x"00000000", hwstrb => hwstrb_2, hmaster => open);
 
         avalon_i : entity work.AvalonMaster
             generic map(ASYNC_RESET => ASYNC_RESET)

@@ -121,7 +121,7 @@ begin
     haddr   <= address;
     hwdata  <= write_data;
     hmaster <= MASTER_ID;
-    hburst  <= "000"; -- hburst: only single transfer burst
+    hburst  <= (hburst'range => '0'); -- hburst: only single transfer burst
     hsize   <= miscellaneous(hsize'length - 1 downto 0);
     hprot   <= miscellaneous(hprot'length - 1 + hsize'length downto hsize'length);
 
