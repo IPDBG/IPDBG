@@ -69,7 +69,8 @@ captured by the Logic Analyzer and decoded in PulseView.*
 A bus master core for AXI4-Lite, Wishbone, AHB, APB, Avalon and RISC-V DMI.
 Read and write registers of your design from a PC using the C library or
 the C++, Python and Octave bindings – ideal for scripted tests and bring-up.
-See the [BusAccess documentation](sw/BusAccess/README.md).
+See the [BusAccess documentation](sw/BusAccess/README.md), and the
+[bus master cores](rtl/BusAccess/README.md) for how to add one to your design.
 
 **IoView / IoProbe**
 Read and set individual signals interactively: IoProbe is the IP core in

@@ -86,21 +86,10 @@ timeout to your transport with `setTimeout()`; 0 waits forever.
 
 ## Supported bus master cores
 
-The HDL cores are in [`rtl/BusAccess`](../../rtl/BusAccess).
-
-| Core                                                   | Data width                    | Strobe       | Misc (width, reset value)                          | Lock        | NAK on                         |
-|--------------------------------------------------------|-------------------------------|--------------|----------------------------------------------------|-------------|--------------------------------|
-| [`WbMaster`](../../rtl/BusAccess/WbMaster.vhd)         | any, multiple of `sel_o`      | `sel_o`      | –                                                  | `lock_o`    | `rty_i`, `err_i`               |
-| [`ApbMaster`](../../rtl/BusAccess/ApbMaster.vhd)       | 8, 16, 32                     | `pstrb`      | `pprot` (3, `000`)                                 | –           | `pslverr`                      |
-| [`Axi4lMaster`](../../rtl/BusAccess/Axi4lMaster.vhd)   | 32, 64                        | `wstrb`      | `awprot` & `arprot` (6, `000000`)                  | –           | `rresp`/`bresp` ≠ OKAY         |
-| [`AhbMaster`](../../rtl/BusAccess/AhbMaster.vhd)       | 8 … 1024                      | `hwstrb`     | `hprot` & `hsize` (3, 7 or 10; privileged data access, full bus width) | `hmastlock` | `hresp`   |
-| [`AvalonMaster`](../../rtl/BusAccess/AvalonMaster.vhd) | 8 … 1024                      | `byteenable` | `debugaccess` (1, `1`)                             | `lock`      | `response` ≠ OKAY (reads only) |
-| [`RiscvDtm`](../../rtl/BusAccess/RiscvDtm.vhd)         | 32 (address 7 … 32 bit)       | –            | `dmireset`, `dmihardreset` (2, `00`)               | –           | never                          |
-
-Note on the reset values: `AhbMaster` starts with privileged data accesses and
-`AvalonMaster` starts with `debugaccess` asserted. Both are deliberate: a
-debugger usually needs these permissions, e.g. to write to an on-chip memory
-configured as ROM.
+The HDL cores are in [`rtl/BusAccess`](../../rtl/BusAccess/README.md): Wishbone,
+APB, AXI4-Lite, AHB-Lite, Avalon and RISC-V DMI. Their README lists the
+supported widths, the misc signals set by the protocol helpers and how to
+add a core to your design.
 
 ## Building
 
