@@ -18,7 +18,7 @@ entity JtagHub is
         TMS        : in  std_logic;
         TDI        : in  std_logic;
         TDO        : out std_logic;
-        TRST       : in  std_logic;
+        TRSTB      : in  std_logic;
 
         clk        : in  std_logic;
         ce         : in  std_logic;
@@ -81,7 +81,7 @@ architecture structure of JtagHub is
             TMS     : in  std_logic;
             TDI     : in  std_logic;
             TDO     : out std_logic;
-            TRST    : in  std_logic;
+            TRSTB   : in  std_logic;
 
             capture : out std_logic;
             drclk   : out std_logic;
@@ -108,7 +108,7 @@ begin
             TMS     => TMS,
             TDI     => TDI,
             TDO     => TDO,
-            TRST    => TRST,
+            TRSTB   => TRSTB,
             capture => CAPTURE,
             drclk   => DRCLK,
             user    => USER,

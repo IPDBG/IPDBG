@@ -12,7 +12,7 @@ entity IpdbgTap is
         TMS     : in  std_logic;
         TDI     : in  std_logic;
         TDO     : out std_logic;
-        TRST    : in  std_logic;
+        TRSTB   : in  std_logic;
 
         capture : out std_logic;
         drclk   : out std_logic;
@@ -31,7 +31,7 @@ architecture proascic3 of IpdbgTap is
             TMS    : in std_logic;
             TDI    : in std_logic;
             TCK    : in std_logic;
-            TRST   : in std_logic;
+            TRSTB  : in std_logic;
             URSTB  : out std_logic;
             UDRCK  : out std_logic;
             UDRCAP : out std_logic;
@@ -64,7 +64,7 @@ begin
             TDI    => TDI,
             TCK    => TCK,
             TDO    => TDO,
-            TRST   => TRST,
+            TRSTB  => TRSTB,
 
             URSTB  => open,
             UDRCK  => drclk,
