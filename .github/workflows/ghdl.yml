@@ -15,7 +15,7 @@ jobs:
   ghdl:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ghdl/setup-ghdl@v1
         with:
           version: 5.1.1
