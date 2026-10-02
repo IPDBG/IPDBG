@@ -88,7 +88,7 @@ begin
             ir_in               => open,
             virtual_state_cir   => open,
             virtual_state_pdr   => open,
-            ir_out              => open,
+            ir_out              => (others => '0'),
             virtual_state_uir   => open,
             jtag_state_cir      => open,
             jtag_state_uir      => open,
