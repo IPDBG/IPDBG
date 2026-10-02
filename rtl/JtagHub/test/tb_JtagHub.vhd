@@ -186,6 +186,7 @@ begin
         variable up_word      : std_logic_vector(DR_LENGTH - 1 downto 0);
         variable xoff_seen    : boolean := false;
         variable scans        : natural := 0;
+        variable received_1   : natural;
 
         procedure tck_cycle is begin
             wait for T_TCK / 2;
@@ -255,12 +256,12 @@ begin
             sent(tool) := sent(tool) + 1;
         end procedure;
 
-        -- An empty scan does not evaluate the xoff bit: the hub records an xoff as
-        -- seen by the host only in a scan with valid data. The xoff stays set,
-        -- so the next scan with data reports it again.
+        -- An empty scan, like ipdbg_shift_empty_data: the first empty scan after
+        -- data evaluates the xoff bit, it belongs to the channel of that data
         procedure poll is begin
             dr_scan((others => '0'), up_word);
             distribute(up_word);
+            check_for_xoff(TOOL_HUB, up_word);
         end procedure;
 
         variable all_sent : boolean;
@@ -306,11 +307,35 @@ begin
         end loop;
         wait for 20 * T_CLK;
 
+        assert xoff_seen report "no xoff from the slow cores, flow control not tested" severity failure;
+
+        -- Like the polling of OpenOCD with only channel 1 active and two bytes
+        -- per polling: the second byte stalls the channel, so the xoff comes in
+        -- the first empty scan. The hub must send an xon for it.
+        received_1 := received_by_core(1);
+        xoff_seen := false;
+        for r in 1 to 10 loop
+            while dn_xoff(1) = '1' loop
+                poll;
+                assert scans < 40000 report "no xon for the xoff from an empty scan" severity failure;
+            end loop;
+            send_byte(1);
+            send_byte(1);
+            for k in 1 to 8 loop
+                poll;
+            end loop;
+        end loop;
+        while received_by_core(1) < received_1 + 20 loop
+            poll;
+            assert scans < 40000 report "timeout: core 1 received " & integer'image(received_by_core(1) - received_1) &
+                " of 20 bytes" severity failure;
+        end loop;
+        assert xoff_seen report "no xoff in the bursts of two bytes" severity failure;
+
         assert received_by_core(0) = N_BYTES report "channel 0: " & integer'image(received_by_core(0)) & " bytes" severity failure;
-        assert received_by_core(1) = N_BYTES report "channel 1: " & integer'image(received_by_core(1)) & " bytes" severity failure;
+        assert received_by_core(1) = N_BYTES + 20 report "channel 1: " & integer'image(received_by_core(1)) & " bytes" severity failure;
         assert received_by_core(2) = N_BYTES report "channel 2: " & integer'image(received_by_core(2)) & " bytes" severity failure;
         assert received_3 = N_BYTES report "channel 3: " & integer'image(received_3) & " bytes" severity failure;
-        assert xoff_seen report "no xoff from the slow cores, flow control not tested" severity failure;
 
         report "tb_JtagHub: all tests passed (TDI_HAS_EXT_REGISTER = " & boolean'image(TDI_HAS_EXT_REGISTER) &
                ", " & integer'image(scans) & " scans)";

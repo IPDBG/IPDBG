@@ -454,15 +454,17 @@ begin
                         if ce = '1' then
                             xoff_host_set <= (others => '0');
                             if clear = '0' then
+                                -- The xoff belongs to the channel of the last transfer with valid
+                                -- data (xoff_sel). The host evaluates it in the following transfer,
+                                -- with or without valid data, e.g. OpenOCD in the first empty
+                                -- transfer after the data.
                                 if dwn_do_update = '1' then
-                                    if dwn_transfer_register_valid = '1' then -- xoff sent to host is only valid when dwn transfer had valid data
-                                        if xoff_sent = '1' then
-                                            for I in 0 to NUM_FUNCTIONS-1 loop
-                                                if I = to_integer(to_01(unsigned(xoff_sel),'1')) then
-                                                    xoff_host_set(I) <= '1';
-                                                end if;
-                                            end loop;
-                                        end if;
+                                    if xoff_sent = '1' then
+                                        for I in 0 to NUM_FUNCTIONS-1 loop
+                                            if I = to_integer(to_01(unsigned(xoff_sel),'1')) then
+                                                xoff_host_set(I) <= '1';
+                                            end if;
+                                        end loop;
                                     end if;
                                 end if;
                             end if;
