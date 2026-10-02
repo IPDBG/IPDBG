@@ -28,6 +28,8 @@ the libsigrok C/C++ API or its Python bindings: configure triggers, start
 captures and process the data further – for example, a spectrum analyzer
 running FFTs on signals captured inside the FPGA.
 
+How to add the core to your design: [Logic Analyzer core](rtl/LogicAnalyser/README.md).
+
 **Waveform Generator**
 Drive stimuli into your design, either from sigrok or from your own
 programs using the C library and the C++, Python and
@@ -132,7 +134,7 @@ For any other FPGA: a soft JTAG interface on 4 regular I/O pins.
 
 ### UART
 
-[`rtl/Uart`](rtl/Uart): 2 user I/Os per IPDBG core, no hub. On the host,
+[`rtl/Uart`](rtl/Uart/README.md): 2 user I/Os per IPDBG core, no hub. On the host,
 [UartBridge](sw/UartBridge/README.md) connects the host tool to the serial
 port.
 

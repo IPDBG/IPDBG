@@ -2,7 +2,7 @@
 
 Connects the host tools to an IPDBG core over a serial port: UartBridge
 forwards a TCP port to the serial port of the IPDBG UART transport
-([`rtl/Uart`](../../rtl/Uart), `IpdbgUart`). The host tools connect to the
+([`rtl/Uart`](../../rtl/Uart/README.md), `IpdbgUart`). The host tools connect to the
 TCP port as usual, like to OpenOCD for JTAG.
 
 Part of [IPDBG](https://github.com/IPDBG/IPDBG).
