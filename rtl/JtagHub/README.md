@@ -36,8 +36,9 @@ The records are defined in
 Channel N of the hub is tool N in OpenOCD (`$hub start -tool N`).
 
 Only the cores that need it require flow control, e.g.
-[Iurt](../Iurt/README.md). The other cores take every byte immediately and
-work with `'0'`.
+[Iurt](../Iurt/README.md), and every channel with a core behind
+[`IpdbgClockDomainCrossing`](../common/README.md#a-core-with-another-clock-than-the-hub).
+The other cores take every byte immediately and work with `'0'`.
 
 ## Hub variants and TAP files
 
