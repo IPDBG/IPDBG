@@ -49,12 +49,13 @@ elaborate() {
     "$GHDL" --elab-run "${FLAGS[@]}" "${opts[@]}" "$top" "$@" --stop-time=0ns
 }
 
-# simulate TOP EXPECTED [OPTIONS...]: runs TOP, fails on assertion failures
-# and if EXPECTED is not reported
+# simulate TOP EXPECTED [OPTIONS...]: runs TOP for at most 1 ms, fails on
+# assertion failures and if EXPECTED is not reported (e.g. a testbench that
+# hangs)
 simulate() {
     local top=$1 expected=$2
     shift 2
-    "$GHDL" --elab-run "${FLAGS[@]}" "$top" "$@" --assert-level=error | tee sim.log
+    "$GHDL" --elab-run "${FLAGS[@]}" "$top" "$@" --assert-level=error --stop-time=1ms | tee sim.log
     [ "${PIPESTATUS[0]}" -eq 0 ] || return 1
     [ -z "$expected" ] || grep -q "$expected" sim.log
 }
@@ -119,9 +120,13 @@ check cores cores
 # --- self-checking testbenches ------------------------------------------------
 
 tb_iurt() {
-    analyze "$C/ipdbg_interface_pkg.vhd" "${IURT[@]}" "$RTL/Iurt/test/tb_Iurt.vhd" &&
-    simulate tb_Iurt "tb_Iurt: all tests passed" -gBUS_TYPE=wb -gASYNC_RESET=true &&
-    simulate tb_Iurt "tb_Iurt: all tests passed" -gBUS_TYPE=ahb -gASYNC_RESET=false
+    local bus reset
+    analyze "$C/ipdbg_interface_pkg.vhd" "${IURT[@]}" "$RTL/Iurt/test/tb_Iurt.vhd" || return 1
+    for bus in wb ahb axi4l apb3 apb4 avalon obi; do
+        for reset in true false; do
+            simulate tb_Iurt "tb_Iurt: all tests passed" -gBUS_TYPE=$bus -gASYNC_RESET=$reset || return 1
+        done
+    done
 }
 check tb_Iurt tb_iurt
 

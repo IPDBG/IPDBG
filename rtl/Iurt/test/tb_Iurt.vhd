@@ -1,8 +1,9 @@
 -- SPDX-FileCopyrightText: The IPDBG authors
 -- SPDX-License-Identifier: CERN-OHL-W-2.0
 
--- Self-checking testbench for Iurt through IurtWb (BUS_TYPE = "wb") or IurtAhb
--- (BUS_TYPE = "ahb"), with ASYNC_RESET true or false. Stops with an error on the
+-- Self-checking testbench for Iurt through one of its bus interfaces, selected
+-- by BUS_TYPE: "wb", "ahb", "axi4l", "apb3", "apb4", "avalon" or "obi"; with
+-- ASYNC_RESET true or false. Stops with an error on the
 -- first mismatch, reports "tb_Iurt: all tests passed" at the end.
 
 library ieee;
@@ -52,6 +53,30 @@ architecture test of tb_Iurt is
     signal hsize    : std_logic_vector(2 downto 0);
     signal hwdata   : std_logic_vector(31 downto 0);
     signal hrdata   : std_logic_vector(31 downto 0);
+
+    -- axi4-lite
+    signal awvalid, awready, wvalid, wready, bvalid, bready : std_logic;
+    signal arvalid, arready, rvalid, rready                 : std_logic;
+    signal awaddr, araddr : std_logic_vector(4 downto 0);
+    signal wdata, rdata   : std_logic_vector(31 downto 0);
+    signal bresp, rresp   : std_logic_vector(1 downto 0);
+
+    -- apb3 / apb4
+    signal psel, penable, pwrite, pready, pslverr : std_logic;
+    signal paddr  : std_logic_vector(4 downto 0);
+    signal pwdata : std_logic_vector(31 downto 0);
+    signal prdata : std_logic_vector(31 downto 0);
+
+    -- avalon
+    signal av_read, av_write, av_waitrequest, av_readdatavalid, av_writeresponsevalid : std_logic;
+    signal av_address  : std_logic_vector(2 downto 0);
+    signal av_writedata, av_readdata : std_logic_vector(31 downto 0);
+    signal av_response : std_logic_vector(1 downto 0);
+
+    -- obi
+    signal obi_req, obi_gnt, obi_we, obi_rvalid, obi_rready, obi_err : std_logic;
+    signal obi_addr  : std_logic_vector(4 downto 0);
+    signal obi_wdata, obi_rdata : std_logic_vector(31 downto 0);
 
     -- host model
     signal host_take      : std_logic := '1'; -- host takes bytes from Iurt
@@ -139,6 +164,68 @@ begin
             );
     end generate ahb_gen;
 
+    axi4l_gen : if BUS_TYPE = "axi4l" generate
+        dut : entity work.IurtAxi4l
+            generic map(ASYNC_RESET => ASYNC_RESET)
+            port map(
+                clk => clk, rst => rst, ce => ce,
+                awready => awready, awvalid => awvalid, awaddr => awaddr, awprot => "000",
+                wready => wready, wvalid => wvalid, wdata => wdata, wstrb => "1111",
+                bready => bready, bvalid => bvalid, bresp => bresp,
+                arready => arready, arvalid => arvalid, araddr => araddr, arprot => "000",
+                rready => rready, rvalid => rvalid, rdata => rdata, rresp => rresp,
+                irq => irq, dn_lines => dn_lines, up_lines => up_lines
+            );
+    end generate axi4l_gen;
+
+    apb3_gen : if BUS_TYPE = "apb3" generate
+        dut : entity work.IurtApb3
+            generic map(ASYNC_RESET => ASYNC_RESET)
+            port map(
+                clk => clk, rst => rst, ce => ce,
+                psel => psel, penable => penable, pwrite => pwrite, paddr => paddr,
+                pwdata => pwdata, pready => pready, prdata => prdata, pslverr => pslverr,
+                irq => irq, dn_lines => dn_lines, up_lines => up_lines
+            );
+    end generate apb3_gen;
+
+    apb4_gen : if BUS_TYPE = "apb4" generate
+        dut : entity work.IurtApb4
+            generic map(ASYNC_RESET => ASYNC_RESET)
+            port map(
+                clk => clk, rst => rst, ce => ce,
+                psel => psel, penable => penable, pwrite => pwrite, pprot => "000",
+                paddr => paddr, pwdata => pwdata, pstrb => "1111",
+                pready => pready, prdata => prdata, pslverr => pslverr,
+                irq => irq, dn_lines => dn_lines, up_lines => up_lines
+            );
+    end generate apb4_gen;
+
+    avalon_gen : if BUS_TYPE = "avalon" generate
+        dut : entity work.IurtAvalon
+            generic map(ASYNC_RESET => ASYNC_RESET)
+            port map(
+                clk => clk, rst => rst, ce => ce,
+                read => av_read, write => av_write, waitrequest => av_waitrequest,
+                address => av_address, writedata => av_writedata, byteenable => "1111",
+                readdatavalid => av_readdatavalid, writeresponsevalid => av_writeresponsevalid,
+                readdata => av_readdata, response => av_response,
+                irq => irq, dn_lines => dn_lines, up_lines => up_lines
+            );
+    end generate avalon_gen;
+
+    obi_gen : if BUS_TYPE = "obi" generate
+        dut : entity work.IurtObi
+            generic map(ASYNC_RESET => ASYNC_RESET)
+            port map(
+                clk => clk, rst => rst, ce => ce,
+                req => obi_req, gnt => obi_gnt, addr => obi_addr, we => obi_we, be => "1111",
+                wdata => obi_wdata, aid => "0", rvalid => obi_rvalid, rready => obi_rready,
+                rdata => obi_rdata, err => obi_err, rid => open,
+                irq => irq, dn_lines => dn_lines, up_lines => up_lines
+            );
+    end generate obi_gen;
+
     -- host: takes the bytes from Iurt when host_take = '1'
     dn_lines.uplink_ready <= host_take;
     host_rx : process (clk) begin
@@ -179,7 +266,7 @@ begin
                 end if;
                 wb_cyc  <= '0';
                 wb_we   <= '0';
-            else
+            elsif BUS_TYPE = "ahb" then
                 hsel   <= '1';
                 haddr  <= std_logic_vector(to_unsigned(a, 5));
                 htrans <= "10";
@@ -190,6 +277,62 @@ begin
                 htrans <= "00";
                 hwdata <= x"000000" & d;
                 wait until rising_edge(clk) and hreadyout = '1';
+            elsif BUS_TYPE = "axi4l" then
+                awaddr  <= std_logic_vector(to_unsigned(a, 5));
+                wdata   <= x"000000" & d;
+                awvalid <= '1';
+                wvalid  <= '1';
+                loop
+                    wait until rising_edge(clk);
+                    if awready = '1' then awvalid <= '0'; end if;
+                    if wready = '1' then wvalid <= '0'; end if;
+                    exit when (awready = '1' or awvalid = '0') and (wready = '1' or wvalid = '0');
+                end loop;
+                awvalid <= '0';
+                wvalid  <= '0';
+                bready  <= '1';
+                wait until rising_edge(clk) and bvalid = '1';
+                assert bresp = "00" report "bresp not OKAY" severity failure;
+                bready  <= '0';
+            elsif BUS_TYPE = "apb3" or BUS_TYPE = "apb4" then
+                paddr   <= std_logic_vector(to_unsigned(a, 5));
+                pwdata  <= x"000000" & d;
+                pwrite  <= '1';
+                psel    <= '1';
+                wait until rising_edge(clk);
+                penable <= '1';
+                wait until rising_edge(clk) and pready = '1';
+                assert pslverr = '0' report "pslverr" severity failure;
+                psel    <= '0';
+                penable <= '0';
+                pwrite  <= '0';
+            elsif BUS_TYPE = "avalon" then
+                av_address   <= std_logic_vector(to_unsigned(a / 4, 3));
+                av_writedata <= x"000000" & d;
+                av_write     <= '1';
+                wait until rising_edge(clk) and av_waitrequest = '0';
+                av_write     <= '0';
+                if av_writeresponsevalid /= '1' then
+                    wait until rising_edge(clk) and av_writeresponsevalid = '1';
+                end if;
+                assert av_response = "00" report "response not OKAY" severity failure;
+            elsif BUS_TYPE = "obi" then
+                obi_addr   <= std_logic_vector(to_unsigned(a, 5));
+                obi_wdata  <= x"000000" & d;
+                obi_we     <= '1';
+                obi_req    <= '1';
+                wait until rising_edge(clk) and obi_gnt = '1';
+                obi_req    <= '0';
+                obi_we     <= '0';
+                obi_rready <= '1';
+                if obi_rvalid /= '1' then
+                    wait until rising_edge(clk) and obi_rvalid = '1';
+                end if;
+                assert obi_err = '0' report "err" severity failure;
+                wait until rising_edge(clk);
+                obi_rready <= '0';
+            else
+                report "unknown BUS_TYPE " & BUS_TYPE severity failure;
             end if;
         end procedure bus_write;
 
@@ -208,7 +351,7 @@ begin
                 assert wb_idat(31 downto 8) = x"000000" report "bits 31..8 not 0" severity failure;
                 d := wb_idat(7 downto 0);
                 wb_cyc  <= '0';
-            else
+            elsif BUS_TYPE = "ahb" then
                 hsel   <= '1';
                 haddr  <= std_logic_vector(to_unsigned(a, 5));
                 htrans <= "10";
@@ -221,6 +364,60 @@ begin
                 assert hresp = '0' report "hresp not OKAY" severity failure;
                 assert hrdata(31 downto 8) = x"000000" report "bits 31..8 not 0" severity failure;
                 d := hrdata(7 downto 0);
+            elsif BUS_TYPE = "axi4l" then
+                araddr  <= std_logic_vector(to_unsigned(a, 5));
+                arvalid <= '1';
+                wait until rising_edge(clk) and arready = '1';
+                arvalid <= '0';
+                rready  <= '1';
+                if rvalid /= '1' then
+                    wait until rising_edge(clk) and rvalid = '1';
+                end if;
+                assert rresp = "00" report "rresp not OKAY" severity failure;
+                assert rdata(31 downto 8) = x"000000" report "bits 31..8 not 0" severity failure;
+                d := rdata(7 downto 0);
+                wait until rising_edge(clk);
+                rready  <= '0';
+            elsif BUS_TYPE = "apb3" or BUS_TYPE = "apb4" then
+                paddr   <= std_logic_vector(to_unsigned(a, 5));
+                pwrite  <= '0';
+                psel    <= '1';
+                wait until rising_edge(clk);
+                penable <= '1';
+                wait until rising_edge(clk) and pready = '1';
+                assert pslverr = '0' report "pslverr" severity failure;
+                assert prdata(31 downto 8) = x"000000" report "bits 31..8 not 0" severity failure;
+                d := prdata(7 downto 0);
+                psel    <= '0';
+                penable <= '0';
+            elsif BUS_TYPE = "avalon" then
+                av_address <= std_logic_vector(to_unsigned(a / 4, 3));
+                av_read    <= '1';
+                wait until rising_edge(clk) and av_waitrequest = '0';
+                av_read    <= '0';
+                if av_readdatavalid /= '1' then
+                    wait until rising_edge(clk) and av_readdatavalid = '1';
+                end if;
+                assert av_response = "00" report "response not OKAY" severity failure;
+                assert av_readdata(31 downto 8) = x"000000" report "bits 31..8 not 0" severity failure;
+                d := av_readdata(7 downto 0);
+            elsif BUS_TYPE = "obi" then
+                obi_addr   <= std_logic_vector(to_unsigned(a, 5));
+                obi_we     <= '0';
+                obi_req    <= '1';
+                wait until rising_edge(clk) and obi_gnt = '1';
+                obi_req    <= '0';
+                obi_rready <= '1';
+                if obi_rvalid /= '1' then
+                    wait until rising_edge(clk) and obi_rvalid = '1';
+                end if;
+                assert obi_err = '0' report "err" severity failure;
+                assert obi_rdata(31 downto 8) = x"000000" report "bits 31..8 not 0" severity failure;
+                d := obi_rdata(7 downto 0);
+                wait until rising_edge(clk);
+                obi_rready <= '0';
+            else
+                report "unknown BUS_TYPE " & BUS_TYPE severity failure;
             end if;
         end procedure bus_read;
 
@@ -254,6 +451,12 @@ begin
         wb_adr <= (others => '0'); wb_odat <= (others => '0');
         hsel <= '0'; haddr <= (others => '0'); htrans <= "00"; hwrite <= '0';
         hsize <= "010"; hwdata <= (others => '0');
+        awvalid <= '0'; wvalid <= '0'; bready <= '0'; arvalid <= '0'; rready <= '0';
+        awaddr <= (others => '0'); araddr <= (others => '0'); wdata <= (others => '0');
+        psel <= '0'; penable <= '0'; pwrite <= '0'; paddr <= (others => '0'); pwdata <= (others => '0');
+        av_read <= '0'; av_write <= '0'; av_address <= (others => '0'); av_writedata <= (others => '0');
+        obi_req <= '0'; obi_we <= '0'; obi_rready <= '0'; obi_addr <= (others => '0');
+        obi_wdata <= (others => '0');
 
         idle(3);
         rst <= '0';
@@ -308,7 +511,9 @@ begin
         idle(10);
         check(LSR, x"61", "LSR while host waits");
         check(RBR, x"42", "RBR first byte");
-        wait until host_tx_done = 2;
+        if host_tx_done /= 2 then -- may be done already, depending on the bus timing
+            wait until host_tx_done = 2;
+        end if;
         idle(2);
         check(RBR, x"43", "RBR second byte");
         check(LSR, x"60", "LSR after reading RBR");

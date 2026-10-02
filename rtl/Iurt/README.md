@@ -106,7 +106,7 @@ of your bus address.
 | `generated/` | Register blocks generated from `iurt.rdl` with [PeakRDL-regblock-vhdl](https://github.com/SystemRDL/PeakRDL-regblock-vhdl), one per bus, and `reg_utils.vhd`: bus interface, IIR, LCR, MCR, LSR, MSR and SCR |
 | `iurt.rdl` | SystemRDL description of the registers and their fields; RBR/THR/DLL and IER/DLM are `external` |
 | `Makefile` | `make regs` regenerates `generated/` |
-| `test/tb_Iurt.vhd` | Self-checking testbench (Wishbone or AHB-Lite) |
+| `test/tb_Iurt.vhd` | Self-checking testbench, for each of the bus interfaces |
 
 For a design with `IurtAxi4l`, add `rtl/common/ipdbg_interface_pkg.vhd`,
 `generated/reg_utils.vhd`, `generated/IurtRegsAxi4l_pkg.vhd`,
@@ -124,20 +124,21 @@ make regs
 
 ## Simulation
 
-With [GHDL](https://github.com/ghdl/ghdl):
+With [GHDL](https://github.com/ghdl/ghdl), `rtl/test/run.sh` runs the
+testbench for all bus interfaces, each with synchronous and asynchronous
+reset (see [`rtl/test`](../test/README.md)). By hand, e.g. for AXI4-Lite:
 
 ```sh
 cd rtl/Iurt
-ghdl -a --std=08 ../common/ipdbg_interface_pkg.vhd generated/reg_utils.vhd \
-    generated/IurtRegsWb_pkg.vhd generated/IurtRegsWb.vhd \
-    generated/IurtRegsPassthrough_pkg.vhd generated/IurtRegsPassthrough.vhd \
-    IurtCore.vhd IurtWb.vhd IurtAhb.vhd test/tb_Iurt.vhd
-ghdl --elab-run --std=08 tb_Iurt -gBUS_TYPE=wb  -gASYNC_RESET=true
-ghdl --elab-run --std=08 tb_Iurt -gBUS_TYPE=ahb -gASYNC_RESET=false
+ghdl -a --std=08 -frelaxed ../common/ipdbg_interface_pkg.vhd generated/reg_utils.vhd \
+    generated/IurtRegs*_pkg.vhd $(ls generated/IurtRegs*.vhd | grep -v _pkg) \
+    IurtCore.vhd Iurt{Wb,Axi4l,Apb3,Apb4,Avalon,Obi,Ahb}.vhd test/tb_Iurt.vhd
+ghdl --elab-run --std=08 -frelaxed tb_Iurt -gBUS_TYPE=axi4l -gASYNC_RESET=true
 ```
 
-The testbench ends with `tb_Iurt: all tests passed` or stops at the first
-mismatch.
+`BUS_TYPE` is one of `wb`, `ahb`, `axi4l`, `apb3`, `apb4`, `avalon` and
+`obi`. The testbench ends with `tb_Iurt: all tests passed` or stops at the
+first mismatch.
 
 ## License
 
