@@ -55,7 +55,9 @@ wfg.close();
 ```
 
 See the [WaveformGenerator documentation](sw/WaveformGenerator/README.md)
-for the C API and the bindings.
+for the C API and the bindings, and the
+[Waveform Generator core](rtl/WaveformGenerator/README.md) for how to add it
+to your design.
 
 Looped back to the Logic Analyzer, the result shows up in PulseView:
 

@@ -96,20 +96,9 @@ this range are rejected.
 
 ## Supported core
 
-The HDL core is in [`rtl/WaveformGenerator`](../../rtl/WaveformGenerator)
-(`WaveformGeneratorTop`).
-
-| Generic         | Default | Meaning                                                              |
-|-----------------|---------|----------------------------------------------------------------------|
-| `ADDR_WIDTH`    | 13      | Size of the sample memory: 2^`ADDR_WIDTH` samples                     |
-| `DOUBLE_BUFFER` | `false` | Second sample memory for glitch-free updates while playing            |
-| `SYNC_MASTER`   | `true`  | `false`: after start, wait for `sync_in` before playing               |
-| `ASYNC_RESET`   | `true`  | Asynchronous or synchronous reset                                     |
-
-`sync_out` pulses at the end of every repetition while playing repeatedly
-(not during a one-shot). Connected to `sync_in` of
-other Waveform Generators (with `SYNC_MASTER = false`), it lets several
-generators start in step.
+The HDL core is in [`rtl/WaveformGenerator`](../../rtl/WaveformGenerator/README.md)
+(`WaveformGeneratorTop`); its README describes the generics, the ports and
+how to add it to your design.
 
 ## Building
 
