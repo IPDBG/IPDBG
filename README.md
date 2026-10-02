@@ -75,7 +75,8 @@ See the [BusAccess documentation](sw/BusAccess/README.md), and the
 **IoView / IoProbe**
 Read and set individual signals interactively: IoProbe is the IP core in
 the FPGA, IoView the host application.
-See the [IoView documentation](sw/IoView/README.md).
+See the [IoView documentation](sw/IoView/README.md), and the
+[IoProbe core](rtl/IoProbe/README.md) for how to add it to your design.
 
 ![IoView](doc/ioview.png)
 *IoView reading inputs and setting outputs of an IoProbe core.*

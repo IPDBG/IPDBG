@@ -99,20 +99,9 @@ a timeout while reading the inputs, are reported the same way.
 
 ## The IoProbe core
 
-`IoProbeTop` in [`rtl/IoProbe`](../../rtl/IoProbe/IoProbeTop.vhd) connects
-to a port of the IPDBG hub, e.g. the JtagHub:
-
-| Port / generic         | Meaning |
-|------------------------|---------|
-| `ASYNC_RESET`          | Asynchronous (`true`) or synchronous reset |
-| `probe_inputs`         | Signals read by IoView, at least 1 bit. All bits are sampled in the same clock cycle. |
-| `probe_outputs`        | Signals set by IoView, at least 1 bit |
-| `probe_outputs_update` | One clock cycle pulse when IoView wrote the outputs |
-
-The widths of `probe_inputs` and `probe_outputs` are taken from the
-signals you connect and may differ. IoProbe needs the BusAccess controller
-from `rtl/BusAccess` (`BusAccessController.vhd`, `BusAccessStatemachine.vhd`)
-and `rtl/common/IpdbgEscaping.vhd`.
+The HDL core is in [`rtl/IoProbe`](../../rtl/IoProbe/README.md)
+(`IoProbeTop`); its README describes the ports and how to add it to your
+design.
 
 ## License
 
