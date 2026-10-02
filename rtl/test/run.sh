@@ -38,8 +38,16 @@ check() {
 
 analyze() { "$GHDL" -a "${FLAGS[@]}" "$@"; }
 
-# elaborate TOP [OPTIONS...]
-elaborate() { local top=$1; shift; "$GHDL" -e "${FLAGS[@]}" "$@" "$top"; }
+# elaborate TOP [OPTIONS...] [-- RUN OPTIONS...]: elaborates TOP and runs it
+# for 0 ns. Generics (-gNAME=VALUE) are run options: with the GCC and LLVM
+# backends of GHDL, -g at elaboration means debug information.
+elaborate() {
+    local top=$1 opts=()
+    shift
+    while [ $# -gt 0 ] && [ "$1" != "--" ]; do opts+=("$1"); shift; done
+    [ $# -gt 0 ] && shift
+    "$GHDL" --elab-run "${FLAGS[@]}" "${opts[@]}" "$top" "$@" --stop-time=0ns
+}
 
 # simulate TOP EXPECTED [OPTIONS...]: runs TOP, fails on assertion failures
 # and if EXPECTED is not reported
@@ -68,7 +76,7 @@ J=$RTL/JtagHub
 hub() {
     vendor_libs &&
     analyze -Paltera -Papa "$C/ipdbg_interface_pkg.vhd" "$C/dffpc_behav.vhd" "$J/JtagCdc.vhd" "$@" &&
-    elaborate JtagHub -Paltera -Papa -gFLOW_CONTROL_ENABLE=0000001
+    elaborate JtagHub -Paltera -Papa -- -gFLOW_CONTROL_ENABLE=0000001
 }
 
 check hub-JtagHub          hub "$J/IpdbgTap_intel_vjtag.vhd" "$J/JtagHub.vhd"
