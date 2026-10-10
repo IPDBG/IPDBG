@@ -5,6 +5,10 @@
 #include "IOViewPanel.h"
 #include "IOViewProtocol.h"
 
+#ifndef IPDBG_VERSION
+#define IPDBG_VERSION "unknown"
+#endif
+
 namespace
 {
     int idMenuQuit = wxNewId();
@@ -77,7 +81,7 @@ void IOViewFrame::OnQuit(wxCommandEvent &event)
 
 void IOViewFrame::OnAbout(wxCommandEvent &event)
 {
-    wxMessageBox(_("I/O-View"), _("Welcome to..."));
+    wxMessageBox(wxString::Format("I/O-View %s", IPDBG_VERSION), _("Welcome to..."));
 }
 
 void IOViewFrame::visualizeInputs(uint8_t *buffer, size_t len)

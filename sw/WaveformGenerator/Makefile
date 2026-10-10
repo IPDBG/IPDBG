@@ -3,20 +3,28 @@
 
 # IPDBG WaveformGenerator library (C API + C++ class)
 #
-#   make          build the library into bin/Release
-#                 Linux:   libWaveformGenerator.so (+ versioned names)
-#                 Windows: libWaveformGenerator.dll and libWaveformGenerator.dll.a (MinGW-w64, e.g. MSYS2)
-#   make library  same as make
-#   make test     build bin/Release/test (example program, see test.c)
-#   make python   build the Python bindings (make -C python)
-#   make octave   build the Octave bindings (make -C octave)
-#   make clean    remove build output (not the one of the bindings)
+#   make            build the library into bin/Release
+#                   Linux:   libipdbg-waveformgenerator.so (+ versioned names)
+#                   Windows: libipdbg-waveformgenerator.dll and libipdbg-waveformgenerator.dll.a (MinGW-w64, e.g. MSYS2)
+#   make library    same as make
+#   make test       build bin/Release/test (example program, see test.c)
+#   make python     build the Python bindings (make -C python)
+#   make octave     build the Octave bindings (make -C octave)
+#   make install    install library, headers (include/ipdbg) and pkg-config file ipdbg-waveformgenerator.pc,
+#                   see ../common.mk for PREFIX, DESTDIR, ...
+#   make uninstall  remove what make install installed
+#   make clean      remove build output (not the one of the bindings)
 
-VERSION_MAJOR := 0
-VERSION       := $(VERSION_MAJOR).1.0
+include ../common.mk
+
+# ABI version of the library (soname), independent of the release version
+ABI_MAJOR   := 0
+ABI_VERSION := $(ABI_MAJOR).1.0
 
 OBJDIR := obj/Release
 BINDIR := bin/Release
+
+HEADERS := WaveformGenerator.h WaveformGeneratorCxx.h
 
 CC  ?= gcc
 CXX ?= g++
@@ -27,19 +35,20 @@ override CFLAGS   += -std=gnu11 -Wall -Wextra -MMD -MP
 override CXXFLAGS += -std=c++17 -Wall -Wextra -MMD -MP
 
 OBJS := $(OBJDIR)/WaveformGenerator.o $(OBJDIR)/WaveformGeneratorCxx.o
+PC   := ipdbg-waveformgenerator.pc
 
 ifeq ($(OS),Windows_NT)
-    LIB     := $(BINDIR)/libWaveformGenerator.dll
-    IMPLIB  := $(BINDIR)/libWaveformGenerator.dll.a
+    LIB     := $(BINDIR)/libipdbg-waveformgenerator.dll
+    IMPLIB  := $(BINDIR)/libipdbg-waveformgenerator.dll.a
     TEST    := $(BINDIR)/test.exe
     LIBS    := -lws2_32
     OUTPUTS := $(LIB) $(IMPLIB) $(TEST)
     # the DLL exports its functions, programs using it import them
     $(OBJS): override CPPFLAGS += -DEXPORT
 else
-    LIBNAME := libWaveformGenerator.so
-    SONAME  := $(LIBNAME).$(VERSION_MAJOR)
-    REAL    := $(LIBNAME).$(VERSION)
+    LIBNAME := libipdbg-waveformgenerator.so
+    SONAME  := $(LIBNAME).$(ABI_MAJOR)
+    REAL    := $(LIBNAME).$(ABI_VERSION)
     LIB     := $(BINDIR)/$(LIBNAME)
     TEST    := $(BINDIR)/test
     OUTPUTS := $(BINDIR)/$(LIBNAME) $(BINDIR)/$(SONAME) $(BINDIR)/$(REAL) $(TEST)
@@ -47,11 +56,11 @@ else
     override CXXFLAGS += -fPIC
 endif
 
-.PHONY: all library test python octave clean
+.PHONY: all library test python octave install uninstall clean
 
 all: $(LIB)
 
-library: $(LIB)
+library: all
 
 test: $(TEST)
 
@@ -65,7 +74,18 @@ $(LIB): $(OBJS) | $(BINDIR)
 
 # the DLL is found because test.exe is in the same directory
 $(TEST): $(OBJDIR)/test.o $(LIB)
-	$(CC) $< $(LDFLAGS) -L$(BINDIR) -lWaveformGenerator -o $@
+	$(CC) $< $(LDFLAGS) -L$(BINDIR) -lipdbg-waveformgenerator -o $@
+
+install: all
+	$(INSTALL) -d $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/ipdbg $(DESTDIR)$(pkgconfigdir)
+	$(INSTALL_PROGRAM) $(LIB) $(DESTDIR)$(bindir)
+	$(INSTALL_DATA) $(IMPLIB) $(DESTDIR)$(libdir)
+	$(INSTALL_DATA) $(HEADERS) $(DESTDIR)$(includedir)/ipdbg
+	$(write_pc) > $(DESTDIR)$(pkgconfigdir)/$(PC)
+
+uninstall:
+	rm -f $(DESTDIR)$(bindir)/$(notdir $(LIB)) $(DESTDIR)$(libdir)/$(notdir $(IMPLIB))
+	rm -f $(addprefix $(DESTDIR)$(includedir)/ipdbg/,$(HEADERS)) $(DESTDIR)$(pkgconfigdir)/$(PC)
 
 else
 
@@ -78,11 +98,38 @@ $(BINDIR)/$(SONAME): $(BINDIR)/$(REAL)
 $(BINDIR)/$(LIBNAME): $(BINDIR)/$(SONAME)
 	ln -sf $(SONAME) $@
 
-# rpath: find the library next to the program, no LD_LIBRARY_PATH needed
+# rpath: find the library next to the example program, no LD_LIBRARY_PATH needed
+# (the example is not installed)
 $(TEST): $(OBJDIR)/test.o $(LIB)
-	$(CC) $< $(LDFLAGS) -L$(BINDIR) -lWaveformGenerator -Wl,-rpath,'$$ORIGIN' -o $@
+	$(CC) $< $(LDFLAGS) -L$(BINDIR) -lipdbg-waveformgenerator -Wl,-rpath,'$$ORIGIN' -o $@
+
+install: all
+	$(INSTALL) -d $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/ipdbg $(DESTDIR)$(pkgconfigdir)
+	$(INSTALL_PROGRAM) $(BINDIR)/$(REAL) $(DESTDIR)$(libdir)
+	ln -sf $(REAL) $(DESTDIR)$(libdir)/$(SONAME)
+	ln -sf $(SONAME) $(DESTDIR)$(libdir)/$(LIBNAME)
+	$(INSTALL_DATA) $(HEADERS) $(DESTDIR)$(includedir)/ipdbg
+	$(write_pc) > $(DESTDIR)$(pkgconfigdir)/$(PC)
+
+uninstall:
+	rm -f $(addprefix $(DESTDIR)$(libdir)/,$(REAL) $(SONAME) $(LIBNAME))
+	rm -f $(addprefix $(DESTDIR)$(includedir)/ipdbg/,$(HEADERS)) $(DESTDIR)$(pkgconfigdir)/$(PC)
 
 endif
+
+# pkg-config file, written by make install with the install directories
+write_pc = printf '%s\n' \
+    'prefix=$(prefix)' \
+    'libdir=$(libdir)' \
+    'includedir=$(includedir)' \
+    '' \
+    'Name: ipdbg-waveformgenerator' \
+    'Description: IPDBG WaveformGenerator: control of an IPDBG Waveform Generator core' \
+    'Version: $(VERSION)' \
+    'URL: https://github.com/IPDBG/IPDBG' \
+    'Libs: -L$${libdir} -lipdbg-waveformgenerator' \
+    $(if $(LIBS),'Libs.private: $(LIBS)') \
+    'Cflags: -I$${includedir}'
 
 $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@

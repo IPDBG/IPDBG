@@ -114,18 +114,18 @@ make
 
 This builds the library into `bin/Release`. On Linux:
 
-| File                            | Purpose                                         |
-|---------------------------------|-------------------------------------------------|
-| `libWaveformGenerator.so.0.1.0` | The library (C API and C++ class)               |
-| `libWaveformGenerator.so.0`     | Symlink, SONAME used by programs at runtime     |
-| `libWaveformGenerator.so`       | Symlink used when linking                       |
+| File                                  | Purpose                                         |
+|---------------------------------------|-------------------------------------------------|
+| `libipdbg-waveformgenerator.so.0.1.0` | The library (C API and C++ class)               |
+| `libipdbg-waveformgenerator.so.0`     | Symlink, SONAME used by programs at runtime     |
+| `libipdbg-waveformgenerator.so`       | Symlink used when linking                       |
 
 On Windows:
 
-| File                          | Purpose                                         |
-|-------------------------------|-------------------------------------------------|
-| `libWaveformGenerator.dll`    | The library (C API and C++ class)               |
-| `libWaveformGenerator.dll.a`  | Import library used when linking                |
+| File                               | Purpose                                         |
+|------------------------------------|-------------------------------------------------|
+| `libipdbg-waveformgenerator.dll`   | The library (C API and C++ class)               |
+| `libipdbg-waveformgenerator.dll.a` | Import library used when linking                |
 
 `make test` builds the example program `bin/Release/test` (`test.exe` on
 Windows, see [Example](#example)). `make clean` removes the build output.
@@ -137,14 +137,26 @@ four. On Windows, set the make program of the compiler in Code::Blocks to
 the `make` of MSYS2 (*Settings → Compiler → Toolchain executables → Make
 program*).
 
-To use the library from your own program, add `sw/WaveformGenerator` to the
-include path and link with
-`-L<path>/sw/WaveformGenerator/bin/Release -lWaveformGenerator`.
+`make install` installs the library, the headers and the pkg-config file
+`ipdbg-waveformgenerator.pc`, see [Installing](../README.md#installing) for `PREFIX`,
+`DESTDIR` etc. `WaveformGenerator.h` and `WaveformGeneratorCxx.h` are
+installed to `PREFIX/include/ipdbg`, so include them with the directory,
+e.g. `#include <ipdbg/WaveformGenerator.h>`, and build your program with
+
+```sh
+cc myprogram.c $(pkg-config --cflags --libs ipdbg-waveformgenerator)
+```
+
+`make uninstall` removes the installed files.
+
+To use the library from the source tree instead, add `sw/WaveformGenerator` to
+the include path and link with
+`-L<path>/sw/WaveformGenerator/bin/Release -lipdbg-waveformgenerator`.
 At runtime the library has to be found:
 
-* Linux: the loader has to find `libWaveformGenerator.so.0`, e.g. via
-  `-Wl,-rpath,<path>/sw/WaveformGenerator/bin/Release` or `LD_LIBRARY_PATH`.
-* Windows: `libWaveformGenerator.dll` has to be in the directory of your
+* Linux: the loader has to find `libipdbg-waveformgenerator.so.0`, e.g. via
+  `LD_LIBRARY_PATH=<path>/sw/WaveformGenerator/bin/Release`.
+* Windows: `libipdbg-waveformgenerator.dll` has to be in the directory of your
   program or in `PATH`.
 
 The Python and Octave bindings can be built on Linux and on Windows with

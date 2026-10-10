@@ -24,9 +24,8 @@ make
 
 This creates `BusAccess.py` and the extension module:
 
-* Linux: `_BusAccess.so`. It links `libBusAccess.so` and builds it first if
-  needed (see the [main README](../README.md#building)). It finds the
-  library on its own, so `LD_LIBRARY_PATH` is not needed.
+* Linux: `_BusAccess.so`. It links `libipdbg-busaccess.so` and builds it first if
+  needed (see the [BusAccess README](../README.md#building)).
 * Windows: `_BusAccess` with the suffix reported by
   `python3-config --extension-suffix`, e.g.
   `_BusAccess.cp312-mingw_x86_64_ucrt_gnu.pyd`. The library is compiled into
@@ -34,8 +33,23 @@ This creates `BusAccess.py` and the extension module:
   with the MSYS2 Python it was built for, not with the Python from
   python.org.
 
-To import the module from another directory, add `sw/BusAccess/python` to
-`PYTHONPATH`.
+To use the module from the source tree on Linux, the loader has to find the
+library, and Python the module:
+
+```sh
+LD_LIBRARY_PATH=<path>/sw/BusAccess/bin/Release \
+PYTHONPATH=<path>/sw/BusAccess/python python3
+```
+
+On Windows, add `sw/BusAccess/python` to `PYTHONPATH`.
+
+`make install` installs `BusAccess.py` and the module into the
+`site-packages` directory of `python3` under `PREFIX`, see
+[Installing](../../README.md#installing). Debian and Ubuntu use
+`dist-packages` instead, e.g.
+`make install PREFIX=/usr PYTHONDIR=/usr/lib/python3/dist-packages`.
+Install the library too (`make install` in `sw/BusAccess`).
+`make uninstall` removes the installed files.
 
 `make clean` removes the generated files.
 

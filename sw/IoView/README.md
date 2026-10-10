@@ -47,9 +47,10 @@ make
 
 This creates:
 
-* Linux: `bin/Release/IoView`. It links `libBusAccess.so` and builds it
-  first if needed (see the [BusAccess README](../BusAccess/README.md#building)).
-  It finds the library on its own, so `LD_LIBRARY_PATH` is not needed.
+* Linux: `bin/Release/IoView`. It links `libipdbg-busaccess.so` and builds
+  it first if needed (see the [BusAccess README](../BusAccess/README.md#building)).
+  To run it from the source tree, the loader has to find the library:
+  `LD_LIBRARY_PATH=../BusAccess/bin/Release bin/Release/IoView`.
 * Windows: `bin/Release/IoView.exe`. The BusAccess library is compiled into
   the program, so no DLL has to be found at runtime.
 
@@ -58,10 +59,18 @@ explicitly, e.g. `make WX_CONFIG=wx-config-3.2`.
 
 `make clean` removes the build output.
 
+`make install` installs IoView as `ipdbg-ioview`, on Linux with a desktop
+file and an icon, so it shows up in the application menu. Install the
+BusAccess library too (`make install` in `sw/BusAccess`); see
+[Installing](../README.md#installing) for `PREFIX`, `DESTDIR` etc.
+`make uninstall` removes the installed files.
+
 The Code::Blocks project `IoView.cbp` builds with the Makefile (target
 *all*). On Windows, set the make program of the compiler in Code::Blocks to
 the `make` of MSYS2 (*Settings → Compiler → Toolchain executables → Make
-program*). The connection dialog can be edited there with wxSmith
+program*). On Linux, Code::Blocks finds the library when it runs IoView: the
+project lists `../BusAccess/bin/Release` as library directory, which
+Code::Blocks adds to `LD_LIBRARY_PATH`. The connection dialog can be edited there with wxSmith
 (`wxsmith/ConnectionDialog.wxs`).
 
 ## Usage

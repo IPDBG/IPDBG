@@ -12,6 +12,10 @@
 				<Option output="bin/Release/IoView" prefix_auto="0" extension_auto="1" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Linker>
+					<!-- not used by the Makefile: Code::Blocks adds it to LD_LIBRARY_PATH when it runs IoView -->
+					<Add directory="../BusAccess/bin/Release" />
+				</Linker>
 				<MakeCommands>
 					<Build command="$make -f $makefile all" />
 					<CompileFile command="$make -f $makefile $file" />

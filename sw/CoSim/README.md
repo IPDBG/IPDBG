@@ -88,7 +88,7 @@ PulseView suggests 5555. Enter the port from the table above.
 
 Load a waveform into the Waveform Generator, e.g. a ramp from Python (see
 [`sw/WaveformGenerator/python`](../WaveformGenerator/python/README.md) for
-building the module):
+building and using the module):
 
 ```python
 import WaveformGenerator
@@ -117,10 +117,15 @@ an I²C frame generated in Octave and decoded in PulseView.
 [`examples/spi_demo.m`](examples/spi_demo.m) lets the Waveform Generator
 play the signals of an SPI master FSM that reads an ADXL345 accelerometer:
 first the device ID, then the X, Y and Z values. With the Octave bindings
-(see [`sw/WaveformGenerator/octave`](../WaveformGenerator/octave/README.md)):
+(see [`sw/WaveformGenerator/octave`](../WaveformGenerator/octave/README.md)),
+from the source tree:
+
+```sh
+cd sw/CoSim/examples
+LD_LIBRARY_PATH=../../WaveformGenerator/bin/Release octave
+```
 
 ```octave
-cd sw/CoSim/examples
 addpath("../../WaveformGenerator/octave")
 spi_demo
 ```

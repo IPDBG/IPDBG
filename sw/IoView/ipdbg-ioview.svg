@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: The IPDBG authors -->
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+<!-- IoView icon: a row of LEDs, one of them on -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="off" cx="0.4" cy="0.35" r="0.65">
+      <stop offset="0" stop-color="#8a8f8a"/>
+      <stop offset="1" stop-color="#3a3d3a"/>
+    </radialGradient>
+    <radialGradient id="on" cx="0.4" cy="0.35" r="0.65">
+      <stop offset="0" stop-color="#eaffea"/>
+      <stop offset="0.35" stop-color="#5cf05c"/>
+      <stop offset="1" stop-color="#1a8a1a"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#5cf05c" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#5cf05c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="4" y="38" width="120" height="52" rx="12" fill="#1f3b2a" stroke="#0f1f16" stroke-width="3"/>
+  <g stroke="#0f1f16" stroke-width="2">
+    <circle cx="23" cy="64" r="12" fill="url(#off)"/>
+    <circle cx="107" cy="64" r="12" fill="url(#off)"/>
+    <circle cx="79" cy="64" r="12" fill="url(#off)"/>
+  </g>
+  <circle cx="51" cy="64" r="22" fill="url(#glow)"/>
+  <circle cx="51" cy="64" r="12" fill="url(#on)" stroke="#0f1f16" stroke-width="2"/>
+</svg>

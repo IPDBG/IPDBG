@@ -24,15 +24,21 @@ make
 
 This creates `WaveformGenerator.oct`.
 
-* Linux: the module links `libWaveformGenerator.so` and builds it first if needed (see
-  the [main README](../README.md#building)). It finds the library on its
-  own, so `LD_LIBRARY_PATH` is not needed.
+* Linux: the module links `libipdbg-waveformgenerator.so` and builds it first if
+  needed (see the [WaveformGenerator README](../README.md#building)).
 * Windows: the library is compiled into `WaveformGenerator.oct`, so no DLL has to be
   found at runtime.
 
-To use the module from another directory, add `sw/WaveformGenerator/octave`
-to the Octave search path, e.g.
-`addpath("<path>/sw/WaveformGenerator/octave")`.
+To use the module from the source tree, add `sw/WaveformGenerator/octave` to
+the Octave search path, e.g. `addpath("<path>/sw/WaveformGenerator/octave")`. On
+Linux, the loader also has to find the library: start Octave with
+`LD_LIBRARY_PATH=<path>/sw/WaveformGenerator/bin/Release octave`.
+
+`make install` installs `WaveformGenerator.oct` into the directory reported by
+`octave-config -p LOCALOCTFILEDIR`, which is in the Octave search path;
+another directory with `OCTDIR=...`. Install the library too
+(`make install` in `sw/WaveformGenerator`, see [Installing](../../README.md#installing)).
+`make uninstall` removes the installed file.
 
 `make clean` removes the generated files.
 

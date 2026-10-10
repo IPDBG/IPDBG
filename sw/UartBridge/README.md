@@ -38,6 +38,10 @@ make
 This creates `bin/Release/UartBridge` (`UartBridge.exe` on Windows).
 `make clean` removes the build output.
 
+`make install` installs it as `ipdbg-uartbridge`, see
+[Installing](../README.md#installing) for `PREFIX`, `DESTDIR` etc.
+`make uninstall` removes the installed file.
+
 The Code::Blocks project `UartBridge.cbp` builds with the Makefile (target
 *all*). On Windows, set the make program of the compiler in Code::Blocks to
 the `make` of MSYS2 (*Settings → Compiler → Toolchain executables → Make
@@ -50,11 +54,14 @@ UartBridge [options] <serial-port> <baudrate> <tcp-port>
 UartBridge --list
 ```
 
+Installed, the program is called `ipdbg-uartbridge`.
+
 | Option | Meaning |
 |--------|---------|
 | `--list` | List the serial ports with description, USB vendor/product ID and serial number, then exit |
 | `--bind <address>` | IPv4 address to listen on; default `127.0.0.1`, `0.0.0.0` for all interfaces |
 | `-h`, `--help` | Help |
+| `--version` | Show the version |
 
 The frame format is fixed to 8N1 (8 data bits, no parity, 1 stop bit), no
 flow control, like `IpdbgUart`. The baudrate must match the generic

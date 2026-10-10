@@ -105,18 +105,18 @@ make
 
 This builds the library into `bin/Release`. On Linux:
 
-| File                    | Purpose                                         |
-|-------------------------|-------------------------------------------------|
-| `libBusAccess.so.0.1.0` | The library (C API and C++ class)               |
-| `libBusAccess.so.0`     | Symlink, SONAME used by programs at runtime     |
-| `libBusAccess.so`       | Symlink used when linking                       |
+| File                          | Purpose                                         |
+|-------------------------------|-------------------------------------------------|
+| `libipdbg-busaccess.so.0.1.0` | The library (C API and C++ class)               |
+| `libipdbg-busaccess.so.0`     | Symlink, SONAME used by programs at runtime     |
+| `libipdbg-busaccess.so`       | Symlink used when linking                       |
 
 On Windows:
 
-| File                    | Purpose                                         |
-|-------------------------|-------------------------------------------------|
-| `libBusAccess.dll`      | The library (C API and C++ class)               |
-| `libBusAccess.dll.a`    | Import library used when linking                |
+| File                       | Purpose                                         |
+|----------------------------|-------------------------------------------------|
+| `libipdbg-busaccess.dll`   | The library (C API and C++ class)               |
+| `libipdbg-busaccess.dll.a` | Import library used when linking                |
 
 `make test` builds the example program `bin/Release/test` (`test.exe` on
 Windows) from `test.c`; host and port are optional arguments (default
@@ -129,14 +129,27 @@ On Windows, set the make program of the compiler in Code::Blocks to the
 `make` of MSYS2 (*Settings → Compiler → Toolchain executables → Make
 program*).
 
-To use the library from your own program, add `sw/BusAccess` to the include
-path and link with `-L<path>/sw/BusAccess/bin/Release -lBusAccess`.
+`make install` installs the library, the headers and the pkg-config file
+`ipdbg-busaccess.pc`, see [Installing](../README.md#installing) for `PREFIX`,
+`DESTDIR` etc. `BusAccess.h`, `BusAccessCxx.h` and `BusAccessCxx.tpp` are
+installed to `PREFIX/include/ipdbg`, so include them with the directory,
+e.g. `#include <ipdbg/BusAccess.h>`, and build your program with
+
+```sh
+cc myprogram.c $(pkg-config --cflags --libs ipdbg-busaccess)
+```
+
+`make uninstall` removes the installed files.
+
+To use the library from the source tree instead, add `sw/BusAccess` to
+the include path and link with
+`-L<path>/sw/BusAccess/bin/Release -lipdbg-busaccess`.
 At runtime the library has to be found:
 
-* Linux: the loader has to find `libBusAccess.so.0`, e.g. via
-  `-Wl,-rpath,<path>/sw/BusAccess/bin/Release` or `LD_LIBRARY_PATH`.
-* Windows: `libBusAccess.dll` has to be in the directory of your program or
-  in `PATH`.
+* Linux: the loader has to find `libipdbg-busaccess.so.0`, e.g. via
+  `LD_LIBRARY_PATH=<path>/sw/BusAccess/bin/Release`.
+* Windows: `libipdbg-busaccess.dll` has to be in the directory of your
+  program or in `PATH`.
 
 The Python and Octave bindings can be built on Linux and on Windows with
 MSYS2.

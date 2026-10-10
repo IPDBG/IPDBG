@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=IoView
+GenericName=I/O Viewer
+Comment=Show and set the inputs and outputs of the IPDBG IoProbe core
+Exec=ipdbg-ioview
+Icon=ipdbg-ioview
+Terminal=false
+Categories=Development;Electronics;
+Keywords=IPDBG;FPGA;JTAG;IoProbe;

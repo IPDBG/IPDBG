@@ -12,7 +12,7 @@
 
 struct IpdbgBusAccessHandle;
 
-// Connection to an IoProbe core through libBusAccess (sw/BusAccess):
+// Connection to an IoProbe core through the BusAccess library (sw/BusAccess):
 // inputs = read data, outputs = write data, polled 50 ms after the previous read.
 // All accesses are synchronous: if the core does not answer, the GUI waits
 // for the timeout of the library (5 s), then the connection is closed.

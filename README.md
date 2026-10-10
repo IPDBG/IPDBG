@@ -235,6 +235,9 @@ the IPDBG hub and the JTAG interface for your FPGA family instead; the
 | [`sw/UartBridge`](sw/UartBridge/README.md) | TCP to serial port bridge for the UART transport |
 | [`sw/CoSim`](sw/CoSim/README.md) | Co-simulation with GHDL, try IPDBG without hardware |
 
+[`sw/README.md`](sw/README.md) describes how to build and install the host
+software.
+
 The IPDBG server for JTAG is part of [OpenOCD](https://openocd.org),
 the Logic Analyzer driver is part of [libsigrok](https://sigrok.org).
 

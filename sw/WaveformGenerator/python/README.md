@@ -24,9 +24,8 @@ make
 
 This creates `WaveformGenerator.py` and the extension module:
 
-* Linux: `_WaveformGenerator.so`. It links `libWaveformGenerator.so` and builds it first if
-  needed (see the [main README](../README.md#building)). It finds the
-  library on its own, so `LD_LIBRARY_PATH` is not needed.
+* Linux: `_WaveformGenerator.so`. It links `libipdbg-waveformgenerator.so` and builds it
+  first if needed (see the [WaveformGenerator README](../README.md#building)).
 * Windows: `_WaveformGenerator` with the suffix reported by
   `python3-config --extension-suffix`, e.g.
   `_WaveformGenerator.cp312-mingw_x86_64_ucrt_gnu.pyd`. The library is compiled into
@@ -36,10 +35,26 @@ This creates `WaveformGenerator.py` and the extension module:
 
 The module is built for the Python version that `python3-config` belongs to.
 If that is not the version you run `python3` with, select it explicitly, e.g.
-`make PYTHON3_CONFIG=python3.13-config`.
+`make PYTHON3_CONFIG=python3.13-config`, and for `make install` also
+`PYTHON3=python3.13`.
 
-To import the module from another directory, add
-`sw/WaveformGenerator/python` to `PYTHONPATH`.
+To use the module from the source tree on Linux, the loader has to find the
+library, and Python the module:
+
+```sh
+LD_LIBRARY_PATH=<path>/sw/WaveformGenerator/bin/Release \
+PYTHONPATH=<path>/sw/WaveformGenerator/python python3
+```
+
+On Windows, add `sw/WaveformGenerator/python` to `PYTHONPATH`.
+
+`make install` installs `WaveformGenerator.py` and the module into the
+`site-packages` directory of `python3` under `PREFIX`, see
+[Installing](../../README.md#installing). Debian and Ubuntu use
+`dist-packages` instead, e.g.
+`make install PREFIX=/usr PYTHONDIR=/usr/lib/python3/dist-packages`.
+Install the library too (`make install` in `sw/WaveformGenerator`).
+`make uninstall` removes the installed files.
 
 `make clean` removes the generated files.
 

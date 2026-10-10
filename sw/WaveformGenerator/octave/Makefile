@@ -4,21 +4,29 @@
 # Octave bindings for IPDBG WaveformGenerator
 #
 #   make          build WaveformGenerator.oct
-#                 Linux:   links libWaveformGenerator.so (builds the library first if needed)
+#                 Linux:   links libipdbg-waveformgenerator.so (builds the library first if needed)
 #                 Windows: compiles the library into WaveformGenerator.oct (MinGW-w64, e.g. MSYS2)
+#   make install  install WaveformGenerator.oct into the site oct-file directory of Octave
+#                 (octave-config -p LOCALOCTFILEDIR); another directory with OCTDIR=...
+#   make uninstall remove it again
 #   make clean    remove generated files
+#
+# Linux: the module links the library without rpath. Before make install, run Octave with
+#   LD_LIBRARY_PATH=../bin/Release and addpath of this directory
+
+include ../../common.mk
 
 SWIG      ?= swig
 MKOCTFILE ?= mkoctfile
 
 LIBDIR := ../bin/Release
 
-.PHONY: all clean FORCE
+.PHONY: all install uninstall clean FORCE
 
 all: WaveformGenerator.oct
 
 # always ask the library Makefile, relink only if the library changed
-$(LIBDIR)/libWaveformGenerator.so: FORCE
+$(LIBDIR)/libipdbg-waveformgenerator.so: FORCE
 	$(MAKE) -C ..
 
 WaveformGeneratorCxx_wrap.cxx: ../WaveformGeneratorCxx.i ../WaveformGeneratorCxx.h
@@ -34,12 +42,20 @@ WaveformGenerator.oct: WaveformGeneratorCxx_wrap.cxx $(LIBSRCS) ../WaveformGener
 
 else
 
-# rpath: find libWaveformGenerator.so relative to WaveformGenerator.oct, no LD_LIBRARY_PATH needed.
-# mkoctfile runs the linker through a shell again, hence the escaped \$ORIGIN.
-WaveformGenerator.oct: WaveformGeneratorCxx_wrap.cxx $(LIBDIR)/libWaveformGenerator.so
-	$(MKOCTFILE) -I.. $< -L$(LIBDIR) -lWaveformGenerator -Wl,-rpath,'\$$ORIGIN/$(LIBDIR)' -o $@
+WaveformGenerator.oct: WaveformGeneratorCxx_wrap.cxx $(LIBDIR)/libipdbg-waveformgenerator.so
+	$(MKOCTFILE) -I.. $< -L$(LIBDIR) -lipdbg-waveformgenerator -o $@
 
 endif
+
+OCTAVE_CONFIG ?= octave-config
+OCTDIR        ?= $(shell $(OCTAVE_CONFIG) -p LOCALOCTFILEDIR)
+
+install: all
+	$(INSTALL) -d $(DESTDIR)$(OCTDIR)
+	$(INSTALL_PROGRAM) WaveformGenerator.oct $(DESTDIR)$(OCTDIR)
+
+uninstall:
+	rm -f $(DESTDIR)$(OCTDIR)/WaveformGenerator.oct
 
 clean:
 	rm -f WaveformGeneratorCxx_wrap.cxx WaveformGeneratorCxx_wrap.o WaveformGenerator.oct WaveformGenerator.o WaveformGeneratorCxx.o

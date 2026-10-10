@@ -23,14 +23,21 @@ make
 
 This creates `BusAccess.oct`.
 
-* Linux: the module links `libBusAccess.so` and builds it first if needed (see
-  the [main README](../README.md#building)). It finds the library on its
-  own, so `LD_LIBRARY_PATH` is not needed.
+* Linux: the module links `libipdbg-busaccess.so` and builds it first if
+  needed (see the [BusAccess README](../README.md#building)).
 * Windows: the library is compiled into `BusAccess.oct`, so no DLL has to be
   found at runtime.
 
-To use the module from another directory, add `sw/BusAccess/octave` to the
-Octave search path, e.g. `addpath("<path>/sw/BusAccess/octave")`.
+To use the module from the source tree, add `sw/BusAccess/octave` to the
+Octave search path, e.g. `addpath("<path>/sw/BusAccess/octave")`. On Linux,
+the loader also has to find the library: start Octave with
+`LD_LIBRARY_PATH=<path>/sw/BusAccess/bin/Release octave`.
+
+`make install` installs `BusAccess.oct` into the directory reported by
+`octave-config -p LOCALOCTFILEDIR`, which is in the Octave search path;
+another directory with `OCTDIR=...`. Install the library too
+(`make install` in `sw/BusAccess`, see [Installing](../../README.md#installing)).
+`make uninstall` removes the installed file.
 
 `make clean` removes the generated files.
 

@@ -49,6 +49,10 @@
 #include <string>
 #include <thread>
 
+#ifndef IPDBG_VERSION
+#define IPDBG_VERSION "unknown"
+#endif
+
 namespace {
 
 struct Options {
@@ -76,6 +80,7 @@ void usage(const char *prog)
         "  --bind <address>       IPv4 address to listen on (default 127.0.0.1,\n"
         "                         0.0.0.0 for all interfaces)\n"
         "  -h, --help             show this help\n"
+        "  --version              show the version\n"
         "\n"
         "Example: %s /dev/ttyUSB1 115200 4242\n"
         "         %s COM4 115200 4242\n",
@@ -106,6 +111,9 @@ bool parseOptions(int argc, char **argv, Options *o, bool *list)
         };
         if (a == "-h" || a == "--help") {
             usage(argv[0]);
+            std::exit(0);
+        } else if (a == "--version") {
+            std::printf("UartBridge %s\n", IPDBG_VERSION);
             std::exit(0);
         } else if (a == "--list") {
             *list = true;

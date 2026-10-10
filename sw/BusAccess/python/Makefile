@@ -4,10 +4,18 @@
 # Python bindings for IPDBG BusAccess
 #
 #   make          build BusAccess.py and the extension module _BusAccess
-#                 Linux:   _BusAccess.so, links libBusAccess.so (builds the library first if needed)
+#                 Linux:   _BusAccess.so, links libipdbg-busaccess.so (builds the library first if needed)
 #                 Windows: _BusAccess<suffix>.pyd with the library compiled in (MinGW-w64 and the
 #                          MSYS2 Python; <suffix> from python3-config --extension-suffix)
+#   make install  install BusAccess.py and the module into the site-packages of python3 under
+#                 PREFIX (see ../../common.mk); another directory with PYTHONDIR=...
+#   make uninstall remove them again
 #   make clean    remove generated files
+#
+# Linux: the module links the library without rpath. Before make install, run it with
+#   LD_LIBRARY_PATH=../bin/Release PYTHONPATH=. python3 ...
+
+include ../../common.mk
 
 SWIG    ?= swig
 CC      ?= gcc
@@ -19,7 +27,7 @@ LIBDIR := ../bin/Release
 CFLAGS   ?= -O2 -g
 CXXFLAGS ?= -O2 -g
 
-.PHONY: all clean FORCE
+.PHONY: all install uninstall clean FORCE
 .DEFAULT_GOAL := all
 
 BusAccessCxx_wrap.cxx BusAccess.py: ../BusAccessCxx.i ../BusAccessCxx.h ../BusAccessCxx.tpp
@@ -55,22 +63,35 @@ else
 MODULE := _BusAccess.so
 
 override CXXFLAGS += -std=c++17 -fPIC -I.. $(shell $(PYTHON3_CONFIG) --includes)
-# find libBusAccess.so relative to _BusAccess.so, no LD_LIBRARY_PATH needed
-override LDFLAGS  += -L$(LIBDIR) -Wl,-rpath,'$$ORIGIN/$(LIBDIR)'
+override LDFLAGS  += -L$(LIBDIR)
 
 all: $(MODULE)
 
 # always ask the library Makefile, relink only if the library changed
-$(LIBDIR)/libBusAccess.so: FORCE
+$(LIBDIR)/libipdbg-busaccess.so: FORCE
 	$(MAKE) -C ..
 
 BusAccessCxx_wrap.o: BusAccessCxx_wrap.cxx
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-$(MODULE): BusAccessCxx_wrap.o $(LIBDIR)/libBusAccess.so
-	$(CXX) -shared $< $(LDFLAGS) -lBusAccess -o $@
+$(MODULE): BusAccessCxx_wrap.o $(LIBDIR)/libipdbg-busaccess.so
+	$(CXX) -shared $< $(LDFLAGS) -lipdbg-busaccess -o $@
 
 endif
+
+# site-packages (platlib) of python3 with PREFIX as base, e.g. /usr/local/lib64/python3.13/site-packages
+# (scheme posix_prefix). Debian and Ubuntu use dist-packages instead: set PYTHONDIR there,
+# e.g. PYTHONDIR=/usr/local/lib/python3.12/dist-packages
+PYTHON3   ?= python3
+PYTHONDIR ?= $(shell $(PYTHON3) -c "import sysconfig; print(sysconfig.get_path('platlib', 'posix_prefix', vars={'base': '$(prefix)', 'platbase': '$(exec_prefix)'}))")
+
+install: all
+	$(INSTALL) -d $(DESTDIR)$(PYTHONDIR)
+	$(INSTALL_DATA) BusAccess.py $(DESTDIR)$(PYTHONDIR)
+	$(INSTALL_PROGRAM) $(MODULE) $(DESTDIR)$(PYTHONDIR)
+
+uninstall:
+	rm -f $(DESTDIR)$(PYTHONDIR)/BusAccess.py $(DESTDIR)$(PYTHONDIR)/$(MODULE)
 
 clean:
 	rm -f BusAccessCxx_wrap.cxx BusAccess.py $(MODULE) BusAccessCxx_wrap.o BusAccess.o BusAccessCxx.o
