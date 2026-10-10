@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: The IPDBG authors -->
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- IPDBG logo: looking into an FPGA at a digital signal -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <g fill="#8a8f96">
+    <rect x="30.0" y="6" width="8" height="14" rx="2"/>
+    <rect x="30.0" y="108" width="8" height="14" rx="2"/>
+    <rect x="6" y="30.0" width="14" height="8" rx="2"/>
+    <rect x="108" y="30.0" width="14" height="8" rx="2"/>
+    <rect x="50.0" y="6" width="8" height="14" rx="2"/>
+    <rect x="50.0" y="108" width="8" height="14" rx="2"/>
+    <rect x="6" y="50.0" width="14" height="8" rx="2"/>
+    <rect x="108" y="50.0" width="14" height="8" rx="2"/>
+    <rect x="70.0" y="6" width="8" height="14" rx="2"/>
+    <rect x="70.0" y="108" width="8" height="14" rx="2"/>
+    <rect x="6" y="70.0" width="14" height="8" rx="2"/>
+    <rect x="108" y="70.0" width="14" height="8" rx="2"/>
+    <rect x="90.0" y="6" width="8" height="14" rx="2"/>
+    <rect x="90.0" y="108" width="8" height="14" rx="2"/>
+    <rect x="6" y="90.0" width="14" height="8" rx="2"/>
+    <rect x="108" y="90.0" width="14" height="8" rx="2"/>
+  </g>
+  <rect x="18" y="18" width="92" height="92" rx="10" fill="#1f2a36" stroke="#4a5866" stroke-width="3"/>
+  <path d="M28 82 H40 V58 H52 V82 H60 V58 H72" fill="none" stroke="#4ce06a" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="74" cy="56" r="18" fill="none" stroke="#e8eaed" stroke-width="7"/>
+  <line x1="87" y1="69" x2="100" y2="82" stroke="#e8eaed" stroke-width="9" stroke-linecap="round"/>
+</svg>
