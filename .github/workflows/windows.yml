@@ -1,0 +1,60 @@
+# Builds the host software on Windows with MSYS2 (UCRT64) and packs the ZIP
+# for users without MSYS2 (sw/packaging/windows/make-zip.sh). The ZIP is
+# attached to the run as artifact.
+name: Windows
+on:
+  # with tags, branches must be listed too; paths are not checked for tags
+  push:
+    branches: ['**']
+    tags: ['v*']
+    paths: [sw/**, LICENSES/**, .github/workflows/windows.yml]
+  pull_request:
+    paths: [sw/**, LICENSES/**, .github/workflows/windows.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zip:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make
+            zip
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-libserialport
+            mingw-w64-ucrt-x86_64-wxwidgets3.2-msw
+      - name: Check the version
+        run: |
+          version=$(cat sw/VERSION)
+          if [[ "$GITHUB_REF" == refs/tags/v* && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "tag $GITHUB_REF_NAME does not match sw/VERSION ($version)"
+            exit 1
+          fi
+          # a release (tag) gets the plain version, other builds the commit
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then suffix=; else suffix=g${GITHUB_SHA::7}; fi
+          echo "SUFFIX=$suffix" >> "$GITHUB_ENV"
+      - name: Build the ZIP
+        run: |
+          zip=$(sw/packaging/windows/make-zip.sh out "$SUFFIX" | tail -1)
+          echo "ZIP=$(cygpath -w "$zip")" >> "$GITHUB_ENV"
+      - name: Smoke test
+        run: |
+          # only the DLLs of the ZIP and of Windows in PATH
+          dir=$(echo out/stage/ipdbg-*)
+          PATH="$dir/bin:/c/Windows/System32" ipdbg-uartbridge.exe --version
+          cat "$dir/THIRD-PARTY.txt"
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ env.ZIP }}
+          archive: false

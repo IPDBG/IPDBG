@@ -117,11 +117,14 @@ uninstall:
 
 endif
 
-# pkg-config file, written by make install with the install directories
+# pkg-config file, written by make install with the install directories.
+# libdir and includedir relative to prefix if they are below it, so that
+# pkgconf can relocate the files (default on Windows, --define-prefix)
+pc_rel = $(patsubst $(prefix)/%,$${prefix}/%,$(1))
 write_pc = printf '%s\n' \
     'prefix=$(prefix)' \
-    'libdir=$(libdir)' \
-    'includedir=$(includedir)' \
+    'libdir=$(call pc_rel,$(libdir))' \
+    'includedir=$(call pc_rel,$(includedir))' \
     '' \
     'Name: ipdbg-busaccess' \
     'Description: IPDBG BusAccess: bus accesses through an IPDBG bus master core' \

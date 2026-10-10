@@ -84,6 +84,22 @@ On Windows (MSYS2), `make install` installs the programs as
 `ipdbg-ioview.exe` and `ipdbg-uartbridge.exe`; IoView and the bindings have
 the library compiled in.
 
+## Windows ZIP
+
+For users without MSYS2, [`packaging/windows/make-zip.sh`](packaging/windows/make-zip.sh)
+packs IoView and UartBridge with all DLLs they need, and the libraries for
+own programs, into `ipdbg-VERSION-windows-x86_64.zip`. In an MSYS2 UCRT64
+shell, with the packages listed in
+[`.github/workflows/windows.yml`](../.github/workflows/windows.yml):
+
+```sh
+sw/packaging/windows/make-zip.sh out
+```
+
+GitHub Actions builds the ZIP on every change of `sw/` (workflow *Windows*)
+and attaches it to the run. For a tag `vVERSION` the tag has to match
+[`VERSION`](VERSION); other builds have the commit in the name.
+
 ## License
 
 [MPL-2.0](https://www.mozilla.org/MPL/2.0/)

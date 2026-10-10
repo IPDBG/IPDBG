@@ -1,3 +1,8 @@
-aaaa ICON "wx/msw/std.ico"
+// SPDX-FileCopyrightText: The IPDBG authors
+// SPDX-License-Identifier: MPL-2.0
+
+// The first icon (by name) is the icon of IoView.exe; IOViewApp.cpp also
+// sets it as window icon.
+aaaa ICON "ipdbg-ioview.ico"
 
 #include "wx/msw/wx.rc"

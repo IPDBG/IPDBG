@@ -57,7 +57,7 @@ $(OBJDIR)/BusAccess.o: $(BADIR)/BusAccess.c | $(OBJDIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # icon and manifest (visual styles) of wxWidgets
-$(OBJDIR)/resource.o: resource.rc | $(OBJDIR)
+$(OBJDIR)/resource.o: resource.rc ipdbg-ioview.ico | $(OBJDIR)
 	$(shell $(WX_CONFIG) --rescomp) -i $< -o $@ -O coff
 
 $(TARGET): $(OBJS) | $(BINDIR)

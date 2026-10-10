@@ -65,6 +65,15 @@ BusAccess library too (`make install` in `sw/BusAccess`); see
 [Installing](../README.md#installing) for `PREFIX`, `DESTDIR` etc.
 `make uninstall` removes the installed files.
 
+The icon is `ipdbg-ioview.svg`; `ipdbg-ioview.ico` holds it in sizes from
+16 to 256 pixels for Windows (`resource.rc`). After a change of the SVG,
+generate the ICO again, e.g. with
+
+```sh
+for s in 16 24 32 48 64 256; do rsvg-convert -w $s -h $s ipdbg-ioview.svg -o $s.png; done
+magick 16.png 24.png 32.png 48.png 64.png 256.png ipdbg-ioview.ico
+```
+
 The Code::Blocks project `IoView.cbp` builds with the Makefile (target
 *all*). On Windows, set the make program of the compiler in Code::Blocks to
 the `make` of MSYS2 (*Settings → Compiler → Toolchain executables → Make
