@@ -1,6 +1,8 @@
-# Builds the host software on Windows with MSYS2 (UCRT64) and packs the ZIP
-# for users without MSYS2 (sw/packaging/windows/make-zip.sh). The ZIP is
-# attached to the run as artifact.
+# Builds the host software on Windows with MSYS2 (UCRT64):
+# - zip: packs the ZIP for users without MSYS2 (sw/packaging/windows/make-zip.sh)
+#   and attaches it to the run as artifact
+# - bindings: builds the Python and Octave bindings and loads them, they are
+#   not in the ZIP
 name: Windows
 on:
   # with tags, branches must be listed too; paths are not checked for tags
@@ -58,3 +60,34 @@ jobs:
         with:
           path: ${{ env.ZIP }}
           archive: false
+
+  bindings:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-swig
+            mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-octave
+      - name: Build
+        run: make -C sw -j"$(nproc)" python octave
+      - name: Python
+        run: |
+          for m in BusAccess WaveformGenerator; do
+            (cd sw/$m/python && python3 -c "import $m; print($m.Ipdbg$m())")
+          done
+      - name: Octave
+        run: |
+          for m in BusAccess WaveformGenerator; do
+            (cd sw/$m/octave && octave-cli --norc --eval "$m; disp(class($m.Ipdbg$m()))")
+          done
