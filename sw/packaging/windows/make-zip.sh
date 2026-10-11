@@ -5,12 +5,12 @@
 # Builds the Windows ZIP of the host software in an MSYS2 shell (UCRT64):
 # IoView and UartBridge with all DLLs they need, the libraries for own
 # programs (DLLs, import libraries, headers, pkg-config files), the licenses.
-# Locally and in GitHub Actions (.github/workflows/windows.yml).
+# Locally and in GitHub Actions (.github/workflows/sw.yml).
 #
 #   sw/packaging/windows/make-zip.sh OUTDIR [SUFFIX]
 #
 # creates OUTDIR/ipdbg-VERSION[-SUFFIX]-windows-x86_64.zip, VERSION from
-# sw/VERSION. Needs the packages listed in .github/workflows/windows.yml.
+# sw/VERSION. Needs the packages listed in .github/workflows/sw.yml.
 
 set -euo pipefail
 

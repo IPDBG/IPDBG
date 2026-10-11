@@ -1,0 +1,150 @@
+# Builds and checks the host software (sw/):
+# - linux: builds everything on Ubuntu, loads the bindings, checks make
+#   install and make uninstall
+# - windows-zip: packs the ZIP for users without MSYS2 (MSYS2 UCRT64,
+#   sw/packaging/windows/make-zip.sh) and attaches it to the run as artifact
+# - windows-bindings: builds the Python and Octave bindings with MSYS2 and
+#   loads them, they are not in the ZIP
+# - release: for a tag v*, if all jobs passed, creates a draft GitHub release
+#   with the ZIP. Linux packages are built from the source archive of the tag.
+name: Host software
+on:
+  # with tags, branches must be listed too; paths are not checked for tags
+  push:
+    branches: ['**']
+    tags: ['v*']
+    paths: [sw/**, LICENSES/**, .github/workflows/sw.yml]
+  pull_request:
+    paths: [sw/**, LICENSES/**, .github/workflows/sw.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install the dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config \
+            libserialport-dev libwxgtk3.2-dev swig python3-dev octave octave-dev
+      - name: Build
+        run: make -C sw -j"$(nproc)" all python octave
+      - name: Load the bindings
+        run: |
+          for m in BusAccess WaveformGenerator; do
+            export LD_LIBRARY_PATH=$PWD/sw/$m/bin/Release
+            (cd sw/$m/python && python3 -c "import $m; print($m.Ipdbg$m())")
+            (cd sw/$m/octave && octave-cli --norc --eval "$m; disp(class($m.Ipdbg$m()))")
+          done
+          sw/UartBridge/bin/Release/UartBridge --version
+      - name: Install and uninstall
+        run: |
+          stage=$PWD/stage
+          make -C sw install install-python install-octave PREFIX=/usr DESTDIR="$stage"
+          (cd "$stage" && find . ! -type d | sort)
+          make -C sw uninstall uninstall-python uninstall-octave PREFIX=/usr DESTDIR="$stage"
+          left=$(find "$stage" ! -type d)
+          [ -z "$left" ] || { echo "left after uninstall:"; echo "$left"; exit 1; }
+
+  windows-zip:
+    runs-on: windows-latest
+    outputs:
+      zip: ${{ steps.build.outputs.zip }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make
+            zip
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-libserialport
+            mingw-w64-ucrt-x86_64-wxwidgets3.2-msw
+      - name: Check the version
+        run: |
+          version=$(cat sw/VERSION)
+          if [[ "$GITHUB_REF" == refs/tags/v* && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "tag $GITHUB_REF_NAME does not match sw/VERSION ($version)"
+            exit 1
+          fi
+          # a release (tag) gets the plain version, other builds the commit
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then suffix=; else suffix=g${GITHUB_SHA::7}; fi
+          echo "SUFFIX=$suffix" >> "$GITHUB_ENV"
+      - name: Build the ZIP
+        id: build
+        run: |
+          zip=$(sw/packaging/windows/make-zip.sh out "$SUFFIX" | tail -1)
+          echo "ZIP=$(cygpath -w "$zip")" >> "$GITHUB_ENV"
+          echo "zip=$(basename "$zip")" >> "$GITHUB_OUTPUT"
+      - name: Smoke test
+        run: |
+          # only the DLLs of the ZIP and of Windows in PATH
+          dir=$(echo out/stage/ipdbg-*)
+          PATH="$dir/bin:/c/Windows/System32" ipdbg-uartbridge.exe --version
+          cat "$dir/THIRD-PARTY.txt"
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ env.ZIP }}
+          archive: false
+
+  windows-bindings:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-swig
+            mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-octave
+      - name: Build
+        run: make -C sw -j"$(nproc)" python octave
+      - name: Python
+        run: |
+          for m in BusAccess WaveformGenerator; do
+            (cd sw/$m/python && python3 -c "import $m; print($m.Ipdbg$m())")
+          done
+      - name: Octave
+        run: |
+          for m in BusAccess WaveformGenerator; do
+            (cd sw/$m/octave && octave-cli --norc --eval "$m; disp(class($m.Ipdbg$m()))")
+          done
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux, windows-zip, windows-bindings]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.windows-zip.outputs.zip }}
+          path: dist
+          skip-decompress: true
+      # a draft: check the notes on GitHub, then publish it
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -l dist
+          gh release create "$GITHUB_REF_NAME" dist/*.zip --repo "$GITHUB_REPOSITORY" \
+            --draft --verify-tag --generate-notes --title "IPDBG ${GITHUB_REF_NAME#v}"
