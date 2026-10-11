@@ -1,0 +1,3 @@
+usr/include/ipdbg
+usr/lib/*/libipdbg-*.so
+usr/lib/*/pkgconfig/ipdbg-*.pc

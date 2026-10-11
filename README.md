@@ -147,6 +147,25 @@ port.
 - SPI (e.g. for Cologne Chip GateMate)
 - I²C (e.g. for Lattice iCE40)
 
+## Installation
+
+**Host software** (IoView, UartBridge, the BusAccess and WaveformGenerator
+libraries with their Python and Octave bindings):
+
+- Windows: download `ipdbg-VERSION-windows-x86_64.zip` from the
+  [latest release](https://github.com/IPDBG/IPDBG/releases/latest), unpack
+  it and start the programs in `bin`. No installation and no MSYS2 needed.
+- Linux, and Windows with MSYS2: build and install from source, see
+  [`sw/README.md`](sw/README.md).
+
+**IP cores:** nothing to install – add the VHDL files from [`rtl/`](rtl) to
+your design; the [JtagHub README](rtl/JtagHub/README.md) lists the files
+per FPGA family.
+
+**Other projects:** the JTAG server is part of [OpenOCD](https://openocd.org),
+the Logic Analyzer is used with [sigrok](https://sigrok.org) (PulseView or
+sigrok-cli); both are packaged by most Linux distributions.
+
 ## Quick start
 
 ### Try it without hardware

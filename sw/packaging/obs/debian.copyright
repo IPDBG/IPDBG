@@ -1,0 +1,25 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: IPDBG
+Source: https://github.com/IPDBG/IPDBG
+
+Files: *
+Copyright: The IPDBG authors, see AUTHORS
+License: MPL-2.0
+
+Files: rtl/*
+Copyright: The IPDBG authors, see AUTHORS
+License: CERN-OHL-W-2.0
+ The full text is in LICENSES/CERN-OHL-W-2.0.txt of the source.
+
+Files: README.md doc/* webpage/* */README.md
+Copyright: The IPDBG authors, see AUTHORS
+License: CC-BY-4.0
+ The full text is in LICENSES/CC-BY-4.0.txt of the source.
+
+License: MPL-2.0
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ .
+ On Debian systems, the full text of the Mozilla Public License
+ version 2.0 can be found in the file /usr/share/common-licenses/MPL-2.0.

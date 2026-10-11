@@ -1,0 +1,57 @@
+Source: ipdbg
+Section: electronics
+Priority: optional
+Maintainer: Daniel Anselmi <danselmi@gmx.ch>
+Build-Depends: debhelper-compat (= 13), dh-python, pkgconf, libserialport-dev, libwxgtk3.2-dev, swig, python3-dev, octave-dev | liboctave-dev
+Standards-Version: 4.7.0
+Homepage: https://github.com/IPDBG/IPDBG
+Rules-Requires-Root: no
+
+Package: ipdbg-ioview
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: IoView: read and set signals of an IPDBG IoProbe core
+ IoView is the GUI for the IoProbe core of IPDBG, the debugger for FPGAs:
+ it shows the probe inputs as LEDs and sets the probe outputs.
+
+Package: ipdbg-uartbridge
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: UartBridge: TCP to serial port bridge for the IPDBG UART transport
+ UartBridge forwards a TCP port to a serial port, so the host tools of IPDBG,
+ the debugger for FPGAs, reach a core over the UART transport.
+
+Package: libipdbg0
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: IPDBG BusAccess and WaveformGenerator libraries
+ The libraries libipdbg-busaccess (register accesses through an IPDBG bus
+ master core) and libipdbg-waveformgenerator (control of the IPDBG waveform
+ generator core). IPDBG is a debugger for FPGAs.
+
+Package: libipdbg-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: libipdbg0 (= ${binary:Version}), ${misc:Depends}
+Description: development files of the IPDBG libraries
+ Headers and pkg-config files of libipdbg-busaccess and
+ libipdbg-waveformgenerator. IPDBG is a debugger for FPGAs.
+
+Package: python3-ipdbg
+Section: python
+Architecture: any
+Depends: ${python3:Depends}, ${shlibs:Depends}, ${misc:Depends}
+Description: Python bindings of the IPDBG libraries
+ Python modules BusAccess and WaveformGenerator for the bus master and
+ waveform generator cores of IPDBG, the debugger for FPGAs.
+
+Package: octave-ipdbg
+Section: math
+Architecture: any
+Depends: octave, ${shlibs:Depends}, ${misc:Depends}
+Description: GNU Octave bindings of the IPDBG libraries
+ GNU Octave modules BusAccess and WaveformGenerator for the bus master and
+ waveform generator cores of IPDBG, the debugger for FPGAs.

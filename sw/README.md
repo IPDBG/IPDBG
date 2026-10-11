@@ -84,33 +84,8 @@ On Windows (MSYS2), `make install` installs the programs as
 `ipdbg-ioview.exe` and `ipdbg-uartbridge.exe`; IoView and the bindings have
 the library compiled in.
 
-## Windows ZIP
-
-For users without MSYS2, [`packaging/windows/make-zip.sh`](packaging/windows/make-zip.sh)
-packs IoView and UartBridge with all DLLs they need, and the libraries for
-own programs, into `ipdbg-VERSION-windows-x86_64.zip`. In an MSYS2 UCRT64
-shell, with the packages listed in
-[`.github/workflows/sw.yml`](../.github/workflows/sw.yml):
-
-```sh
-sw/packaging/windows/make-zip.sh out
-```
-
-GitHub Actions builds the ZIP on every change of `sw/` (workflow *Host
-software*, which also builds and checks everything on Linux) and attaches it
-to the run. For a tag `vVERSION` the tag has to match
-[`VERSION`](VERSION); other builds have the commit in the name.
-
-## Release
-
-1. Set the version in [`VERSION`](VERSION), commit and push.
-2. Tag the commit and push the tag, e.g.
-   `git tag -a v0.1.0 -m "IPDBG 0.1.0" && git push origin v0.1.0`.
-3. The workflow *Host software* builds and checks everything on Linux and
-   Windows. If all passes, it creates a draft release on GitHub with the
-   Windows ZIP and notes generated from the commits. Check the notes and
-   publish the release. The Linux packages are built from the source
-   archive of the tag.
+Ready-made programs for Windows, without MSYS2, are in the ZIP of each
+[release](https://github.com/IPDBG/IPDBG/releases).
 
 ## License
 
