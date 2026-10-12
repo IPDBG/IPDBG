@@ -4,6 +4,13 @@
 /* SWIG interface for the IPDBG BusAccess C++ class, shared by the Python and Octave bindings. */
 %module BusAccess
 
+/* The Octave runtime of SWIG uses assert() without including <cassert>;
+   with newer Octave headers it is no longer included indirectly
+   (e.g. openSUSE Leap 16). */
+%begin %{
+#include <cassert>
+%}
+
 %include <std_string.i>
 %include <stdint.i>
 %include <exception.i>
