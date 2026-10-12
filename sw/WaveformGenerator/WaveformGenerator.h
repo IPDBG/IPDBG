@@ -8,14 +8,14 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#ifndef __ELF__
+#ifdef _WIN32
     #include <windows.h>
 #endif
 
 /* IPDBG_STATIC: the library sources are compiled directly into a program or module */
 #if defined IPDBG_STATIC
     #define API
-#elif defined __ELF__
+#elif !defined _WIN32
     #define API __attribute((visibility("default")))
 #elif defined EXPORT
     #define API __declspec(dllexport)

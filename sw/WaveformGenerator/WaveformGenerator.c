@@ -15,8 +15,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <unistd.h>
 #ifndef _WIN32
+    #include <unistd.h>
     #include <sys/socket.h>
     #include <netinet/in.h>
     #include <arpa/inet.h>
