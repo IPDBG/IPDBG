@@ -8,8 +8,10 @@
 # - linux-packages: builds the packages of sw/packaging/obs and
 #   sw/packaging/aur in containers of the distributions, installs and checks
 #   them; the packages are attached to the run as artifacts
+# - python-wheels, python-sdist: the Python package for PyPI (sw/pyproject.toml)
 # - release: for a tag v*, if all jobs passed, creates a draft GitHub release
 #   with the ZIP. Linux packages are built from the source archive of the tag.
+# - pypi: for a tag v*, uploads the Python package to PyPI
 name: Host software
 on:
   # with tags, branches must be listed too; paths are not checked for tags
@@ -165,9 +167,38 @@ jobs:
             (cd sw/$m/octave && octave-cli --norc --eval "$m; disp(class($m.Ipdbg$m()))")
           done
 
+  python-wheels:
+    name: python-wheels (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pypa/cibuildwheel@v4.3.1
+        with:
+          package-dir: sw
+          output-dir: wheelhouse
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+
+  python-sdist:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the source archive
+        run: pipx run build --sdist sw --outdir dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [linux, linux-packages, windows-zip, windows-bindings]
+    needs: [linux, linux-packages, windows-zip, windows-bindings, python-wheels, python-sdist]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -185,3 +216,24 @@ jobs:
           ls -l dist
           gh release create "$GITHUB_REF_NAME" dist/*.zip --repo "$GITHUB_REPOSITORY" \
             --draft --verify-tag --generate-notes --title "IPDBG ${GITHUB_REF_NAME#v}"
+
+  # trusted publishing: PyPI accepts uploads from this workflow and the
+  # environment pypi, see sw/packaging/README.md
+  pypi:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [release]
+    runs-on: ubuntu-24.04
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: sdist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@v1.14.2

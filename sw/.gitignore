@@ -7,3 +7,10 @@ obj/
 compile_commands.json
 *.oct
 *.ghw
+
+# Python package (setup.py)
+build/
+dist/
+*.egg-info/
+*_wrap.cpp
+wheelhouse/

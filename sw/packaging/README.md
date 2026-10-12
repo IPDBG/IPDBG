@@ -10,6 +10,7 @@ Linux packages are built and tested. Users find the installation in the
 | [`windows/`](windows) | the Windows ZIP: `make-zip.sh` and the `README.txt` in the ZIP |
 | [`obs/`](obs/README.md) | the Linux packages for the openSUSE Build Service, and scripts to build and check them in containers |
 | [`aur/`](aur/README.md) | the Arch Linux packages for the AUR |
+| [`pypi/`](pypi/README.md) | the description of the Python package on PyPI; the build files are [`sw/pyproject.toml`](../pyproject.toml) and [`sw/setup.py`](../setup.py) |
 
 ## Continuous integration
 
@@ -22,7 +23,9 @@ runs on every change of `sw/`:
 | `linux-packages` | builds the packages of [`obs/`](obs/README.md) and [`aur/`](aur/README.md) in containers of Fedora, openSUSE, Debian, Ubuntu and Arch, installs and checks them; the packages are attached to the run |
 | `windows-zip` | builds the Windows ZIP with MSYS2 (UCRT64), starts UartBridge with only the DLLs of the ZIP; the ZIP is attached to the run |
 | `windows-bindings` | builds the Python and Octave bindings with MSYS2 and loads them; they are not in the ZIP |
+| `python-wheels`, `python-sdist` | build the Python package `ipdbg` for Linux, Windows and macOS with [cibuildwheel](https://cibuildwheel.pypa.io), and the source archive; each wheel is imported in a test |
 | `release` | only for a tag `v*` and if all other jobs passed: creates a draft release on GitHub with the ZIP |
+| `pypi` | only for a tag `v*`, after `release`: uploads the Python package to PyPI |
 
 ## Release
 
@@ -44,6 +47,18 @@ runs on every change of `sw/`:
    and publish the release.
 4. Update the Linux packages on OBS and the AUR, see
    [`obs/README.md`](obs/README.md) and [`aur/README.md`](aur/README.md).
+   The job `pypi` has already uploaded the Python package.
+
+## PyPI
+
+The job `pypi` uploads without a password ([trusted publishing](https://docs.pypi.org/trusted-publishers/)).
+Once:
+
+1. On [pypi.org](https://pypi.org), with an account with two-factor
+   authentication: *Publishing* → *Add a new pending publisher*, project
+   `ipdbg`, owner `IPDBG`, repository `IPDBG`, workflow `sw.yml`,
+   environment `pypi`.
+2. On GitHub: *Settings* → *Environments* → *New environment* `pypi`.
 
 ## Windows ZIP
 

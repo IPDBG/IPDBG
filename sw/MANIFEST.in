@@ -1,0 +1,4 @@
+include VERSION LICENSE packaging/pypi/README.md
+include BusAccess/*.h BusAccess/*.c BusAccess/*.cpp BusAccess/*.tpp BusAccess/*.i
+include WaveformGenerator/*.h WaveformGenerator/*.c WaveformGenerator/*.cpp WaveformGenerator/*.i
+exclude BusAccess/*_wrap.cpp WaveformGenerator/*_wrap.cpp BusAccess/test.c WaveformGenerator/test.c

@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: The IPDBG authors
+# SPDX-License-Identifier: MPL-2.0
+#
+# Python package "ipdbg" with the modules BusAccess and WaveformGenerator,
+# for PyPI; see packaging/README.md.
+
+[build-system]
+requires = ["setuptools>=77", "swig>=4.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ipdbg"
+dynamic = ["version"]
+description = "IPDBG BusAccess and WaveformGenerator: control IPDBG debug cores in an FPGA from Python"
+readme = "packaging/pypi/README.md"
+license = "MPL-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [{ name = "The IPDBG authors" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: C",
+    "Programming Language :: C++",
+    "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+    "Topic :: System :: Hardware",
+]
+
+[project.urls]
+Homepage = "https://ipdbg.org"
+Source = "https://github.com/IPDBG/IPDBG"
+Documentation = "https://github.com/IPDBG/IPDBG/blob/master/sw/BusAccess/python/README.md"
+
+# wheels for PyPI, built by the job python-wheels (.github/workflows/sw.yml)
+[tool.cibuildwheel]
+skip = ["*-win32", "*-manylinux_i686", "*-musllinux_i686"]
+test-command = "python -c \"import BusAccess, WaveformGenerator; BusAccess.IpdbgBusAccess(); WaveformGenerator.IpdbgWaveformGenerator()\""
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
