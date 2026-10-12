@@ -35,7 +35,7 @@ Writing the outputs happens immediately when you change them.
 * Linux, or Windows with [MSYS2](https://www.msys2.org) (MinGW-w64)
 * wxWidgets 3.0 or later including development files, e.g. `wxGTK-devel`
   on Fedora, `libwxgtk3.2-dev` on Debian/Ubuntu,
-  `mingw-w64-ucrt-x86_64-wxwidgets3.2-msw` on MSYS2 (UCRT64)
+  `mingw-w64-ucrt-x86_64-wxwidgets3.3-msw` on MSYS2 (UCRT64).
 * GCC/G++ with C++17 support, GNU make
 
 ## Building

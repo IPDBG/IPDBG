@@ -103,7 +103,7 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-pkgconf
             mingw-w64-ucrt-x86_64-libserialport
-            mingw-w64-ucrt-x86_64-wxwidgets3.2-msw
+            mingw-w64-ucrt-x86_64-wxwidgets3.3-msw
       - name: Check the version
         run: |
           version=$(cat sw/VERSION)
