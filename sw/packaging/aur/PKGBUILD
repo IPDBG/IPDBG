@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: The IPDBG authors
+# SPDX-License-Identifier: MPL-2.0
+# Maintainer: Daniel Anselmi <danselmi@gmx.ch>
+
+pkgbase=ipdbg
+pkgname=(ipdbg-ioview ipdbg-uartbridge libipdbg python-ipdbg octave-ipdbg)
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Host software of IPDBG, the debugger for FPGAs'
+arch=(x86_64 aarch64)
+url='https://github.com/IPDBG/IPDBG'
+license=(MPL-2.0)
+makedepends=(libserialport octave python swig wxwidgets-gtk3)
+source=("ipdbg-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+_make() {
+  make -C "IPDBG-$pkgver/sw" WX_CONFIG="$(command -v wx-config-gtk3 || command -v wx-config)" "$@"
+}
+
+build() {
+  _make all python octave
+}
+
+package_ipdbg-ioview() {
+  pkgdesc='IoView: read and set signals of an IPDBG IoProbe core'
+  depends=(gcc-libs glibc hicolor-icon-theme libipdbg wxwidgets-gtk3)
+  _make -C IoView install DESTDIR="$pkgdir" PREFIX=/usr
+}
+
+package_ipdbg-uartbridge() {
+  pkgdesc='UartBridge: TCP to serial port bridge for the IPDBG UART transport'
+  depends=(gcc-libs glibc libserialport)
+  _make -C UartBridge install DESTDIR="$pkgdir" PREFIX=/usr
+}
+
+package_libipdbg() {
+  pkgdesc='IPDBG BusAccess and WaveformGenerator libraries'
+  depends=(gcc-libs glibc)
+  _make -C BusAccess install DESTDIR="$pkgdir" PREFIX=/usr
+  _make -C WaveformGenerator install DESTDIR="$pkgdir" PREFIX=/usr
+}
+
+package_python-ipdbg() {
+  pkgdesc='Python bindings of the IPDBG libraries'
+  depends=(gcc-libs glibc libipdbg python)
+  _make -C BusAccess/python install DESTDIR="$pkgdir" PREFIX=/usr
+  _make -C WaveformGenerator/python install DESTDIR="$pkgdir" PREFIX=/usr
+  python -m compileall -q -s "$pkgdir" "$pkgdir"/usr/lib
+}
+
+package_octave-ipdbg() {
+  pkgdesc='GNU Octave bindings of the IPDBG libraries'
+  depends=(gcc-libs glibc libipdbg octave)
+  _make -C BusAccess/octave install DESTDIR="$pkgdir" PREFIX=/usr
+  _make -C WaveformGenerator/octave install DESTDIR="$pkgdir" PREFIX=/usr
+}

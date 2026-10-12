@@ -5,9 +5,9 @@
 #   sw/packaging/windows/make-zip.sh) and attaches it to the run as artifact
 # - windows-bindings: builds the Python and Octave bindings with MSYS2 and
 #   loads them, they are not in the ZIP
-# - linux-packages: builds the RPM and Debian packages of sw/packaging/obs in
-#   containers of the distributions, installs and checks them; the packages
-#   are attached to the run as artifacts
+# - linux-packages: builds the packages of sw/packaging/obs and
+#   sw/packaging/aur in containers of the distributions, installs and checks
+#   them; the packages are attached to the run as artifacts
 # - release: for a tag v*, if all jobs passed, creates a draft GitHub release
 #   with the ZIP. Linux packages are built from the source archive of the tag.
 name: Host software
@@ -61,28 +61,31 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {name: fedora, image: 'fedora:latest', kind: rpm}
-          - {name: tumbleweed, image: 'opensuse/tumbleweed', kind: rpm}
-          - {name: leap16, image: 'opensuse/leap:16.0', kind: rpm}
-          - {name: debian13, image: 'debian:trixie', kind: deb}
-          - {name: debian12, image: 'debian:bookworm', kind: deb}
-          - {name: ubuntu2404, image: 'ubuntu:24.04', kind: deb}
-          - {name: ubuntu2604, image: 'ubuntu:26.04', kind: deb}
+          - {name: fedora, image: 'fedora:latest', script: obs/ci-rpm.sh}
+          - {name: tumbleweed, image: 'opensuse/tumbleweed', script: obs/ci-rpm.sh}
+          - {name: leap16, image: 'opensuse/leap:16.0', script: obs/ci-rpm.sh}
+          - {name: debian13, image: 'debian:trixie', script: obs/ci-deb.sh}
+          - {name: debian12, image: 'debian:bookworm', script: obs/ci-deb.sh}
+          - {name: ubuntu2404, image: 'ubuntu:24.04', script: obs/ci-deb.sh}
+          - {name: ubuntu2604, image: 'ubuntu:26.04', script: obs/ci-deb.sh}
+          - {name: arch, image: 'archlinux:latest', script: aur/ci-arch.sh}
     steps:
       # git and tar for actions/checkout
       - name: Prepare the container
         run: |
           if command -v dnf >/dev/null; then dnf -y install git tar
           elif command -v zypper >/dev/null; then zypper -n install git tar gzip
+          elif command -v pacman >/dev/null; then pacman -Syu --noconfirm git
           else apt-get update && apt-get install -y --no-install-recommends git ca-certificates
           fi
       - uses: actions/checkout@v5
       - name: Build, install and check the packages
-        run: bash sw/packaging/obs/ci-${{ matrix.kind }}.sh out
+        run: bash sw/packaging/${{ matrix.script }} out
       - uses: actions/upload-artifact@v7
         with:
           name: packages-${{ matrix.name }}
-          path: out/*
+          path: out/
+          include-hidden-files: true
 
   windows-zip:
     runs-on: windows-latest
