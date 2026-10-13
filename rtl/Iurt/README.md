@@ -67,7 +67,7 @@ Differences to a real 16450:
   THR empty, with the priorities of the 16450. `irq` is a level, active
   high.
 
-The bytes to and from the host are not escaped, so all 256 values pass
+The bytes to and from the host are not [escaped](../common/README.md#escaping), so all 256 values pass
 unchanged and any TCP terminal works, e.g. `nc 127.0.0.1 <port>` with the port of
 the Iurt channel.
 

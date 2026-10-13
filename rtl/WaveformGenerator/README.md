@@ -45,6 +45,28 @@ the others (`SYNC_MASTER = false`). Started from the host, the others wait
 for the end of the current repetition of the master and then play in step
 with it.
 
+## Protocol
+
+For your own host tool instead of the library. The bytes to the core are
+[escaped](../common/README.md#escaping). *D* and *A* are `data_out'length`
+and `ADDR_WIDTH` in bytes (bits rounded up).
+
+| Command | Then to the core | Answer |
+|---------|------------------|--------|
+| `0xF2` sizes | – | `data_out'length` and `ADDR_WIDTH`, 4 bytes each, least significant byte first |
+| `0xF5` status | – | 1 byte: bit 0 = playing, bit 1 = `DOUBLE_BUFFER` |
+| `0xF4` number of samples | *A* bytes: number − 1 | – |
+| `0xF3` write samples | the samples, *D* bytes each | `0xFA` while writing, `0xFB` at the end |
+| `0xF0` start | – | – |
+| `0xF6` one shot | – | – |
+| `0xF1` stop | – | – |
+
+* Values are sent most significant byte first.
+* Send `0xF4` before `0xF3`: the core expects that many samples.
+* While receiving samples, the core sends `0xFA` after every 64 bytes,
+  except after the last one, as a sign of life; it drops a `0xFA` while
+  the host is not ready to take it. After the last sample it sends `0xFB`.
+
 ## Instantiation
 
 From the [Cmod S7 demo](../demo/cmod-s7/top.vhd): 16 bit, 4096 samples,

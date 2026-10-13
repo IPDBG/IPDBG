@@ -181,6 +181,46 @@ xc7.ipdbghub start -tool 1 -port 4243
 See the [OpenOCD manual](https://openocd.org/doc/html/Boundary-Scan-Commands.html),
 section *IPDBG: JTAG-Host server*, for all options.
 
+## Protocol
+
+For your own JTAG host instead of OpenOCD (whose implementation is
+`src/server/ipdbg.c`). Select the user data register of the hub with the
+`USER1` instruction (see [OpenOCD](#openocd)), then exchange words with DR
+scans: Capture-DR, 13 bits in Shift-DR, Update-DR. Each scan sends one
+word to the hub and returns one word from the hub, bit 0 first.
+
+| Bits | To the hub (TDI) | From the hub (TDO) |
+|------|------------------|--------------------|
+| 12 | valid: the word carries a byte | valid: the word carries a byte |
+| 11 | 0 | xoff, see below |
+| 10..8 | channel 0 … 6, or 7 for the hub itself | channel 0 … 6, or 7 for a message of the hub |
+| 7..0 | the byte | the byte |
+
+* A word from the hub counts as received only if the scan shifted all
+  13 bits; otherwise the hub sends it again.
+* The hub takes the bytes of the channels in turn, one byte per scan. To
+  receive without sending, scan words with valid = 0.
+* A word to channel 7 with valid = 1 resets the hub: it drops all buffered
+  bytes and the flow control state. The next word from the hub is channel
+  7 with bit 7 = 1 and bits 6..0 = `FLOW_CONTROL_ENABLE`. OpenOCD resets
+  the hub when the first tool connects.
+
+Flow control, only for the channels with `FLOW_CONTROL_ENABLE = '1'`:
+
+* The xoff bit of a word from the hub refers to the channel of the last
+  word with valid = 1 that the host sent. With xoff = 1, the host stops
+  sending to that channel. The hub still takes the byte sent in the scan
+  that returned the xoff.
+* When the channel can take bytes again, the hub sends a word to channel 7
+  with bit 7 = 0 and bit N = 1 for each channel N the host may send to
+  again (xon).
+
+To a channel without flow control, the host may send in every scan; the
+core must take every byte.
+
+The bytes themselves pass the hub unchanged; see
+[escaping](../common/README.md#escaping) and the README of each core.
+
 ## Simulation
 
 `test/tb_JtagHub.vhd` tests `JtagCdc`, the part that all hub variants

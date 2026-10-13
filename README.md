@@ -112,6 +112,17 @@ lwIP can act as the bridge: it accepts the TCP connections from the host
 tools and forwards the data to the IPDBG hub in a memory-mapped FPGA –
 no JTAG involved at all.
 
+The protocols, from the FPGA up:
+
+* [Core interface](rtl/common/README.md#core-interface): the valid/ready
+  handshake between hub or transport and core
+* [JTAG](rtl/JtagHub/README.md#protocol) and [UART](rtl/Uart/README.md#protocol):
+  how the bytes travel between host and FPGA
+* [Escaping](rtl/common/README.md#escaping): the reset of a core by the host
+* The commands of the cores: [Logic Analyzer](rtl/LogicAnalyser/README.md#protocol),
+  [Waveform Generator](rtl/WaveformGenerator/README.md#protocol),
+  [BusAccess](rtl/BusAccess/README.md#protocol), [IoProbe](rtl/IoProbe/README.md#protocol)
+
 ## Supported transports and devices
 
 ### JTAG (vendor user scan chain – no extra pins)

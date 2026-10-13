@@ -29,6 +29,13 @@ Part of [IPDBG](https://github.com/IPDBG/IPDBG).
 The widths of `probe_inputs` and `probe_outputs` are taken from the signals
 you connect and may differ; the host queries them.
 
+## Protocol
+
+The [BusAccess protocol](../BusAccess/README.md#protocol) with core type 1,
+address, strobe and misc of width 0: a write (`0xBF`) sets
+`probe_outputs`, a read (`0xCF`) returns `probe_inputs`. Every access is
+answered with ACK.
+
 ## Instantiation
 
 From the [Cmod S7 demo](../demo/cmod-s7/top.vhd): 10 inputs, the four LEDs

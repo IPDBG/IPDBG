@@ -65,6 +65,34 @@ independent of a bus: address, data, strobe and misc outputs, `start_read`
 `access_error`. The bus master cores above are thin wrappers around it, so
 use one of them as a template for another bus.
 
+## Protocol
+
+For your own host tool instead of the library. The bytes to the core are
+[escaped](../common/README.md#escaping). Values of several bytes are sent
+least significant byte first; *A*, *W*, *R*, *S*, *M* are the widths of
+address, write data, read data, strobe and misc in bytes (bits rounded up).
+
+| Command | Then to the core | Answer |
+|---------|------------------|--------|
+| `0xAB` widths | – | 6 values of 4 bytes, see below |
+| `0xD0` set address | *A* bytes | – |
+| `0x92` set strobe | *S* bytes | – |
+| `0xE5` set misc | *M* bytes | – |
+| `0xBF` write, `0xBE` write and lock | *W* bytes | `0x55` (ACK) or `0x33` (NACK) after the access |
+| `0xCF` read, `0xCE` read and lock | – | ACK or NACK, then *R* bytes (undefined after NACK) |
+
+* The widths: protocol ID `0x1D` in bits 7..0, protocol version 0 in bits
+  15..8, core type in bits 23..16 (0: bus master, 1:
+  [IoProbe](../IoProbe/README.md)); then the widths in bits of write data,
+  read data, address, misc and strobe.
+* A command whose width is 0 is ignored, e.g. `0xD0` without address.
+* After a read or write command, wait for the answer before the next
+  command.
+* After a reset, the address is 0, the strobe all `1` and misc the reset
+  value of the table above.
+* Lock: with `0xBE` / `0xCE` the bus is locked from the start of the access
+  until the end of the next access with `0xBF` / `0xCF`.
+
 ## Instantiation
 
 From the [Cmod S7 demo](../demo/cmod-s7/top.vhd): a Wishbone master with

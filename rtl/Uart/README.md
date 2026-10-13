@@ -35,14 +35,20 @@ Choose `CLOCKS_PER_ONE_SIXTEENTH_BIT` so that the baudrate is within 1 % of
 the baudrate of UartBridge. Example: 100 MHz / (16 × 54) = 115741
 baud, 0.5 % above 115200.
 
-The frame format is fixed to 8N1 (8 data bits, no parity, 1 stop bit),
-without hardware flow control, like UartBridge.
-
 Limits:
 
 * The UART holds one byte from the host until the core takes it; a byte
   that arrives before is lost. The UART cannot hold back the host.
 * Framing errors are not detected.
+
+## Protocol
+
+Each byte between host tool and core is one UART frame, unchanged, in both
+directions: 8N1 (8 data bits, no parity, 1 stop bit), without hardware
+flow control, like UartBridge. There is no further framing, so a host tool
+can also open the serial port directly instead of the TCP port of
+UartBridge. The meaning of the bytes is up to the core, see
+[escaping](../common/README.md#escaping) and the README of each core.
 
 ## Instantiation
 
