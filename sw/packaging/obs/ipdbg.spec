@@ -5,7 +5,7 @@
 # (Fedora, openSUSE), see README.md.
 
 Name:           ipdbg
-Version:        0.1.0
+Version:        0.1.1
 Release:        1%{?dist}
 Summary:        Host software of IPDBG, the debugger for FPGAs
 License:        MPL-2.0
@@ -142,5 +142,8 @@ python3 -m compileall -q -d %{python3_sitearch} %{buildroot}%{python3_sitearch}
 %files -n octave-ipdbg -f octave.files
 
 %changelog
+* Tue Oct 13 2026 Daniel Anselmi <danselmi@gmx.ch> - 0.1.1-1
+- Version 0.1.1
+
 * Sun Oct 11 2026 Daniel Anselmi <danselmi@gmx.ch> - 0.1.0-1
 - First package

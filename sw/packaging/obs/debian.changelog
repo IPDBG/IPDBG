@@ -1,3 +1,9 @@
+ipdbg (0.1.1-1) unstable; urgency=medium
+
+  * Version 0.1.1.
+
+ -- Daniel Anselmi <danselmi@gmx.ch>  Tue, 13 Oct 2026 02:30:00 +0200
+
 ipdbg (0.1.0-1) unstable; urgency=medium
 
   * First package.
