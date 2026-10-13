@@ -251,12 +251,12 @@ begin
                             if W_DATA_WIDTH > 0 and
                                (dn_lines.dnlink_data = WRITE_CMD_LOCK or dn_lines.dnlink_data = WRITE_CMD_UNLOCK) then
                                 state     <= write_access;
-                                next_lock <= dn_lines.dnlink_data(0);
+                                next_lock <= not dn_lines.dnlink_data(0); -- bit 0 is 0 in the lock commands
                             end if;
                             if R_DATA_WIDTH > 0 and
                                (dn_lines.dnlink_data = READ_CMD_LOCK or dn_lines.dnlink_data = READ_CMD_UNLOCK) then
                                 state         <= read_access;
-                                lock          <= dn_lines.dnlink_data(0);
+                                lock          <= not dn_lines.dnlink_data(0);
                                 start_read    <= '1';
                                 wait_response <= '1';
                             end if;
