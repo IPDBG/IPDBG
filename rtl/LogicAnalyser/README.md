@@ -61,20 +61,35 @@ For your own host tool instead of libsigrok. The bytes to the core are
 and `ADDR_WIDTH` in bytes (bits rounded up), *S* = (`probe'length` +
 `RUN_LENGTH_COMPRESSION`) in bytes.
 
-| Command | Then to the core | Answer |
-|---------|------------------|--------|
-| `0xBB` id | – | `IDBG`, with run-length compression `idbg` |
-| `0xAA` sizes | – | `probe'length` and `ADDR_WIDTH`, 4 bytes each, least significant byte first |
-| `0x10` features | – | 4 bytes, least significant byte first: bit 1 = run-length compression; bit 0 is reserved |
-| `0x60` run-length width | – | `RUN_LENGTH_COMPRESSION`, 1 byte; only with run-length compression |
-| `0xF0 0xF1 0xF3` mask current | *D* bytes | – |
-| `0xF0 0xF1 0xF7` value current | *D* bytes | – |
-| `0xF0 0xF9 0xFB` mask last | *D* bytes | – |
-| `0xF0 0xF9 0xFF` value last | *D* bytes | – |
-| `0xF0 0xF5 0xF6` mask edge | *D* bytes | – |
-| `0x0F 0x1F` delay | *A* bytes | – |
-| `0xFE` arm | – | the capture, see below |
-| `0x00` trigger now | – | – |
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> idle
+    idle --> answer : 0xBB, 0xAA, 0x10, 0x60
+    answer --> idle : answer sent
+    idle --> trigger : 0xF0
+    trigger --> current : 0xF1
+    trigger --> last : 0xF9
+    trigger --> edge : 0xF5
+    current --> idle : 0xF3 mask or 0xF7 value, D bytes
+    last --> idle : 0xFB mask or 0xFF value, D bytes
+    edge --> idle : 0xF6 mask, D bytes
+    idle --> delay : 0x0F
+    delay --> idle : 0x1F, A bytes
+    idle --> capture : capture complete
+    capture --> idle : all samples sent
+```
+
+Other bytes are ignored and keep the state. The commands of `idle`:
+
+| Command | Answer |
+|---------|--------|
+| `0xFE` arm | the capture, see below |
+| `0x00` trigger now | – |
+| `0xBB` id | `IDBG`, with run-length compression `idbg` |
+| `0xAA` sizes | `probe'length` and `ADDR_WIDTH`, 4 bytes each, least significant byte first |
+| `0x10` features | 4 bytes, least significant byte first: bit 1 = run-length compression; bit 0 is reserved |
+| `0x60` run-length width | `RUN_LENGTH_COMPRESSION`, 1 byte; only with run-length compression |
 
 * Masks, values and delay are sent most significant byte first. They are
   not set by a reset; set all of them before the first capture.
@@ -88,8 +103,8 @@ and `ADDR_WIDTH` in bytes (bits rounded up), *S* = (`probe'length` +
   undefined; the trigger sample is sample number `delay`. Send `0xFE` again for the next capture.
 * `0x00` makes the next capture trigger at once, also when sent before
   `0xFE`.
-* While the core sends a capture, it ignores commands; the reset `0xEE`
-  still works.
+* While the core sends an answer or a capture, it ignores commands; the
+  reset `0xEE` still works.
 * With run-length compression, a sample is the value shifted left by
   `RUN_LENGTH_COMPRESSION` bits, plus the number of repetitions − 1 in the
   low bits; `delay` counts these samples.
