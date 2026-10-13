@@ -149,6 +149,71 @@ tb_uart() {
 }
 check IpdbgUart_tb tb_uart
 
+# --- protocol testbenches of the cores, with the host model of ipdbg_test_pkg --
+
+TEST_PKG=("$C/ipdbg_interface_pkg.vhd" "$RTL/test/ipdbg_test_pkg.vhd")
+# back-pressure: idle clocks between the bytes to the core, clocks until the
+# host is ready again for the next byte from the core
+FAST=(-gMAX_GAP=0 -gMAX_DELAY=0)
+SLOW=(-gMAX_GAP=10 -gMAX_DELAY=25)
+
+tb_escaping() {
+    analyze "${TEST_PKG[@]}" "$C/IpdbgEscaping.vhd" "$C/test/tb_IpdbgEscaping.vhd" || return 1
+    simulate tb_IpdbgEscaping "all tests passed" -gASYNC_RESET=true &&
+    simulate tb_IpdbgEscaping "all tests passed" -gASYNC_RESET=false -gSEED=2 -gMAX_GAP=0 &&
+    simulate tb_IpdbgEscaping "all tests passed" -gSEED=3 -gMAX_GAP=10
+}
+check tb_IpdbgEscaping tb_escaping
+
+BUSACCESS=("$C/IpdbgEscaping.vhd" "$RTL/BusAccess/BusAccessStatemachine.vhd" "$RTL/BusAccess/BusAccessController.vhd")
+
+tb_busaccess() {
+    analyze "${TEST_PKG[@]}" "${BUSACCESS[@]}" "$RTL/BusAccess/test/tb_BusAccess.vhd" || return 1
+    simulate tb_BusAccess "all tests passed" &&
+    simulate tb_BusAccess "all tests passed" -gASYNC_RESET=false -gSEED=2 "${FAST[@]}" -gMAX_LATENCY=0 &&
+    simulate tb_BusAccess "all tests passed" -gSEED=3 "${SLOW[@]}" -gMAX_LATENCY=40 &&
+    simulate tb_BusAccess "all tests passed" -gADDRESS_WIDTH=33 -gR_DATA_WIDTH=13 -gW_DATA_WIDTH=9 \
+        -gSTROBE_WIDTH=0 -gMISC_WIDTH=0 -gSEED=4 &&
+    simulate tb_BusAccess "all tests passed" -gADDRESS_WIDTH=4 -gR_DATA_WIDTH=5 -gW_DATA_WIDTH=64 \
+        -gSTROBE_WIDTH=8 -gMISC_WIDTH=10 -gSEED=5 "${FAST[@]}"
+}
+check tb_BusAccess tb_busaccess
+
+tb_ioprobe() {
+    analyze "${TEST_PKG[@]}" "${BUSACCESS[@]}" "$RTL/IoProbe/IoProbeTop.vhd" "$RTL/IoProbe/test/tb_IoProbe.vhd" || return 1
+    simulate tb_IoProbe "all tests passed" &&
+    simulate tb_IoProbe "all tests passed" -gASYNC_RESET=false -gINPUT_WIDTH=1 -gOUTPUT_WIDTH=1 -gSEED=2 "${FAST[@]}" &&
+    simulate tb_IoProbe "all tests passed" -gINPUT_WIDTH=8 -gOUTPUT_WIDTH=33 -gSEED=3 "${SLOW[@]}"
+}
+check tb_IoProbe tb_ioprobe
+
+tb_wfg() {
+    local W=$RTL/WaveformGenerator
+    analyze "${TEST_PKG[@]}" "$C/IpdbgEscaping.vhd" "$C/pdpRam.vhd" "$W/WaveformGeneratorController.vhd" \
+        "$W/WaveformGeneratorMemory.vhd" "$W/WaveformGeneratorTop.vhd" "$W/test/tb_WaveformGenerator.vhd" || return 1
+    simulate tb_WaveformGenerator "all tests passed" &&
+    simulate tb_WaveformGenerator "all tests passed" -gDOUBLE_BUFFER=true -gSEED=2 "${FAST[@]}" &&
+    simulate tb_WaveformGenerator "all tests passed" -gDOUBLE_BUFFER=true -gASYNC_RESET=false -gSAMPLE_EVERY=3 \
+        -gDATA_WIDTH=1 -gADDR_WIDTH=8 -gSEED=3 &&
+    simulate tb_WaveformGenerator "all tests passed" -gDATA_WIDTH=17 -gSEED=4 "${SLOW[@]}"
+}
+check tb_WaveformGenerator tb_wfg
+
+tb_la() {
+    local L=$RTL/LogicAnalyser
+    analyze "${TEST_PKG[@]}" "$C/IpdbgEscaping.vhd" "$C/pdpRam.vhd" "$L/LogicAnalyserTrigger.vhd" \
+        "$L/LogicAnalyserMemory.vhd" "$L/LogicAnalyserRunLengthCoder.vhd" "$L/LogicAnalyserController.vhd" \
+        "$L/LogicAnalyserTop.vhd" "$L/test/tb_LogicAnalyser.vhd" || return 1
+    simulate tb_LogicAnalyser "all tests passed" &&
+    simulate tb_LogicAnalyser "all tests passed" -gASYNC_RESET=false -gSAMPLE_EVERY=2 -gSEED=2 "${FAST[@]}" &&
+    simulate tb_LogicAnalyser "all tests passed" -gDATA_WIDTH=8 -gADDR_WIDTH=8 -gRUN=3 -gSEED=3 "${SLOW[@]}" &&
+    simulate tb_LogicAnalyser "all tests passed" -gDATA_WIDTH=1 -gADDR_WIDTH=3 -gSEED=4 &&
+    simulate tb_LogicAnalyser "all tests passed" -gRUN_LENGTH_COMPRESSION=4 -gRUN=3 -gSEED=5 &&
+    simulate tb_LogicAnalyser "all tests passed" -gRUN_LENGTH_COMPRESSION=2 -gRUN=4 -gDATA_WIDTH=6 \
+        -gSAMPLE_EVERY=2 -gSEED=6 "${SLOW[@]}"
+}
+check tb_LogicAnalyser tb_la
+
 # ------------------------------------------------------------------------------
 
 if [ ${#failed[@]} -ne 0 ]; then
