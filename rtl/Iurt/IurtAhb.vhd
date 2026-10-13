@@ -104,6 +104,7 @@ architecture behavioral of IurtAhb is
             lsr_oe        : in  std_logic;
             lsr_oe_set    : out std_logic;
             lsr_thre      : out std_logic;
+            lsr_temt      : out std_logic;
             msr           : out std_logic_vector(7 downto 4);
             irq           : out std_logic;
             dn_lines      : in  ipdbg_dn_lines;
@@ -132,6 +133,7 @@ architecture behavioral of IurtAhb is
     signal hwif_out : iurt_out_t;
     signal iir_id   : std_logic_vector(1 downto 0);
     signal lsr_thre : std_logic;
+    signal lsr_temt : std_logic;
     signal msr      : std_logic_vector(7 downto 4);
 
     -- byte lanes of a transfer, little endian
@@ -221,7 +223,7 @@ begin
 
     hwif_in.iir.id.next_q   <= iir_id;
     hwif_in.lsr.thre.next_q <= lsr_thre;
-    hwif_in.lsr.temt.next_q <= lsr_thre;
+    hwif_in.lsr.temt.next_q <= lsr_temt;
     hwif_in.msr.dcd.next_q  <= msr(7);
     hwif_in.msr.ri.next_q   <= msr(6);
     hwif_in.msr.dsr.next_q  <= msr(5);
@@ -262,6 +264,7 @@ begin
             lsr_oe        => hwif_out.lsr.oe.value,
             lsr_oe_set    => hwif_in.lsr.oe.hwset,
             lsr_thre      => lsr_thre,
+            lsr_temt      => lsr_temt,
             msr           => msr,
             irq           => irq,
             dn_lines      => dn_lines,

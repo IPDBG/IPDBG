@@ -18,15 +18,15 @@ use work.ipdbg_test_pkg.all;
 
 entity tb_WaveformGenerator is
     generic(
-        ASYNC_RESET   : boolean  := true;
-        DATA_WIDTH    : positive := 12;
-        ADDR_WIDTH    : positive := 6;
-        DOUBLE_BUFFER : boolean  := false;
-        SAMPLE_EVERY  : positive := 1;  -- sample_enable every SAMPLE_EVERY clocks
-        SEED          : positive := 1;
-        MIN_GAP       : natural  := 1;
-        MAX_GAP       : natural  := 3;
-        MAX_DELAY     : natural  := 4
+        ASYNC_RESET       : boolean  := true;
+        DATA_WIDTH        : positive := 12;
+        ADDR_WIDTH        : positive := 6;       -- at least 2
+        DOUBLE_BUFFER     : boolean  := false;
+        SAMPLE_EVERY      : positive := 1;       -- sample_enable every SAMPLE_EVERY clocks
+        SEED              : positive := 1;
+        MAX_GAP           : natural  := 3;
+        MAX_DELAY         : natural  := 4;
+        READY_AFTER_VALID : boolean  := false    -- uplink_ready only after uplink_valid
     );
 end entity tb_WaveformGenerator;
 
@@ -66,7 +66,7 @@ begin
     clk <= not clk after 5 ns when not done;
 
     dn_lines <= (uplink_ready => up_ready, dnlink_valid => dn_valid, dnlink_data => dn_data);
-    host_sink(clk, up_lines.uplink_valid, up_lines.uplink_data, up_ready, MAX_DELAY);
+    host_sink(clk, up_lines.uplink_valid, up_lines.uplink_data, up_ready, MAX_DELAY, READY_AFTER_VALID);
 
     dut : entity work.WaveformGeneratorTop
         generic map(
@@ -103,7 +103,7 @@ begin
     stimulus : process
         procedure send(bytes : byte_array) is
         begin
-            host_send(clk, dn_valid, dn_data, up_lines.dnlink_ready, bytes, MIN_GAP, MAX_GAP);
+            host_send(clk, dn_valid, dn_data, up_lines.dnlink_ready, bytes, MAX_GAP);
         end procedure;
 
         procedure expect_status(enabled : std_logic; what : string) is
@@ -186,7 +186,7 @@ begin
         end procedure;
 
         variable wave_a : sample_array(0 to MAX_SAMPLES - 1);
-        variable wave_b : sample_array(0 to 4);
+        variable wave_b : sample_array(0 to minimum(5, MAX_SAMPLES - 1) - 1); -- a short waveform
         variable d             : std_logic_vector(DATA_WIDTH - 1 downto 0);
         variable first, active : std_logic;
     begin
@@ -227,7 +227,7 @@ begin
 
         -- a short waveform
         random_samples(wave_b);
-        write_waveform(wave_b, "write 5 samples");
+        write_waveform(wave_b, "write a short waveform");
         send((0 => START));
         expect_output(wave_b, 4, "short waveform");
 

@@ -59,16 +59,14 @@ architecture tab of WaveformGeneratorController is
     type states_t is(init, set_numberofsamples, write_samples, return_sizes, return_status, send_last_ack);
     signal state : states_t;
 
-    type Output is(init, Zwischenspeicher, shift, get_next_data);
-    signal init_Output    : Output;
 
     signal byte_cntr                        : natural range 0 to data_size;
     signal byte_cnt_timeout                 : natural range 0 to 63;
     signal addr_size_s                      : natural range 0 to data_size;
     signal data_samples_valid_early         : std_logic;
     signal data_samples_last_early          : std_logic;
-    signal counter                          : unsigned(ADDR_WIDTH-1 downto 0);
-    signal import_ADDR                      : std_logic;
+    signal size_cnt                         : natural range 0 to 7;
+    signal up_valid                         : std_logic;
     signal sizes_temporary                  : std_logic_vector(31 downto 0);
     signal data_out_s                       : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal sample_counter                   : unsigned(ADDR_WIDTH-1 downto 0);
@@ -90,18 +88,17 @@ begin
     end generate sync_init;
 
     up_lines.dnlink_ready <= '1';
+    up_lines.uplink_valid <= up_valid;
 
     process (clk, arst)
         procedure reset_assignments is begin
             byte_cntr                       <= 0;
             byte_cnt_timeout                <= 0;
             state                           <= init;
-            init_Output                     <= init;
             sizes_temporary                 <= (others => '-');
-            counter                         <= (others => '-');
-            import_ADDR                     <= '0';
+            size_cnt                        <= 0;
             up_lines.uplink_data            <= (others => '-');
-            up_lines.uplink_valid           <= '0';
+            up_valid                        <= '0';
             sample_counter                  <= (others => '-');
             data_samples_valid              <= '0';
             data_samples_last               <= '0';
@@ -115,6 +112,7 @@ begin
             stop                            <= '-';
             one_shot                        <= '-';
         end procedure reset_assignments;
+        variable up_free : boolean; -- a byte can be put into the output register
     begin
         if arst = '1' then
             reset_assignments;
@@ -133,7 +131,10 @@ begin
                     set_addroflastsample_next_byte <= '0';
                     set_dataouts_next_byte <= '0';
                     addr_of_last_sample_stb_early <= '0';
-                    up_lines.uplink_valid <= '0';
+                    up_free := up_valid = '0' or dn_lines.uplink_ready = '1';
+                    if dn_lines.uplink_ready = '1' then
+                        up_valid <= '0';
+                    end if;
                     case state is
                     when init =>
                         if dn_lines.dnlink_valid = '1' then
@@ -147,11 +148,9 @@ begin
                                 one_shot <= '1';
                             end if ;
                             if dn_lines.dnlink_data = return_sizes_command then
-                                counter <= (others => '0');
-                                sizes_temporary <= (others => '0');
-                                import_ADDR <= '0';
+                                size_cnt <= 0;
+                                sizes_temporary <= DATA_WIDTH_slv;
                                 state <= return_sizes;
-                                init_Output <= init;
                             end if ;
                             if dn_lines.dnlink_data = return_status_command then
                                 state <= return_status;
@@ -169,45 +168,23 @@ begin
                             byte_cnt_timeout <= 0;
                         end if;
 
-                    when return_sizes =>
-                        case init_Output is
-                        when init =>
-                            if dn_lines.uplink_ready = '1' then
-                                sizes_temporary <= DATA_WIDTH_slv;
-                                init_Output <= Zwischenspeicher;
-                            end if;
-                        when Zwischenspeicher =>
-                            if dn_lines.uplink_ready = '1' then
-                                up_lines.uplink_data <= sizes_temporary(up_lines.uplink_data'range);
-                                up_lines.uplink_valid <= '1';
-                                sizes_temporary <= x"00" & sizes_temporary( sizes_temporary'left downto up_lines.uplink_data'length);
-                                counter <= counter + 1;
-                                init_Output <= shift;
-                            end if;
-                        when shift =>
-                            if dn_lines.uplink_ready = '0' then
-                                init_Output <= Zwischenspeicher;
-                            end if;
-
-                            if counter = to_unsigned(4, counter'length) then
-                                if import_ADDR = '0' then
-                                    init_Output <= get_next_data;
-                                else
-                                    init_Output <= init;
-                                    state <= init;
-                                end if;
-                            end if;
-                        when get_next_data =>
-                            if dn_lines.uplink_ready = '1' then
-                                counter <= (others => '0');
-                                import_ADDR <= '1';
+                    when return_sizes => -- DATA_WIDTH, then ADDR_WIDTH, 4 bytes each, least significant byte first
+                        if up_free then
+                            up_valid <= '1';
+                            up_lines.uplink_data <= sizes_temporary(up_lines.uplink_data'range);
+                            sizes_temporary <= x"00" & sizes_temporary(sizes_temporary'left downto up_lines.uplink_data'length);
+                            if size_cnt = 3 then
                                 sizes_temporary <= ADDR_WIDTH_slv;
-                                init_Output <= Zwischenspeicher;
                             end if;
-                        end case;
+                            if size_cnt = 7 then
+                                state <= init;
+                            else
+                                size_cnt <= size_cnt + 1;
+                            end if;
+                        end if;
 
                     when return_status =>
-                        if dn_lines.uplink_ready = '1' then
+                        if up_free then
                             up_lines.uplink_data <= x"00";
                             up_lines.uplink_data(0) <= enabled;
                             if DOUBLE_BUFFER then
@@ -215,7 +192,7 @@ begin
                             else
                                 up_lines.uplink_data(1) <= '0';
                             end if;
-                            up_lines.uplink_valid <= '1';
+                            up_valid <= '1';
                             state <= init;
                         end if;
 
@@ -224,9 +201,10 @@ begin
                             set_dataouts_next_byte <= '1';
                             if byte_cnt_timeout = 63 then
                                 byte_cnt_timeout <= 0;
-                                up_lines.uplink_data <= x"FA";
-                                if dn_lines.uplink_ready = '1' then
-                                    up_lines.uplink_valid <= '1';
+                                -- alive message, not with the last byte (FB follows), dropped if the host is busy
+                                if up_free and not (byte_cntr + 1 = data_size and sample_counter = unsigned(addr_of_last_sample_s)) then
+                                    up_lines.uplink_data <= x"FA";
+                                    up_valid <= '1';
                                 end if;
                             else
                                 byte_cnt_timeout <= byte_cnt_timeout+1;
@@ -237,7 +215,6 @@ begin
                                 sample_counter <= sample_counter + 1;
                                 byte_cntr <= 0;
                                 if sample_counter  = unsigned(addr_of_last_sample_s) then
-                                    up_lines.uplink_valid <= '0';
                                     state <= send_last_ack;
                                     data_samples_last_early <= '1';
                                 end if;
@@ -246,9 +223,9 @@ begin
                             end if;
                         end if;
                     when send_last_ack =>
-                        up_lines.uplink_data <= x"FB";
-                        if dn_lines.uplink_ready = '1' then
-                            up_lines.uplink_valid <= '1';
+                        if up_free then
+                            up_lines.uplink_data <= x"FB";
+                            up_valid <= '1';
                             state <= init;
                         end if;
 

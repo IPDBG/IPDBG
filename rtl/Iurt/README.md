@@ -58,7 +58,8 @@ Differences to a real 16450:
   the flow control of the hub for the Iurt channel (`FLOW_CONTROL_ENABLE`
   of the JtagHub). Without it, a byte arriving while RBR is full is lost
   and sets OE in the LSR.
-* While THR is full, THRE stays 0 until the host has taken the byte.
+* THR empties when its byte moves to the transmit register, which holds it
+  until the host takes it; TEMT is 1 when both are empty.
 * LSR: DR, OE, THRE and TEMT; no parity, framing or break errors.
 * MSR: DCD, DSR and CTS are 1. In loopback mode (MCR bit 4) the MSR
   reflects MCR like a 16450, but the data is not looped back.

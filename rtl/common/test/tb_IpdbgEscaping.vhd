@@ -17,7 +17,6 @@ entity tb_IpdbgEscaping is
     generic(
         ASYNC_RESET : boolean  := true;
         SEED        : positive := 1;
-        MIN_GAP     : natural  := 1;
         MAX_GAP     : natural  := 3
     );
 end entity tb_IpdbgEscaping;
@@ -72,7 +71,7 @@ begin
     stimulus : process
         procedure send(bytes : byte_array) is
         begin
-            host_send(clk, dn_valid, dn_data, up_lines_out.dnlink_ready, bytes, MIN_GAP, MAX_GAP);
+            host_send(clk, dn_valid, dn_data, up_lines_out.dnlink_ready, bytes, MAX_GAP);
             wait_clocks(clk, 3);
         end procedure;
 

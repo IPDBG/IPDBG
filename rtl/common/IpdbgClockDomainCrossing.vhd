@@ -62,41 +62,44 @@ begin
         srst_func <= rst_func;
     end generate sync_init_func;
 
+    -- host to core
     data_dwn_block : block
         signal transfer_register : std_logic_vector(7 downto 0);
-        signal request           : std_logic;
-        signal acknowledge       : std_logic;
+        signal request           : std_logic; -- toggles from 0 to 1 when transfer_register holds a byte
+        signal acknowledge       : std_logic; -- follows request when the byte was passed on
     begin
         host_clock_domain : block
-            signal acknowledge_synced      : std_logic;
-            signal acknowledge_synced_prev : std_logic;
+            signal acknowledge_synced : std_logic;
+            signal busy               : std_logic;
         begin
+            up_lines_host.dnlink_ready <= not busy;
+
             process (clk_host, arst_host)
                 procedure assign_reset is begin
                     request <= '0';
-					up_lines_host.dnlink_ready <= '1';
-                    acknowledge_synced_prev <= '0';
+                    busy <= '0';
                     transfer_register <= (others => '-');
                 end procedure assign_reset;
             begin
                 if arst_host = '1' then
                     assign_reset;
-                elsif rising_edge(clk_host)then
+                elsif rising_edge(clk_host) then
                     if srst_host = '1' then
                         assign_reset;
                     else
                         if ce_host = '1' then
-                            acknowledge_synced_prev <= acknowledge_synced;
-                            if dn_lines_host.dnlink_valid = '1' then
-                                request <= '1';
-                                transfer_register <= dn_lines_host.dnlink_data;
-								up_lines_host.dnlink_ready <= '0';
+                            if busy = '0' then
+                                if dn_lines_host.dnlink_valid = '1' then
+                                    transfer_register <= dn_lines_host.dnlink_data;
+                                    request <= '1';
+                                    busy <= '1';
+                                end if;
                             else
-                                if acknowledge_synced = '1' and acknowledge_synced_prev = '0' then
+                                if acknowledge_synced = '1' then
                                     request <= '0';
                                 end if;
-                                if acknowledge_synced = '0' and acknowledge_synced_prev = '1' then
-                                    up_lines_host.dnlink_ready <= '1';
+                                if request = '0' and acknowledge_synced = '0' then
+                                    busy <= '0';
                                 end if;
                             end if;
                         end if;
@@ -104,7 +107,7 @@ begin
                 end if;
             end process;
 
-            ff_jtag: block
+            sync: block
                 signal ff : std_logic_vector(MFF_LENGTH downto 0);
             begin
                 ff(0) <= acknowledge;
@@ -121,55 +124,44 @@ begin
             end block;
         end block;
 
-        function_clock_domain : block
-            signal request_synced      : std_logic;
-            signal request_synced_prev : std_logic;
-            signal pending             : std_logic;
+        func_clock_domain : block
+            signal request_synced : std_logic;
+            signal valid          : std_logic;
         begin
+            dn_lines_func.dnlink_valid <= valid;
+
             process (clk_func, arst_func)
-				procedure assign_reset is begin
+                procedure assign_reset is begin
                     acknowledge <= '0';
-                    dn_lines_func.dnlink_valid <= '0';
+                    valid <= '0';
                     dn_lines_func.dnlink_data <= (others => '-');
-                    request_synced_prev <= '0';
-                    pending <= '0';
                 end procedure assign_reset;
-			begin
+            begin
                 if arst_func = '1' then
-					assign_reset;
+                    assign_reset;
                 elsif rising_edge(clk_func) then
                     if srst_func = '1' then
                         assign_reset;
                     else
                         if ce_func = '1' then
-                            dn_lines_func.dnlink_valid <= '0';
-                            request_synced_prev <= request_synced;
-                            if pending = '1' then
+                            if valid = '1' then
                                 if up_lines_func.dnlink_ready = '1' then
+                                    valid <= '0';
                                     acknowledge <= '1';
-                                    dn_lines_func.dnlink_valid <= '1';
-                                    pending <= '0';
                                 end if;
-                            else
-                                if request_synced = '1' and request_synced_prev = '0' then -- detect 0 -> 1 change
-                                    dn_lines_func.dnlink_data <= transfer_register;
-                                    if up_lines_func.dnlink_ready = '1' then
-                                        acknowledge <= '1';
-                                        dn_lines_func.dnlink_valid <= '1';
-                                    else
-                                        pending <= '1';
-                                    end if;
-                                elsif request_synced = '0' and request_synced_prev = '1' then -- detect 1 -> 0 change
-                                    acknowledge <= '0';
-                                end if;
+                            elsif request_synced = '1' and acknowledge = '0' then
+                                dn_lines_func.dnlink_data <= transfer_register; -- stable while request = '1'
+                                valid <= '1';
+                            elsif request_synced = '0' then
+                                acknowledge <= '0';
                             end if;
                         end if;
                     end if;
                 end if;
             end process;
 
-            ff_clk: block
-                signal ff   : std_logic_vector(MFF_LENGTH downto 0);
+            sync: block
+                signal ff : std_logic_vector(MFF_LENGTH downto 0);
             begin
                 ff(0) <= request;
                 mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
@@ -186,20 +178,22 @@ begin
         end block;
     end block;
 
-    data_up_block: block
+    -- core to host
+    data_up_block : block
         signal transfer_register : std_logic_vector(7 downto 0);
-        signal request           : std_logic;
-        signal acknowledge       : std_logic;
+        signal request           : std_logic; -- toggles from 0 to 1 when transfer_register holds a byte
+        signal acknowledge       : std_logic; -- follows request when the byte was passed on
     begin
-        function_clock_domain : block
-            signal acknowledge_synced      : std_logic;
-            signal acknowledge_synced_prev : std_logic;
+        func_clock_domain : block
+            signal acknowledge_synced : std_logic;
+            signal busy               : std_logic;
         begin
+            dn_lines_func.uplink_ready <= not busy;
+
             process (clk_func, arst_func)
                 procedure assign_reset is begin
                     request <= '0';
-                    dn_lines_func.uplink_ready <= '1';
-                    acknowledge_synced_prev <= '0';
+                    busy <= '0';
                     transfer_register <= (others => '-');
                 end procedure assign_reset;
             begin
@@ -210,17 +204,18 @@ begin
                         assign_reset;
                     else
                         if ce_func = '1' then
-                            acknowledge_synced_prev <= acknowledge_synced;
-                            if up_lines_func.uplink_valid = '1' then
-                                request <= '1';
-                                transfer_register <= up_lines_func.uplink_data;
-                                dn_lines_func.uplink_ready <= '0';
+                            if busy = '0' then
+                                if up_lines_func.uplink_valid = '1' then
+                                    transfer_register <= up_lines_func.uplink_data;
+                                    request <= '1';
+                                    busy <= '1';
+                                end if;
                             else
-                                if acknowledge_synced = '1' and acknowledge_synced_prev = '0'then
+                                if acknowledge_synced = '1' then
                                     request <= '0';
                                 end if;
-                                if acknowledge_synced = '0' and acknowledge_synced_prev = '1'then
-                                    dn_lines_func.uplink_ready <= '1';
+                                if request = '0' and acknowledge_synced = '0' then
+                                    busy <= '0';
                                 end if;
                             end if;
                         end if;
@@ -228,8 +223,8 @@ begin
                 end if;
             end process;
 
-            ff_clk1: block
-                signal ff   : std_logic_vector(MFF_LENGTH downto 0);
+            sync: block
+                signal ff : std_logic_vector(MFF_LENGTH downto 0);
             begin
                 ff(0) <= acknowledge;
                 mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
@@ -245,55 +240,44 @@ begin
             end block;
         end block;
 
-        host_clock_domain: block
-            signal request_synced      : std_logic;
-            signal request_synced_prev : std_logic;
-            signal pending             : std_logic;
+        host_clock_domain : block
+            signal request_synced : std_logic;
+            signal valid          : std_logic;
         begin
-            process(clk_host, arst_host)
+            up_lines_host.uplink_valid <= valid;
+
+            process (clk_host, arst_host)
                 procedure assign_reset is begin
                     acknowledge <= '0';
-                    up_lines_host.uplink_valid <= '0';
+                    valid <= '0';
                     up_lines_host.uplink_data <= (others => '-');
-                    request_synced_prev <= '0';
-                    pending <= '0';
                 end procedure assign_reset;
             begin
-                if arst_host= '1' then
+                if arst_host = '1' then
                     assign_reset;
                 elsif rising_edge(clk_host) then
                     if srst_host = '1' then
-                         assign_reset;
+                        assign_reset;
                     else
                         if ce_host = '1' then
-                            up_lines_host.uplink_valid <= '0';
-                            request_synced_prev <= request_synced;
-                            if pending = '1' then
+                            if valid = '1' then
                                 if dn_lines_host.uplink_ready = '1' then
+                                    valid <= '0';
                                     acknowledge <= '1';
-                                    up_lines_host.uplink_valid <= '1';
-                                    pending <= '0';
                                 end if;
-                            else
-                                if request_synced = '1' and request_synced_prev = '0' then -- detect 0 -> 1 change
-                                    up_lines_host.uplink_data <= transfer_register;
-                                    if dn_lines_host.uplink_ready = '1' then
-                                        acknowledge <= '1';
-                                        up_lines_host.uplink_valid <= '1';
-                                    else
-                                        pending <= '1';
-                                    end if;
-                                elsif request_synced = '0' and request_synced_prev = '1' then -- detect 1 -> 0 change
-                                    acknowledge <= '0';
-                                end if;
+                            elsif request_synced = '1' and acknowledge = '0' then
+                                up_lines_host.uplink_data <= transfer_register; -- stable while request = '1'
+                                valid <= '1';
+                            elsif request_synced = '0' then
+                                acknowledge <= '0';
                             end if;
                         end if;
                     end if;
                 end if;
             end process;
 
-           ff_clkjtag: block
-                signal ff   : std_logic_vector(MFF_LENGTH downto 0);
+            sync: block
+                signal ff : std_logic_vector(MFF_LENGTH downto 0);
             begin
                 ff(0) <= request;
                 mff_flops: for K in 0 to MFF_LENGTH-1 generate begin
@@ -309,4 +293,5 @@ begin
             end block;
         end block;
     end block;
+
 end architecture behavioral;

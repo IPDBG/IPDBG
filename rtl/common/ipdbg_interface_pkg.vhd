@@ -15,6 +15,10 @@ package ipdbg_interface_pkg is
 --        data  : std_logic_vector(7 downto 0);
 --    end record;
 
+    -- Both directions use the valid/ready handshake of AXI4-Stream: a byte
+    -- moves at a rising edge with valid = '1' and ready = '1'. The sender
+    -- keeps valid and data until then and does not wait for ready before it
+    -- sets valid; the receiver may change ready at any time.
     type ipdbg_up_lines is record
         dnlink_ready : std_logic;
         uplink_valid : std_logic;

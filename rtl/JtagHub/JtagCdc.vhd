@@ -343,7 +343,8 @@ begin
                     signal data_dwn_local   : std_logic_vector(DATA_LENGTH-1 downto 0);
                     signal channel_selected : std_logic;
                 begin
-                    can_write <= data_dwn_ready(I) and (not valid);
+                    -- the output register is empty or the core takes its byte
+                    can_write <= data_dwn_ready(I) or (not valid);
                     near_full(I) <= occupied(0);
                     process(clk)begin
                         if rising_edge(clk) then
@@ -359,7 +360,6 @@ begin
                                         channel_selected <= '1';
                                     end if;
 
-                                    valid <= '0';
                                     if can_write = '1' then
                                         data_dwn_local <= buf(0);
                                         buf(0)         <= buf(1);

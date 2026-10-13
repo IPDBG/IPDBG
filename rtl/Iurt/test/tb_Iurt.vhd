@@ -228,25 +228,39 @@ begin
 
     -- host: takes the bytes from Iurt when host_take = '1'
     dn_lines.uplink_ready <= host_take;
-    host_rx : process (clk) begin
+    host_rx : process (clk)
+        variable held      : boolean := false;
+        variable held_data : std_logic_vector(7 downto 0);
+    begin
         if rising_edge(clk) then
+            if held then
+                assert up_lines.uplink_valid = '1' and up_lines.uplink_data = held_data
+                    report "uplink_valid or uplink_data changed before the transfer" severity failure;
+            end if;
+            held := false;
             if up_lines.uplink_valid = '1' then
-                assert host_take = '1' report "uplink_valid while not ready" severity failure;
-                host_rx_count <= host_rx_count + 1;
-                host_rx_last  <= up_lines.uplink_data;
+                if host_take = '1' then
+                    host_rx_count <= host_rx_count + 1;
+                    host_rx_last  <= up_lines.uplink_data;
+                else
+                    held := true;
+                    held_data := up_lines.uplink_data;
+                end if;
             end if;
         end if;
     end process;
 
-    -- host: sends a byte when host_tx_req is incremented, respects dnlink_ready
+    -- host: sends a byte when host_tx_req is incremented; holds it until
+    -- dnlink_ready, or for one clock with host_ignore_rdy (a hub channel
+    -- without flow control)
     host_tx : process begin
         dn_lines.dnlink_valid <= '0';
         dn_lines.dnlink_data  <= (others => '-');
         wait until host_tx_req'event;
-        wait until rising_edge(clk) and (up_lines.dnlink_ready = '1' or host_ignore_rdy = '1');
+        wait until rising_edge(clk);
         dn_lines.dnlink_valid <= '1';
         dn_lines.dnlink_data  <= host_tx_data;
-        wait until rising_edge(clk);
+        wait until rising_edge(clk) and (up_lines.dnlink_ready = '1' or host_ignore_rdy = '1');
         host_tx_done <= host_tx_done + 1;
     end process;
 
@@ -494,7 +508,7 @@ begin
         host_take <= '0';
         n := host_rx_count;
         bus_write(RBR, x"41");
-        check(LSR, x"00", "LSR while THR full");
+        check(LSR, x"20", "LSR while the byte waits for the host"); -- THRE, not TEMT
         idle(5);
         assert host_rx_count = n report "byte sent while host not ready" severity failure;
         host_take <= '1';
@@ -537,21 +551,28 @@ begin
         idle(1);
         assert irq = '0' report "thre irq not cleared by IIR read" severity failure;
         check(IIR, x"01", "IIR after thre cleared");
-        -- raised again when the host has taken a byte
+        -- raised again when THR is empty: the first byte moves on to the
+        -- host at once, the second one waits in THR
         host_take <= '0';
         bus_write(RBR, x"45");
         idle(3);
-        assert irq = '0' report "thre irq while THR full" severity failure;
-        host_take <= '1';
+        check(IIR, x"02", "IIR thre after the first byte");
+        bus_write(RBR, x"46");
         idle(3);
+        assert irq = '0' report "thre irq while THR full" severity failure;
+        check(LSR, x"00", "LSR while THR full");
+        host_take <= '1';
+        idle(5);
         assert irq = '1' report "no thre irq after transmit" severity failure;
+        assert host_rx_last = x"46" report "second byte not sent" severity failure;
         host_take <= '0';
-        bus_write(RBR, x"46"); -- writing THR clears it
+        bus_write(RBR, x"47"); -- writing THR clears it
+        bus_write(RBR, x"48");
         idle(1);
         assert irq = '0' report "thre irq not cleared by THR write" severity failure;
         host_take <= '1';
-        idle(3);
-        assert host_rx_last = x"46" report "second byte not sent" severity failure;
+        idle(5);
+        assert host_rx_last = x"48" report "fourth byte not sent" severity failure;
 
         -- priority: rx data before thre
         bus_write(IER, x"03");

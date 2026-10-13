@@ -19,7 +19,8 @@
 --     the flow control of the hub for this channel (JtagHub
 --     FLOW_CONTROL_ENABLE). Without it, a byte arriving while RBR is full is
 --     lost and sets LSR.OE, like a 16450 overrun.
---   * While THR is full, THRE stays 0 until the host has taken the byte.
+--   * THR empties when its byte moves to the transmit register, which holds
+--     it until the host takes it.
 --   * The bytes to and from the host are not escaped, so any TCP terminal
 --     works.
 --   * Interrupts: receiver line status (overrun), received data available
@@ -70,7 +71,8 @@ entity IurtCore is
         lsr_dr         : out std_logic;
         lsr_oe         : in  std_logic;
         lsr_oe_set     : out std_logic;
-        lsr_thre       : out std_logic;                    -- also TEMT
+        lsr_thre       : out std_logic;
+        lsr_temt       : out std_logic;
         msr            : out std_logic_vector(7 downto 4); -- dcd, ri, dsr, cts
 
         irq            : out std_logic; -- level, active high
@@ -92,6 +94,8 @@ architecture behavioral of IurtCore is
     signal dr         : std_logic; -- data ready: RBR full
     signal thr        : std_logic_vector(7 downto 0);
     signal thr_full   : std_logic;
+    signal up_valid   : std_logic; -- output register to the host
+    signal refused    : std_logic; -- a byte from the host was not taken
     signal thre_int   : std_logic; -- THR empty interrupt pending
     signal ier        : std_logic_vector(3 downto 0);
     signal dll        : std_logic_vector(7 downto 0);
@@ -124,11 +128,13 @@ begin
 
     lsr_dr   <= dr;
     lsr_thre <= not thr_full;
+    lsr_temt <= not (thr_full or up_valid);
 
     msr <= mcr(3) & mcr(2) & mcr(0) & mcr(1) when mcr(4) = '1' else -- loopback: DCD = OUT2, RI = OUT1, DSR = DTR, CTS = RTS
            "1011";                                                -- DCD, DSR, CTS
 
     up_lines.dnlink_ready <= not dr;
+    up_lines.uplink_valid <= up_valid;
 
     process (clk, arst)
         procedure reset_assignments is begin
@@ -147,8 +153,9 @@ begin
             ier_rd_ack            <= '0';
             ier_rd_data           <= (others => '-');
             ier_wr_ack            <= '0';
-            up_lines.uplink_valid <= '0';
+            up_valid              <= '0';
             up_lines.uplink_data  <= (others => '-');
+            refused               <= '0';
         end procedure reset_assignments;
 
         -- the written bits of a register
@@ -169,23 +176,28 @@ begin
             if srst = '1' then
                 reset_assignments;
             else
-                -- to and from the host
-                up_lines.uplink_valid <= '0';
+                -- to and from the host; THR moves to the output register (the
+                -- transmitter) when it is empty or the host takes its byte
                 lsr_oe_set            <= '0';
                 if ce = '1' then
-                    if thr_full = '1' and dn_lines.uplink_ready = '1' then
-                        up_lines.uplink_valid <= '1';
+                    if dn_lines.uplink_ready = '1' then
+                        up_valid <= '0';
+                    end if;
+                    if thr_full = '1' and (up_valid = '0' or dn_lines.uplink_ready = '1') then
+                        up_valid              <= '1';
                         up_lines.uplink_data  <= thr;
                         thr_full              <= '0';
                         thre_int              <= '1';
                     end if;
-                    if dn_lines.dnlink_valid = '1' then
-                        if dr = '0' then
-                            rbr <= dn_lines.dnlink_data;
-                            dr  <= '1';
-                        else
-                            lsr_oe_set <= '1'; -- only without flow control
-                        end if;
+                    if dn_lines.dnlink_valid = '1' and dr = '0' then
+                        rbr <= dn_lines.dnlink_data;
+                        dr  <= '1';
+                    end if;
+                    -- a byte that was not taken and is gone: without flow
+                    -- control, the hub does not wait for dnlink_ready
+                    refused <= dn_lines.dnlink_valid and dr;
+                    if refused = '1' and dn_lines.dnlink_valid = '0' then
+                        lsr_oe_set <= '1';
                     end if;
                 end if;
 

@@ -18,17 +18,17 @@ use work.ipdbg_test_pkg.all;
 
 entity tb_BusAccess is
     generic(
-        ASYNC_RESET   : boolean  := true;
-        ADDRESS_WIDTH : natural  := 12; -- at least 4
-        R_DATA_WIDTH  : positive := 32;
-        W_DATA_WIDTH  : positive := 32;
-        STROBE_WIDTH  : natural  := 4;
-        MISC_WIDTH    : natural  := 3;
-        SEED          : positive := 1;
-        MIN_GAP       : natural  := 1;  -- downstream: idle clocks between two bytes
-        MAX_GAP       : natural  := 3;  --   plus 0..MAX_GAP
-        MAX_DELAY     : natural  := 4;  -- upstream: ready comes back after 1 + 0..MAX_DELAY clocks
-        MAX_LATENCY   : natural  := 5   -- bus: done after 1 + 0..MAX_LATENCY clocks
+        ASYNC_RESET       : boolean  := true;
+        ADDRESS_WIDTH     : natural  := 12;    -- at least 4
+        R_DATA_WIDTH      : positive := 32;
+        W_DATA_WIDTH      : positive := 32;
+        STROBE_WIDTH      : natural  := 4;
+        MISC_WIDTH        : natural  := 3;
+        SEED              : positive := 1;
+        MAX_GAP           : natural  := 3;     -- downstream: 0..MAX_GAP idle clocks before each byte
+        MAX_DELAY         : natural  := 4;     -- upstream: ready '0' for 0..MAX_DELAY clocks after each byte
+        READY_AFTER_VALID : boolean  := false; -- uplink_ready only after uplink_valid
+        MAX_LATENCY       : natural  := 5      -- bus: done after 1 + 0..MAX_LATENCY clocks
     );
 end entity tb_BusAccess;
 
@@ -86,7 +86,7 @@ begin
     clk <= not clk after 5 ns when not done;
 
     dn_lines <= (uplink_ready => up_ready, dnlink_valid => dn_valid, dnlink_data => dn_data);
-    host_sink(clk, up_lines.uplink_valid, up_lines.uplink_data, up_ready, MAX_DELAY);
+    host_sink(clk, up_lines.uplink_valid, up_lines.uplink_data, up_ready, MAX_DELAY, READY_AFTER_VALID);
 
     dut : entity work.BusAccessController
         generic map(
@@ -175,7 +175,7 @@ begin
 
         procedure send(bytes : byte_array) is
         begin
-            host_send(clk, dn_valid, dn_data, up_lines.dnlink_ready, bytes, MIN_GAP, MAX_GAP);
+            host_send(clk, dn_valid, dn_data, up_lines.dnlink_ready, bytes, MAX_GAP);
         end procedure;
 
         procedure send_cmd(cmd : byte_t; payload : byte_array) is
@@ -357,8 +357,8 @@ begin
         report "tb_BusAccess: all tests passed (ASYNC_RESET = " & boolean'image(ASYNC_RESET) &
                ", widths A/R/W/S/M = " & integer'image(ADDRESS_WIDTH) & "/" & integer'image(R_DATA_WIDTH) & "/" &
                integer'image(W_DATA_WIDTH) & "/" & integer'image(STROBE_WIDTH) & "/" & integer'image(MISC_WIDTH) &
-               ", SEED = " & integer'image(SEED) & ", gap " & integer'image(MIN_GAP) & ".." &
-               integer'image(MIN_GAP + MAX_GAP) & ", delay " & integer'image(MAX_DELAY) & ")";
+               ", SEED = " & integer'image(SEED) & ", gap " & integer'image(MAX_GAP) &
+               ", delay " & integer'image(MAX_DELAY) & ")";
         done <= true;
         wait;
     end process;

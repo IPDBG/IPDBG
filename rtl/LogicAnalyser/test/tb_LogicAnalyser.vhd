@@ -20,15 +20,15 @@ use work.ipdbg_test_pkg.all;
 entity tb_LogicAnalyser is
     generic(
         ASYNC_RESET            : boolean  := true;
-        DATA_WIDTH             : positive := 12;
+        DATA_WIDTH             : positive := 12; -- at most 30
         ADDR_WIDTH             : positive := 5;
         RUN_LENGTH_COMPRESSION : natural  := 0;
         RUN                    : positive := 1; -- the probe changes every RUN samples
         SAMPLE_EVERY           : positive := 1; -- sample_enable every SAMPLE_EVERY clocks
         SEED                   : positive := 1;
-        MIN_GAP                : natural  := 1;
         MAX_GAP                : natural  := 3;
-        MAX_DELAY              : natural  := 4
+        MAX_DELAY              : natural  := 4;
+        READY_AFTER_VALID      : boolean  := false -- uplink_ready only after uplink_valid
     );
 end entity tb_LogicAnalyser;
 
@@ -80,7 +80,7 @@ begin
     clk <= not clk after 5 ns when not done;
 
     dn_lines <= (uplink_ready => up_ready, dnlink_valid => dn_valid, dnlink_data => dn_data);
-    host_sink(clk, up_lines.uplink_valid, up_lines.uplink_data, up_ready, MAX_DELAY);
+    host_sink(clk, up_lines.uplink_valid, up_lines.uplink_data, up_ready, MAX_DELAY, READY_AFTER_VALID);
 
     dut : entity work.LogicAnalyserTop
         generic map(
@@ -120,7 +120,7 @@ begin
     stimulus : process
         procedure send(bytes : byte_array) is
         begin
-            host_send(clk, dn_valid, dn_data, up_lines.dnlink_ready, bytes, MIN_GAP, MAX_GAP);
+            host_send(clk, dn_valid, dn_data, up_lines.dnlink_ready, bytes, MAX_GAP);
         end procedure;
 
         procedure configure(sel, cmd : byte_t; value : probe_t) is
@@ -186,6 +186,21 @@ begin
             host_expect_nothing(clk, 100, what & ", after the capture");
         end procedure;
 
+        -- a value the probe reaches soon, but after the trigger is configured
+        -- and armed; with the given low byte if low_byte >= 0
+        impure function soon(low_byte : integer := -1) return natural is
+            constant MODULUS : positive := 2 ** minimum(DATA_WIDTH, 8);
+            variable v       : natural;
+        begin
+            v := to_integer(unsigned(probe)) + 2 * SAMPLES + 2000 / (RUN * SAMPLE_EVERY) + random_int(0, SAMPLES);
+            if low_byte >= 0 then
+                while v mod MODULUS /= low_byte mod MODULUS loop
+                    v := v + 1;
+                end loop;
+            end if;
+            return v mod 2 ** DATA_WIDTH;
+        end function;
+
         procedure capture_on_value(value : natural; delay : natural; what : string) is
             variable values : value_array;
             constant p : probe_t := std_logic_vector(to_unsigned(value, DATA_WIDTH));
@@ -202,7 +217,6 @@ begin
         variable values : value_array;
         variable features     : std_logic_vector(31 downto 0);
         variable value        : natural;
-        constant MAX_VALUE    : natural := 2 ** DATA_WIDTH - 1;
     begin
         seed_random(SEED);
         wait_clocks(clk, 3);
@@ -230,17 +244,20 @@ begin
         -- value, with delays 0, 1, half, max; the delay counts samples, with
         -- run length compression compressed samples
         if RLC = 0 and RUN = 1 then
-            capture_on_value(random_int(0, MAX_VALUE), 0, "trigger on value, delay 0");
-            capture_on_value(random_int(0, MAX_VALUE), 1, "trigger on value, delay 1");
-            capture_on_value(random_int(0, MAX_VALUE), SAMPLES / 2, "trigger on value, delay half");
-            capture_on_value(random_int(0, MAX_VALUE), SAMPLES - 1, "trigger on value, delay max");
+            capture_on_value(soon, 0, "trigger on value, delay 0");
+            capture_on_value(soon, 1, "trigger on value, delay 1");
+            capture_on_value(soon, SAMPLES / 2, "trigger on value, delay half");
+            capture_on_value(soon, SAMPLES - 1, "trigger on value, delay max");
             -- escaped bytes in value and delay
-            capture_on_value(16#55# mod (MAX_VALUE + 1), 16#55# mod SAMPLES, "trigger on 0x55");
-            capture_on_value(16#EE# mod (MAX_VALUE + 1), 16#EE# mod SAMPLES, "trigger on 0xEE");
+            capture_on_value(soon(16#55#), 16#55# mod SAMPLES, "trigger on 0x55");
+            capture_on_value(soon(16#EE#), 16#EE# mod SAMPLES, "trigger on 0xEE");
         end if;
 
         -- value after a value: the trigger fires with the first sample of the run
-        value := random_int(1, MAX_VALUE);
+        value := soon;
+        if value = 0 then
+            value := 1;
+        end if;
         set_trigger(ONES, std_logic_vector(to_unsigned(value, DATA_WIDTH)),
             ONES, std_logic_vector(to_unsigned(value - 1, DATA_WIDTH)), ZEROS);
         program_delay(SAMPLES / 4);

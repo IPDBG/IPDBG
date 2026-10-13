@@ -16,13 +16,13 @@ use work.ipdbg_test_pkg.all;
 
 entity tb_IoProbe is
     generic(
-        ASYNC_RESET  : boolean  := true;
-        INPUT_WIDTH  : positive := 20;
-        OUTPUT_WIDTH : positive := 12;
-        SEED         : positive := 1;
-        MIN_GAP      : natural  := 1;
-        MAX_GAP      : natural  := 3;
-        MAX_DELAY    : natural  := 4
+        ASYNC_RESET       : boolean  := true;
+        INPUT_WIDTH       : positive := 20;
+        OUTPUT_WIDTH      : positive := 12;
+        SEED              : positive := 1;
+        MAX_GAP           : natural  := 3;
+        MAX_DELAY         : natural  := 4;
+        READY_AFTER_VALID : boolean  := false    -- uplink_ready only after uplink_valid
     );
 end entity tb_IoProbe;
 
@@ -51,7 +51,7 @@ begin
     clk <= not clk after 5 ns when not done;
 
     dn_lines <= (uplink_ready => up_ready, dnlink_valid => dn_valid, dnlink_data => dn_data);
-    host_sink(clk, up_lines.uplink_valid, up_lines.uplink_data, up_ready, MAX_DELAY);
+    host_sink(clk, up_lines.uplink_valid, up_lines.uplink_data, up_ready, MAX_DELAY, READY_AFTER_VALID);
 
     dut : entity work.IoProbeTop
         generic map(
@@ -80,7 +80,7 @@ begin
 
         procedure send(bytes : byte_array) is
         begin
-            host_send(clk, dn_valid, dn_data, up_lines.dnlink_ready, bytes, MIN_GAP, MAX_GAP);
+            host_send(clk, dn_valid, dn_data, up_lines.dnlink_ready, bytes, MAX_GAP);
         end procedure;
 
         procedure set_outputs(value : std_logic_vector; what : string) is

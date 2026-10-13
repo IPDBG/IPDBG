@@ -2,17 +2,19 @@
 -- SPDX-License-Identifier: CERN-OHL-W-2.0
 
 -- Model of the host side of the core interface (ipdbg_dn_lines,
--- ipdbg_up_lines) for the testbenches of the cores. It behaves like JtagCdc:
+-- ipdbg_up_lines) for the testbenches of the cores. Both directions use the
+-- valid/ready handshake: a byte moves at a rising edge with valid = '1' and
+-- ready = '1'.
 --
---   host_send  downstream: valid is a pulse of one clock, sent only when
---              dnlink_ready = '1', with at least min_gap idle clocks between
---              two pulses (JtagCdc: 1) and a random number of up to max_gap
---              more.
---   host_sink  upstream: uplink_ready is a register. It drops in the clock
---              after the core's valid and comes back after 1 + 0..max_delay
---              clocks (random). A valid while uplink_ready = '0' is a lost
---              byte and stops the simulation. host_receive and host_expect
---              take the received bytes.
+--   host_send  downstream: random idle clocks (0..max_gap) before each byte,
+--              then valid and data stay until the core is ready.
+--   host_sink  upstream: uplink_ready changes at random, also without valid;
+--              after a byte it is '0' for 0..max_delay clocks. With
+--              ready_after_valid it only rises after uplink_valid, so a core
+--              that waits for uplink_ready before uplink_valid hangs. Stops
+--              the simulation if uplink_valid drops or uplink_data changes
+--              before the transfer. host_receive and host_expect take the
+--              received bytes.
 --
 -- host_send and the expect procedures start and end right after a rising
 -- edge of clk.
@@ -65,7 +67,6 @@ package ipdbg_test_pkg is
         signal   data    : out byte_t;
         signal   ready   : in  std_logic;
         constant bytes   : in  byte_array;
-        constant min_gap : in  natural;
         constant max_gap : in  natural);
 
     -- runs forever, as a concurrent procedure call
@@ -73,8 +74,9 @@ package ipdbg_test_pkg is
         signal   clk       : in  std_logic;
         signal   valid     : in  std_logic;
         signal   data      : in  byte_t;
-        signal   ready     : out std_logic;
-        constant max_delay : in  natural);
+        signal   ready             : out std_logic;
+        constant max_delay         : in  natural;
+        constant ready_after_valid : in  boolean := false);
 
     procedure host_receive(
         signal   clk     : in  std_logic;
@@ -253,50 +255,73 @@ package body ipdbg_test_pkg is
         signal   data    : out byte_t;
         signal   ready   : in  std_logic;
         constant bytes   : in  byte_array;
-        constant min_gap : in  natural;
         constant max_gap : in  natural) is
+        variable gap : natural;
     begin
         for i in bytes'range loop
-            valid <= '0';
-            data  <= (others => 'X');
-            wait_clocks(clk, min_gap + send_rnd.int(0, max_gap));
-            -- ready of the clock that just ended, like the register of JtagCdc
-            while ready /= '1' loop
-                wait until rising_edge(clk);
-            end loop;
+            gap := send_rnd.int(0, max_gap);
+            if gap > 0 then
+                valid <= '0';
+                data  <= (others => 'X');
+                wait_clocks(clk, gap);
+            end if;
             valid <= '1';
             data  <= bytes(i);
-            wait until rising_edge(clk);
+            loop
+                wait until rising_edge(clk);
+                exit when ready = '1';
+            end loop;
         end loop;
         valid <= '0';
         data  <= (others => 'X');
     end procedure host_send;
 
     procedure host_sink(
-        signal   clk       : in  std_logic;
-        signal   valid     : in  std_logic;
-        signal   data      : in  byte_t;
-        signal   ready     : out std_logic;
-        constant max_delay : in  natural) is
-        variable rdy  : std_logic := '1';
-        variable wait_cnt : natural := 0;
+        signal   clk               : in  std_logic;
+        signal   valid             : in  std_logic;
+        signal   data              : in  byte_t;
+        signal   ready             : out std_logic;
+        constant max_delay         : in  natural;
+        constant ready_after_valid : in  boolean := false) is
+        variable rdy       : std_logic := '0';
+        variable wait_cnt  : natural   := 0;
+        variable held      : boolean   := false;
+        variable held_data : byte_t;
     begin
-        ready <= '1';
+        ready <= '0';
         loop
             wait until rising_edge(clk);
-            if valid = '1' then
-                assert rdy = '1'
-                    report "host: uplink_valid while uplink_ready = '0', byte " & to_hstring(data) & " lost"
+            if held then
+                assert valid = '1'
+                    report "host: uplink_valid dropped before the transfer of " & to_hstring(held_data)
                     severity failure;
-                received.push(data);
-                rdy := '0';
-                wait_cnt := sink_rnd.int(0, max_delay);
-            elsif rdy = '0' then
-                if wait_cnt = 0 then
-                    rdy := '1';
+                assert data = held_data
+                    report "host: uplink_data changed from " & to_hstring(held_data) & " to " & to_hstring(data) &
+                           " before the transfer"
+                    severity failure;
+            end if;
+            held := false;
+            if valid = '1' then
+                if rdy = '1' then
+                    received.push(data);
+                    wait_cnt := sink_rnd.int(0, max_delay);
+                    if wait_cnt > 0 or ready_after_valid then
+                        rdy := '0';
+                    end if;
                 else
-                    wait_cnt := wait_cnt - 1;
+                    held := true;
+                    held_data := data;
                 end if;
+            end if;
+            if rdy = '0' then
+                if wait_cnt > 0 then
+                    wait_cnt := wait_cnt - 1;
+                elsif held or (not ready_after_valid and sink_rnd.int(0, 1) = 0) then
+                    rdy := '1';
+                end if;
+            elsif valid = '0' and max_delay > 0 and sink_rnd.int(0, 3) = 0 then
+                rdy := '0'; -- ready without valid can drop again
+                wait_cnt := sink_rnd.int(0, max_delay);
             end if;
             ready <= rdy;
         end loop;

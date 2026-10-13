@@ -128,7 +128,9 @@ begin
     dn_lines.dnlink_valid <= dn_lines_dnlink_valid;
     dn_lines.dnlink_data <= dn_lines_dnlink_data;
 
-    rx_data_ready <= up_lines.dnlink_ready;
+    -- the receiver has no flow control: a byte that arrives while the
+    -- register still holds the last one is lost
+    rx_data_ready <= '1';
     down: process(arst, clk)
         procedure reset_assignments is begin
             dn_lines_dnlink_data <= (others => '-');
@@ -142,12 +144,12 @@ begin
                 reset_assignments;
             else
                 if ce = '1' then
-                    dn_lines_dnlink_valid <= '0';
                     if up_lines.dnlink_ready = '1' then
-                        if rx_data_valid = '1' then
-                            dn_lines_dnlink_data <= rx_data;
-                            dn_lines_dnlink_valid <= '1';
-                        end if;
+                        dn_lines_dnlink_valid <= '0'; -- taken by the core
+                    end if;
+                    if rx_data_valid = '1' and (dn_lines_dnlink_valid = '0' or up_lines.dnlink_ready = '1') then
+                        dn_lines_dnlink_data <= rx_data;
+                        dn_lines_dnlink_valid <= '1';
                     end if;
                 end if;
             end if;

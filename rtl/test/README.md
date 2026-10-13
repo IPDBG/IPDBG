@@ -16,15 +16,16 @@ GHDL=/path/to/ghdl rtl/test/run.sh
 | `tb_JtagHub` | [Hub testbench](../JtagHub/README.md#simulation): `JtagCdc` with a model of the TAP and of the OpenOCD host. Flow control with slow cores, one of them behind `IpdbgClockDomainCrossing` with its own clock, data to the host, with and without `TDI_HAS_EXT_REGISTER` |
 | `tb_Iurt` | [Iurt testbench](../Iurt/README.md#simulation), all 7 bus interfaces, each with synchronous and asynchronous reset |
 | `IpdbgUart_tb` | [UART testbench](../Uart/README.md#simulation) |
+| `tb_IpdbgClockDomainCrossing` | Bytes through `IpdbgClockDomainCrossing` and back, with several clock ratios and back-pressure settings |
 | `tb_IpdbgEscaping`, `tb_BusAccess`, `tb_IoProbe`, `tb_WaveformGenerator`, `tb_LogicAnalyser` | Protocol testbenches: the commands of each core, sent by the host model of `ipdbg_test_pkg.vhd`, with several widths, seeds and back-pressure settings |
 
 The exit status is 0 if all checks passed. A new self-checking testbench is
 one more `check` in `run.sh`.
 
-`ipdbg_test_pkg.vhd` models the host side of the core interface like
-`JtagCdc`: `host_send` sends bytes to the core, `host_sink` takes the bytes
-from the core with a random delay and stops on a lost byte, `host_expect`
-checks them.
+`ipdbg_test_pkg.vhd` models the host side of the core interface:
+`host_send` sends bytes to the core, `host_sink` takes the bytes from the
+core with a random `uplink_ready` and stops if the core breaks the
+handshake, `host_expect` checks them.
 
 The behaviour of the cores together with OpenOCD and the host tools is
 tested by the [co-simulation](../../sw/CoSim/README.md).

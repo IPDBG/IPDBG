@@ -40,9 +40,8 @@ without hardware flow control, like UartBridge.
 
 Limits:
 
-* The core must take every byte from the host immediately. While
-  `dnlink_ready` of the core is `'0'`, received bytes are lost; the UART
-  cannot hold back the host.
+* The UART holds one byte from the host until the core takes it; a byte
+  that arrives before is lost. The UART cannot hold back the host.
 * Framing errors are not detected.
 
 ## Instantiation

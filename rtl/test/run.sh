@@ -152,10 +152,12 @@ check IpdbgUart_tb tb_uart
 # --- protocol testbenches of the cores, with the host model of ipdbg_test_pkg --
 
 TEST_PKG=("$C/ipdbg_interface_pkg.vhd" "$RTL/test/ipdbg_test_pkg.vhd")
-# back-pressure: idle clocks between the bytes to the core, clocks until the
-# host is ready again for the next byte from the core
+# back-pressure: idle clocks before the bytes to the core, clocks until the
+# host is ready again for the next byte from the core; LAZY: the host is only
+# ready after uplink_valid
 FAST=(-gMAX_GAP=0 -gMAX_DELAY=0)
 SLOW=(-gMAX_GAP=10 -gMAX_DELAY=25)
+LAZY=(-gREADY_AFTER_VALID=true)
 
 tb_escaping() {
     analyze "${TEST_PKG[@]}" "$C/IpdbgEscaping.vhd" "$C/test/tb_IpdbgEscaping.vhd" || return 1
@@ -165,6 +167,16 @@ tb_escaping() {
 }
 check tb_IpdbgEscaping tb_escaping
 
+tb_cdc() {
+    analyze "${TEST_PKG[@]}" "$C/dffpc_behav.vhd" "$C/IpdbgClockDomainCrossing.vhd" \
+        "$C/test/tb_IpdbgClockDomainCrossing.vhd" || return 1
+    simulate tb_IpdbgClockDomainCrossing "all tests passed" &&
+    simulate tb_IpdbgClockDomainCrossing "all tests passed" -gASYNC_RESET=true -gT_FUNC_PS=3000 -gMAX_BUSY=0 \
+        -gSEED=2 "${FAST[@]}" &&
+    simulate tb_IpdbgClockDomainCrossing "all tests passed" -gT_FUNC_PS=47000 -gSEED=3 "${SLOW[@]}" "${LAZY[@]}"
+}
+check tb_IpdbgClockDomainCrossing tb_cdc
+
 BUSACCESS=("$C/IpdbgEscaping.vhd" "$RTL/BusAccess/BusAccessStatemachine.vhd" "$RTL/BusAccess/BusAccessController.vhd")
 
 tb_busaccess() {
@@ -172,6 +184,7 @@ tb_busaccess() {
     simulate tb_BusAccess "all tests passed" &&
     simulate tb_BusAccess "all tests passed" -gASYNC_RESET=false -gSEED=2 "${FAST[@]}" -gMAX_LATENCY=0 &&
     simulate tb_BusAccess "all tests passed" -gSEED=3 "${SLOW[@]}" -gMAX_LATENCY=40 &&
+    simulate tb_BusAccess "all tests passed" -gSEED=6 "${FAST[@]}" "${LAZY[@]}" &&
     simulate tb_BusAccess "all tests passed" -gADDRESS_WIDTH=33 -gR_DATA_WIDTH=13 -gW_DATA_WIDTH=9 \
         -gSTROBE_WIDTH=0 -gMISC_WIDTH=0 -gSEED=4 &&
     simulate tb_BusAccess "all tests passed" -gADDRESS_WIDTH=4 -gR_DATA_WIDTH=5 -gW_DATA_WIDTH=64 \
@@ -183,7 +196,7 @@ tb_ioprobe() {
     analyze "${TEST_PKG[@]}" "${BUSACCESS[@]}" "$RTL/IoProbe/IoProbeTop.vhd" "$RTL/IoProbe/test/tb_IoProbe.vhd" || return 1
     simulate tb_IoProbe "all tests passed" &&
     simulate tb_IoProbe "all tests passed" -gASYNC_RESET=false -gINPUT_WIDTH=1 -gOUTPUT_WIDTH=1 -gSEED=2 "${FAST[@]}" &&
-    simulate tb_IoProbe "all tests passed" -gINPUT_WIDTH=8 -gOUTPUT_WIDTH=33 -gSEED=3 "${SLOW[@]}"
+    simulate tb_IoProbe "all tests passed" -gINPUT_WIDTH=8 -gOUTPUT_WIDTH=33 -gSEED=3 "${SLOW[@]}" "${LAZY[@]}"
 }
 check tb_IoProbe tb_ioprobe
 
@@ -195,7 +208,8 @@ tb_wfg() {
     simulate tb_WaveformGenerator "all tests passed" -gDOUBLE_BUFFER=true -gSEED=2 "${FAST[@]}" &&
     simulate tb_WaveformGenerator "all tests passed" -gDOUBLE_BUFFER=true -gASYNC_RESET=false -gSAMPLE_EVERY=3 \
         -gDATA_WIDTH=1 -gADDR_WIDTH=8 -gSEED=3 &&
-    simulate tb_WaveformGenerator "all tests passed" -gDATA_WIDTH=17 -gSEED=4 "${SLOW[@]}"
+    simulate tb_WaveformGenerator "all tests passed" -gDATA_WIDTH=17 -gSEED=4 "${SLOW[@]}" &&
+    simulate tb_WaveformGenerator "all tests passed" -gADDR_WIDTH=2 -gSEED=5 "${FAST[@]}" "${LAZY[@]}"
 }
 check tb_WaveformGenerator tb_wfg
 
@@ -207,7 +221,9 @@ tb_la() {
     simulate tb_LogicAnalyser "all tests passed" &&
     simulate tb_LogicAnalyser "all tests passed" -gASYNC_RESET=false -gSAMPLE_EVERY=2 -gSEED=2 "${FAST[@]}" &&
     simulate tb_LogicAnalyser "all tests passed" -gDATA_WIDTH=8 -gADDR_WIDTH=8 -gRUN=3 -gSEED=3 "${SLOW[@]}" &&
-    simulate tb_LogicAnalyser "all tests passed" -gDATA_WIDTH=1 -gADDR_WIDTH=3 -gSEED=4 &&
+    simulate tb_LogicAnalyser "all tests passed" -gDATA_WIDTH=1 -gADDR_WIDTH=3 -gSEED=4 "${LAZY[@]}" &&
+    simulate tb_LogicAnalyser "all tests passed" -gDATA_WIDTH=24 -gADDR_WIDTH=4 -gRUN_LENGTH_COMPRESSION=32 \
+        -gRUN=2 -gSEED=7 "${FAST[@]}" &&
     simulate tb_LogicAnalyser "all tests passed" -gRUN_LENGTH_COMPRESSION=4 -gRUN=3 -gSEED=5 &&
     simulate tb_LogicAnalyser "all tests passed" -gRUN_LENGTH_COMPRESSION=2 -gRUN=4 -gDATA_WIDTH=6 \
         -gSAMPLE_EVERY=2 -gSEED=6 "${SLOW[@]}"

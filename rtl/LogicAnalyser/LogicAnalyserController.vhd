@@ -105,8 +105,9 @@ architecture tab of LogicAnalyserController is
     signal mask_edge_s              : std_logic_vector(DATA_WIDTH - 1 downto 0);
     signal delay_s                  : std_logic_vector(ADDR_WIDTH - 1 downto 0);
 
-    signal counter                  : unsigned(ADDR_WIDTH-1 downto 0);
-    signal import_ADDR              : std_logic;
+    signal counter                  : unsigned(2 downto 0);                -- bytes of id, features, sizes
+    signal byte_cnt                 : natural range 0 to data_size_rlc - 1; -- bytes of a sample
+    signal up_valid                 : std_logic;
     signal ende_ausgabe             : std_logic;
     signal theend                   : std_logic;
     signal la_data_temporary        : std_logic_vector(DATA_WIDTH + RUN_LENGTH_COMPRESSION - 1 downto 0);
@@ -172,6 +173,7 @@ begin
     end generate sync_init;
 
     up_lines.dnlink_ready <= '1';
+    up_lines.uplink_valid <= up_valid;
 
     data_dwn_registers: process(clk, arst)
         procedure reset_assignments is begin
@@ -290,14 +292,14 @@ begin
 
             data_dwn_delayed         <= (others => '-');
 
-            up_lines.uplink_valid    <= '0';
+            up_valid                 <= '0';
             up_lines.uplink_data     <= (others => '-');
             trigger_active           <= '0';
             fire_trigger             <= '0';
             data_request_next        <= '0';
 
             counter                  <= (others => '-');
-            import_ADDR              <= '-';
+            byte_cnt                 <= 0;
             la_data_temporary        <= (others => '-');
             ende_ausgabe             <= '0';
             theend                   <= '0';
@@ -308,6 +310,7 @@ begin
             set_value_last_next_byte <= '0';
             set_mask_edge_next_byte  <= '0';
         end procedure reset_assignments;
+        variable up_free : boolean; -- a byte can be put into the output register
     begin
         if arst = '1' then
             reset_assignments;
@@ -323,7 +326,10 @@ begin
                     set_value_last_next_byte <= '0';
                     set_mask_edge_next_byte  <= '0';
                     data_dwn_delayed         <= data_dwn_reg;
-                    up_lines.uplink_valid    <= '0';
+                    up_free := up_valid = '0' or dn_lines.uplink_ready = '1';
+                    if dn_lines.uplink_ready = '1' then
+                        up_valid <= '0';
+                    end if;
                     case state is
                     when init =>
                         init_Output <= init;
@@ -342,7 +348,6 @@ begin
 
                         if get_sizes_active = '1' then
                             state <= return_sizes;
-                            import_ADDR <= '0';
                         end if;
 
                         if activate_trigger_active = '1' then
@@ -370,98 +375,66 @@ begin
                         end if;
 
                     when return_id =>
-                        if RUN_LENGTH_COMPRESSION = 0 then
-                            case counter(1 downto 0) is
-                            when   "00" => up_lines.uplink_data <= I;
-                            when   "01" => up_lines.uplink_data <= D;
-                            when   "10" => up_lines.uplink_data <= B;
-                            when others => up_lines.uplink_data <= G;
-                            end case;
-                        else
-                            case counter(1 downto 0) is
-                            when   "00" => up_lines.uplink_data <= I_small;
-                            when   "01" => up_lines.uplink_data <= D_small;
-                            when   "10" => up_lines.uplink_data <= B_small;
-                            when others => up_lines.uplink_data <= G_small;
-                            end case;
+                        if up_free then
+                            up_valid <= '1';
+                            counter <= counter + 1;
+                            if RUN_LENGTH_COMPRESSION = 0 then
+                                case counter(1 downto 0) is
+                                when   "00" => up_lines.uplink_data <= I;
+                                when   "01" => up_lines.uplink_data <= D;
+                                when   "10" => up_lines.uplink_data <= B;
+                                when others => up_lines.uplink_data <= G;
+                                end case;
+                            else
+                                case counter(1 downto 0) is
+                                when   "00" => up_lines.uplink_data <= I_small;
+                                when   "01" => up_lines.uplink_data <= D_small;
+                                when   "10" => up_lines.uplink_data <= B_small;
+                                when others => up_lines.uplink_data <= G_small;
+                                end case;
+                            end if;
+                            if counter(1 downto 0) = 3 then
+                                state <= init;
+                            end if;
                         end if;
-
-                        case init_Output is
-                        when init =>
-                            up_lines.uplink_valid <= '0';
-                            if dn_lines.uplink_ready = '1' then
-                                up_lines.uplink_valid <= '1';
-                                counter <= counter + 1;
-                                if counter(1 downto 0) = 3 then
-                                    state <= init;
-                                else
-                                    init_Output <= Zwischenspeicher;
-                                end if;
-                            end if;
-                        when others => --Zwischenspeicher =>
-                            up_lines.uplink_valid <= '0';
-                            init_Output <= init;
-                        end case;
                     when get_features =>
-                        case counter(1 downto 0) is
-                        when   "00" => up_lines.uplink_data <= features_slv(7 downto 0);
-                        when   "01" => up_lines.uplink_data <= features_slv(15 downto 8);
-                        when   "10" => up_lines.uplink_data <= features_slv(23 downto 16);
-                        when others => up_lines.uplink_data <= features_slv(31 downto 24);
-                        end case;
-
-                        case init_Output is
-                        when init =>
-                            up_lines.uplink_valid <= '0';
-                            if dn_lines.uplink_ready = '1' then
-                                up_lines.uplink_valid <= '1';
-                                counter <= counter + 1;
-                                if counter(1 downto 0) = 3 then
-                                    state <= init;
-                                else
-                                    init_Output <= Zwischenspeicher;
-                                end if;
+                        if up_free then
+                            up_valid <= '1';
+                            counter <= counter + 1;
+                            case counter(1 downto 0) is
+                            when   "00" => up_lines.uplink_data <= features_slv(7 downto 0);
+                            when   "01" => up_lines.uplink_data <= features_slv(15 downto 8);
+                            when   "10" => up_lines.uplink_data <= features_slv(23 downto 16);
+                            when others => up_lines.uplink_data <= features_slv(31 downto 24);
+                            end case;
+                            if counter(1 downto 0) = 3 then
+                                state <= init;
                             end if;
-                        when others => --Zwischenspeicher =>
-                            up_lines.uplink_valid <= '0';
-                            init_Output <= init;
-                        end case;
+                        end if;
                     when get_rlc_width =>
-                        up_lines.uplink_data <= rlc_width_slv;
-                        up_lines.uplink_valid <= '0';
-                        if dn_lines.uplink_ready = '1' then
-                            up_lines.uplink_valid <= '1';
+                        if up_free then
+                            up_valid <= '1';
+                            up_lines.uplink_data <= rlc_width_slv;
                             state <= init;
                         end if;
                     when return_sizes =>
-                        case counter(2 downto 0) is
-                        when  "000" => up_lines.uplink_data <= DATA_WIDTH_slv(7 downto 0);
-                        when  "001" => up_lines.uplink_data <= DATA_WIDTH_slv(15 downto 8);
-                        when  "010" => up_lines.uplink_data <= DATA_WIDTH_slv(23 downto 16);
-                        when  "011" => up_lines.uplink_data <= DATA_WIDTH_slv(31 downto 24);
-                        when  "100" => up_lines.uplink_data <= ADDR_WIDTH_slv(7 downto 0);
-                        when  "101" => up_lines.uplink_data <= ADDR_WIDTH_slv(15 downto 8);
-                        when  "110" => up_lines.uplink_data <= ADDR_WIDTH_slv(23 downto 16);
-                        when others => up_lines.uplink_data <= ADDR_WIDTH_slv(31 downto 24);
-                        end case;
-
-                        case init_Output is
-                        when init =>
-                            up_lines.uplink_valid <= '0';
-                            if dn_lines.uplink_ready = '1' then
-                                up_lines.uplink_valid <= '1';
-                                counter <= counter + 1;
-                                if counter(2 downto 0) = 7 then
-                                    state <= init;
-                                else
-                                    init_Output <= Zwischenspeicher;
-                                end if;
+                        if up_free then
+                            up_valid <= '1';
+                            counter <= counter + 1;
+                            case counter is
+                            when  "000" => up_lines.uplink_data <= DATA_WIDTH_slv(7 downto 0);
+                            when  "001" => up_lines.uplink_data <= DATA_WIDTH_slv(15 downto 8);
+                            when  "010" => up_lines.uplink_data <= DATA_WIDTH_slv(23 downto 16);
+                            when  "011" => up_lines.uplink_data <= DATA_WIDTH_slv(31 downto 24);
+                            when  "100" => up_lines.uplink_data <= ADDR_WIDTH_slv(7 downto 0);
+                            when  "101" => up_lines.uplink_data <= ADDR_WIDTH_slv(15 downto 8);
+                            when  "110" => up_lines.uplink_data <= ADDR_WIDTH_slv(23 downto 16);
+                            when others => up_lines.uplink_data <= ADDR_WIDTH_slv(31 downto 24);
+                            end case;
+                            if counter = 7 then
+                                state <= init;
                             end if;
-                        when others => --Zwischenspeicher =>
-                            up_lines.uplink_valid <= '0';
-                            init_Output <= init;
-                        end case;
-
+                        end if;
                     when logic_analyser =>
                         addr_size_s <= 0;
                         if set_delay_active = '1' then
@@ -581,38 +554,32 @@ begin
                         when init =>
                             if data_valid = '1' then
                                 la_data_temporary <= data;
+                                byte_cnt <= 0;
                                 init_Output <= Zwischenspeicher;
                             end if;
-
-                        when Zwischenspeicher =>
+                        when Zwischenspeicher => -- send the bytes of the sample
                             data_request_next <= '0';
-                            if dn_lines.uplink_ready = '1' then
-                                up_lines.uplink_valid <= '1';
+                            if up_free then
+                                up_valid <= '1';
                                 up_lines.uplink_data <= data_up_from_la_data;
                                 la_data_temporary <= la_data_temporary_next;
-
-                                counter <= counter + 1;
-                                init_Output <= shift;
+                                if byte_cnt = data_size_rlc - 1 then
+                                    init_Output <= shift;
+                                else
+                                    byte_cnt <= byte_cnt + 1;
+                                end if;
                             end if;
-
-                        when shift =>
-                            up_lines.uplink_valid <= '0';
-                            if dn_lines.uplink_ready = '0' then
-                                init_Output <= Zwischenspeicher;
-                            end if;
-
-                            if counter = data_size_rlc then
+                        when shift => -- wait until the memory has seen data_request_next = '0'
+                            if data_valid = '0' then
                                 data_request_next <= '1';
                                 init_Output <= get_next_data;
                             end if;
-
                         when get_next_data =>
                             if ende_ausgabe = '1' then
                                 theend <= '1';
                             end if;
-
                             if data_valid = '1' then
-                                counter <= (others => '0');
+                                byte_cnt <= 0;
                                 la_data_temporary <= data;
                                 init_Output <= Zwischenspeicher;
                             end if;

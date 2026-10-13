@@ -130,11 +130,9 @@ architecture behavioral of BusAccessStatemachine is
     end function;
     type     states              is (idle, read_width, write_access, read_access, set_address, set_misc, set_strb);
     type     rd_widths_substates is (rd_version_id, rd_write, rd_read, rd_addr, rd_misc, rd_strb);
-    type     handshake_states    is (start, mem, shift, next_data);
     constant MAX_BYTES_RECEIVE   : natural := round_up(calc_max_bits_to_receive, HOST_WORD_SIZE);
     signal   state               : states;
     signal   rd_widths_substate  : rd_widths_substates;
-    signal   handshake_state     : handshake_states;
 
     signal   bytes_received      : unsigned(bytes_received_width - 1 downto 0);
     signal   expected_bytes      : unsigned(bytes_received_width - 1 downto 0);
@@ -150,6 +148,8 @@ architecture behavioral of BusAccessStatemachine is
     signal   write_busy          : std_logic;
     signal   wait_response       : std_logic;
     signal   resp_pending        : std_logic;
+    signal   resp_data           : std_logic_vector(HOST_WORD_SIZE - 1 downto 0); -- ACK or NACK
+    signal   up_valid            : std_logic;
     -- whole bytes, zero extended: every transmitted byte is complete, also for R_DATA_WIDTH < 8
     signal   read_data_reg       : std_logic_vector(R_DATA_WIDTH_BYTES * HOST_WORD_SIZE - 1 downto 0);
 begin
@@ -184,6 +184,7 @@ begin
         severity failure;
 
     up_lines.dnlink_ready <= '1';
+    up_lines.uplink_valid <= up_valid;
 
     process (clk, arst)
         procedure shift_read_data_reg is begin
@@ -197,9 +198,9 @@ begin
         procedure reset_assignment is begin
             state                 <= idle;
             rd_widths_substate    <= rd_version_id;
-            handshake_state       <= start;
-            up_lines.uplink_valid <= '0';
+            up_valid              <= '0';
             up_lines.uplink_data  <= (others => '-');
+            resp_data             <= (others => '-');
             next_lock             <= '-';
             write_busy            <= '-';
             wait_response         <= '-';
@@ -218,6 +219,7 @@ begin
             resp_pending          <= '-';
         end procedure reset_assignment;
         variable tmp_rd_size : std_logic_vector(31 downto 0);
+        variable up_free     : boolean; -- a byte can be put into the output register
     begin
         if arst = '1' then
             reset_assignment;
@@ -226,7 +228,10 @@ begin
                 reset_assignment;
             else
                 if ce = '1' then
-                    up_lines.uplink_valid <= '0';
+                    up_free := up_valid = '0' or dn_lines.uplink_ready = '1';
+                    if dn_lines.uplink_ready = '1' then
+                        up_valid <= '0';
+                    end if;
                     data_in_reg_valid     <= '0';
                     data_in_reg_laddr     <= '0';
                     data_in_reg_lstrb     <= '0';
@@ -242,7 +247,6 @@ begin
                         write_busy         <= '0';
                         wait_response      <= '0';
                         rd_widths_substate <= rd_version_id;
-                        handshake_state    <= start;
                         resp_pending       <= '0';
                         if dn_lines.dnlink_valid = '1' then
                             if dn_lines.dnlink_data = READ_WIDTHS_CMD then
@@ -274,88 +278,70 @@ begin
                             end if;
                         end if;
                     when read_width =>
-                        tmp_rd_size := (others => '0');
-                        -- vsg_off case_012 case_005
-                        case rd_widths_substate is
-                        when rd_version_id => tmp_rd_size := VERSION_AND_ID;
-                        when rd_write      => tmp_rd_size := W_DATA_WIDTH_SLV;
-                        when rd_read       => tmp_rd_size := R_DATA_WIDTH_SLV;
-                        when rd_addr       => tmp_rd_size := ADDRESS_WIDTH_SLV;
-                        when rd_misc       => tmp_rd_size := MISC_WIDTH_SLV;
-                        when rd_strb       => tmp_rd_size := STROBE_WIDTH_SLV;
-                        end case;
+                        if up_free then
+                            tmp_rd_size := (others => '0');
+                            -- vsg_off case_012 case_005
+                            case rd_widths_substate is
+                            when rd_version_id => tmp_rd_size := VERSION_AND_ID;
+                            when rd_write      => tmp_rd_size := W_DATA_WIDTH_SLV;
+                            when rd_read       => tmp_rd_size := R_DATA_WIDTH_SLV;
+                            when rd_addr       => tmp_rd_size := ADDRESS_WIDTH_SLV;
+                            when rd_misc       => tmp_rd_size := MISC_WIDTH_SLV;
+                            when rd_strb       => tmp_rd_size := STROBE_WIDTH_SLV;
+                            end case;
 
-                        case bytes_txed_lsbs is
-                        when "00"   => up_lines.uplink_data <= tmp_rd_size(7 downto 0);
-                        when "01"   => up_lines.uplink_data <= tmp_rd_size(15 downto 8);
-                        when "10"   => up_lines.uplink_data <= tmp_rd_size(23 downto 16);
-                        when others => up_lines.uplink_data <= tmp_rd_size(31 downto 24);
-                        end case;
-                        -- vsg_on
+                            case bytes_txed_lsbs is
+                            when "00"   => up_lines.uplink_data <= tmp_rd_size(7 downto 0);
+                            when "01"   => up_lines.uplink_data <= tmp_rd_size(15 downto 8);
+                            when "10"   => up_lines.uplink_data <= tmp_rd_size(23 downto 16);
+                            when others => up_lines.uplink_data <= tmp_rd_size(31 downto 24);
+                            end case;
+                            -- vsg_on
 
-                        up_lines.uplink_valid <= '0';
-                        if handshake_state = start then
-                            if dn_lines.uplink_ready = '1' then
-                                up_lines.uplink_valid <= '1';
-                                bytes_transmitted     <= bytes_transmitted + 1;
-                                handshake_state <= shift;
-                                if bytes_transmitted(1 downto 0) = "11" then
-                                    bytes_transmitted <= (others => '0');
-                                    -- vsg_off case_012 case_005
-                                    case rd_widths_substate is
-                                    when rd_version_id => rd_widths_substate <= rd_write;
-                                    when rd_write      => rd_widths_substate <= rd_read;
-                                    when rd_read       => rd_widths_substate <= rd_addr;
-                                    when rd_addr       => rd_widths_substate <= rd_misc;
-                                    when rd_misc       => rd_widths_substate <= rd_strb;
-                                    when rd_strb       => rd_widths_substate <= rd_version_id;
-                                        state                                <= idle;
-                                    -- vsg_on
-                                    end case;
-                                end if;
+                            up_valid          <= '1';
+                            bytes_transmitted <= bytes_transmitted + 1;
+                            if bytes_transmitted(1 downto 0) = "11" then
+                                bytes_transmitted <= (others => '0');
+                                -- vsg_off case_012 case_005
+                                case rd_widths_substate is
+                                when rd_version_id => rd_widths_substate <= rd_write;
+                                when rd_write      => rd_widths_substate <= rd_read;
+                                when rd_read       => rd_widths_substate <= rd_addr;
+                                when rd_addr       => rd_widths_substate <= rd_misc;
+                                when rd_misc       => rd_widths_substate <= rd_strb;
+                                when rd_strb       => rd_widths_substate <= rd_version_id;
+                                    state                                <= idle;
+                                -- vsg_on
+                                end case;
                             end if;
-                        else
-                            handshake_state <= start;
                         end if;
                     when read_access =>
-                        up_lines.uplink_valid <= '0';
                         if wait_response = '1' then
                             if read_done = '1' then
-                                -- store answer
+                                -- store answer, sent first, then the data
                                 wait_response <= '0';
+                                resp_pending  <= '1';
                                 if access_error = '0' then
-                                    up_lines.uplink_data <= ACK_RESP;
+                                    resp_data <= ACK_RESP;
                                 else
-                                    up_lines.uplink_data <= NACK_RESP;
+                                    resp_data <= NACK_RESP;
                                 end if;
                                 read_data_reg                                <= (others => '0');
                                 read_data_reg(read_data'length - 1 downto 0) <= read_data;
-                                if dn_lines.uplink_ready = '1' then
-                                    up_lines.uplink_valid <= '1';
-                                    handshake_state       <= shift;
-                                else
-                                    resp_pending <= '1';
-                                end if;
                             end if;
-                        else
-                            if handshake_state = start then
-                                if dn_lines.uplink_ready = '1' then
-                                    up_lines.uplink_valid <= '1';
-                                    handshake_state <= shift;
-                                    if resp_pending = '1' then
-                                        resp_pending <= '0';
-                                    else
-                                        bytes_transmitted    <= bytes_transmitted + 1;
-                                        up_lines.uplink_data <= read_data_reg(7 downto 0);
-                                        update_read_data_reg;
-                                        if to_integer(bytes_transmitted) = R_DATA_WIDTH_BYTES - 1 then
-                                            bytes_transmitted <= (others => '0');
-                                            state             <= idle;
-                                        end if;
-                                    end if;
-                                end if;
+                        elsif up_free then
+                            up_valid <= '1';
+                            if resp_pending = '1' then
+                                resp_pending         <= '0';
+                                up_lines.uplink_data <= resp_data;
                             else
-                                handshake_state <= start;
+                                bytes_transmitted    <= bytes_transmitted + 1;
+                                up_lines.uplink_data <= read_data_reg(7 downto 0);
+                                update_read_data_reg;
+                                if to_integer(bytes_transmitted) = R_DATA_WIDTH_BYTES - 1 then
+                                    bytes_transmitted <= (others => '0');
+                                    state             <= idle;
+                                end if;
                             end if;
                         end if;
                     when write_access =>
@@ -376,19 +362,18 @@ begin
                             if write_done = '1' then
                                 -- store answer
                                 if access_error = '0' then
-                                    up_lines.uplink_data <= ACK_RESP;
+                                    resp_data <= ACK_RESP;
                                 else
-                                    up_lines.uplink_data <= NACK_RESP;
+                                    resp_data <= NACK_RESP;
                                 end if;
                                 wait_response <= '0';
                                 write_busy    <= '1';
                             end if;
                         end if;
-                        if write_busy = '1' then
-                            if dn_lines.uplink_ready = '1' then
-                                up_lines.uplink_valid <= '1';
-                                state                 <= idle;
-                            end if;
+                        if write_busy = '1' and up_free then
+                            up_valid             <= '1';
+                            up_lines.uplink_data <= resp_data;
+                            state                <= idle;
                         end if;
                     when set_address | set_misc | set_strb =>
                         if dn_lines.dnlink_valid = '1' then

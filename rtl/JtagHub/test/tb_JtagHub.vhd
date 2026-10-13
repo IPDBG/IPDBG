@@ -111,18 +111,29 @@ begin
 
     -- channel 1: busy for 600 cycles after each byte
     core1 : process (clk)
-        variable busy : natural := 0;
+        variable busy      : natural := 0;
+        variable held      : boolean := false;
+        variable held_data : std_logic_vector(7 downto 0);
     begin
         if rising_edge(clk) then
             if busy > 0 then
                 busy := busy - 1;
             end if;
+            if held then -- valid and data stay until the transfer
+                assert dn(1).dnlink_valid = '1' and dn(1).dnlink_data = held_data
+                    report "channel 1: valid or data changed before the transfer" severity failure;
+            end if;
+            held := false;
             if dn(1).dnlink_valid = '1' then
-                assert up(1).dnlink_ready = '1' report "channel 1: byte while not ready" severity failure;
-                assert dn(1).dnlink_data = test_byte(1, received_by_core(1))
-                    report "channel 1: byte " & integer'image(received_by_core(1)) & " wrong" severity failure;
-                received_by_core(1) <= received_by_core(1) + 1;
-                busy := 600;
+                if up(1).dnlink_ready = '1' then
+                    assert dn(1).dnlink_data = test_byte(1, received_by_core(1))
+                        report "channel 1: byte " & integer'image(received_by_core(1)) & " wrong" severity failure;
+                    received_by_core(1) <= received_by_core(1) + 1;
+                    busy := 600;
+                else
+                    held := true;
+                    held_data := dn(1).dnlink_data;
+                end if;
             end if;
             up(1).dnlink_ready <= '1' when busy = 0 else '0';
         end if;
@@ -140,18 +151,29 @@ begin
             dn_lines_func => dn_func, up_lines_func => up_func
         );
     core2 : process (clk_func)
-        variable busy : natural := 0;
+        variable busy      : natural := 0;
+        variable held      : boolean := false;
+        variable held_data : std_logic_vector(7 downto 0);
     begin
         if rising_edge(clk_func) then
             if busy > 0 then
                 busy := busy - 1;
             end if;
+            if held then -- valid and data stay until the transfer
+                assert dn_func.dnlink_valid = '1' and dn_func.dnlink_data = held_data
+                    report "channel 2: valid or data changed before the transfer" severity failure;
+            end if;
+            held := false;
             if dn_func.dnlink_valid = '1' then
-                assert up_func.dnlink_ready = '1' report "channel 2: byte while not ready" severity failure;
-                assert dn_func.dnlink_data = test_byte(2, received_by_core(2))
-                    report "channel 2: byte " & integer'image(received_by_core(2)) & " wrong" severity failure;
-                received_by_core(2) <= received_by_core(2) + 1;
-                busy := 500;
+                if up_func.dnlink_ready = '1' then
+                    assert dn_func.dnlink_data = test_byte(2, received_by_core(2))
+                        report "channel 2: byte " & integer'image(received_by_core(2)) & " wrong" severity failure;
+                    received_by_core(2) <= received_by_core(2) + 1;
+                    busy := 500;
+                else
+                    held := true;
+                    held_data := dn_func.dnlink_data;
+                end if;
             end if;
             up_func.dnlink_ready <= '1' when busy = 0 else '0';
         end if;
