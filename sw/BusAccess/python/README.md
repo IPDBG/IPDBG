@@ -6,6 +6,16 @@ with SWIG from the C++ class `IpdbgBusAccess`.
 See the [main README](../README.md) for the concepts (field widths, strobe,
 misc, ACK/NAK, locking) and the supported bus master cores.
 
+## Installing with pip
+
+```sh
+pip install ipdbg
+```
+
+installs `BusAccess` and `WaveformGenerator` with the library compiled in,
+for Linux, Windows and macOS. Building from source is only needed for
+development.
+
 ## Requirements
 
 * Linux, or Windows with [MSYS2](https://www.msys2.org) (MinGW-w64 and the

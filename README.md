@@ -157,6 +157,8 @@ libraries with their Python and Octave bindings):
   it and start the programs in `bin`. No installation and no MSYS2 needed.
 - Linux, and Windows with MSYS2: build and install from source, see
   [`sw/README.md`](sw/README.md).
+- Python modules `BusAccess` and `WaveformGenerator` on Linux, Windows and
+  macOS: `pip install ipdbg`.
 
 **IP cores:** nothing to install – add the VHDL files from [`rtl/`](rtl) to
 your design; the [JtagHub README](rtl/JtagHub/README.md) lists the files
