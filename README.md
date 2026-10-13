@@ -106,20 +106,20 @@ poking registers with BusAccess.
 
 ### Custom transports
 
-The protocol between bridge and FPGA is simple, so adding your own
-transport takes little effort. For example, a microcontroller running
-lwIP can act as the bridge: it accepts the TCP connections from the host
-tools and forwards the data to the IPDBG hub in a memory-mapped FPGA –
-no JTAG involved at all.
+Adding your own transport takes little effort: each host tool needs a TCP
+port that passes its bytes unchanged in both directions, and each core in
+the FPGA needs the [core interface](rtl/common/README.md#core-interface),
+a byte stream with a valid/ready handshake. The transport does not need to
+know the protocols above. For example, a soft CPU running lwIP: a small
+Wishbone-to-IPDBG adapter per core, and one lwIP TCP server per tool – no
+JTAG involved at all.
 
-The protocols, from the FPGA up:
+For reference:
 
-* [Core interface](rtl/common/README.md#core-interface): the valid/ready
-  handshake between hub or transport and core
-* [JTAG](rtl/JtagHub/README.md#protocol) and [UART](rtl/Uart/README.md#protocol):
-  how the bytes travel between host and FPGA
-* [Escaping](rtl/common/README.md#escaping): the reset of a core by the host
-* The commands of the cores: [Logic Analyzer](rtl/LogicAnalyser/README.md#protocol),
+* [JTAG](rtl/JtagHub/README.md#protocol), for a JTAG host other than
+  OpenOCD, and [UART](rtl/Uart/README.md#protocol)
+* [Escaping](rtl/common/README.md#escaping) and the commands of the cores,
+  for porting a host library: [Logic Analyzer](rtl/LogicAnalyser/README.md#protocol),
   [Waveform Generator](rtl/WaveformGenerator/README.md#protocol),
   [BusAccess](rtl/BusAccess/README.md#protocol), [IoProbe](rtl/IoProbe/README.md#protocol)
 
