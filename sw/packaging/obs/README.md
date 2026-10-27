@@ -4,8 +4,7 @@ For the maintainers, see also [`../README.md`](../README.md): the files
 here build the host software as packages on the
 [openSUSE Build Service](https://build.opensuse.org) (OBS) for Fedora,
 openSUSE, Debian and Ubuntu, and OBS publishes them as package repositories.
-Once the repositories exist, the top-level README tells users how to add
-them.
+The top-level README tells users how to add the repositories.
 
 | File | Purpose |
 |------|---------|
@@ -41,20 +40,33 @@ podman run --rm -v "$PWD":/src -w /src debian:trixie sw/packaging/obs/ci-deb.sh 
 
 ## Setting up the OBS project
 
-1. Create an account on [build.opensuse.org](https://build.opensuse.org)
-   and a subproject, e.g. `home:danselmi:ipdbg`.
-2. Add the repositories (*Repositories* → *Add from a Distribution*):
+The packages are built in the project `home:ipdbg` (account `ipdbg`).
+
+1. Add the repositories (*Repositories* → *Add from a Distribution*):
    the supported Fedora versions and Rawhide, openSUSE Tumbleweed and
-   Leap 16, Debian 13 and 12, Ubuntu 24.04 and the current interim release.
+   Leap 16, Debian 13 and 12, Ubuntu 24.04 and the current interim release;
+   architectures x86_64 and aarch64.
+2. In the project config (*Project Config*), choose between packages that
+   provide the same dependency of Octave or wxWidgets; without this, OBS
+   reports *unresolvable: have choice for …*:
+
+   ```
+   Prefer: texlive-latex texlive-tools texlive-preview gnuplot xpdf-libs
+   Prefer: pipewire-jack-audio-connection-kit-libs
+   Prefer: libjpeg62-turbo-dev
+   Prefer: libsdl2-2.0-0
+   ```
 3. Create the package `ipdbg` and upload the files, e.g. with
    [osc](https://github.com/openSUSE/osc):
 
    ```sh
-   osc checkout home:danselmi:ipdbg ipdbg
-   cd home:danselmi:ipdbg/ipdbg
-   cp <IPDBG>/sw/packaging/obs/* .
+   osc -A https://api.opensuse.org checkout home:ipdbg
+   cd home:ipdbg
+   osc mkpac ipdbg
+   cd ipdbg
+   cp <IPDBG>/sw/packaging/obs/{_service,ipdbg.spec,ipdbg.dsc,debian.*} .
    osc add *
-   osc commit -m "ipdbg 0.1.0"
+   osc commit -m "ipdbg 0.1.1"
    ```
 
    OBS runs `_service`, downloads the source archive and builds all

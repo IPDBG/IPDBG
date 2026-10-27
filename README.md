@@ -166,8 +166,14 @@ libraries with their Python and Octave bindings):
 - Windows: download `ipdbg-VERSION-windows-x86_64.zip` from the
   [latest release](https://github.com/IPDBG/IPDBG/releases/latest), unpack
   it and start the programs in `bin`. No installation and no MSYS2 needed.
-- Linux, and Windows with MSYS2: build and install from source, see
-  [`sw/README.md`](sw/README.md).
+- Linux: packages for Fedora, openSUSE, Debian and Ubuntu (x86_64 and
+  aarch64) from the openSUSE Build Service, see the
+  [instructions per distribution](https://software.opensuse.org/download.html?project=home%3Aipdbg&package=ipdbg-ioview).
+  Once the repository is added, all packages can be installed:
+  `ipdbg-ioview`, `ipdbg-uartbridge`, `python3-ipdbg`, `octave-ipdbg` and,
+  for own programs, `libipdbg-devel` (Debian, Ubuntu: `libipdbg-dev`).
+- Other Linux distributions, and Windows with MSYS2: build and install from
+  source, see [`sw/README.md`](sw/README.md).
 - Python modules `BusAccess` and `WaveformGenerator` on Linux, Windows and
   macOS: `pip install ipdbg`.
 
