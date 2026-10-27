@@ -1,11 +1,27 @@
-# Arch Linux packages (AUR)
+# Arch Linux packages
+
+The [openSUSE Build Service](../obs/README.md) builds this `PKGBUILD` and
+publishes the packages as a pacman repository; the AUR is not used.
 
 `PKGBUILD` builds the host software for Arch Linux from the source archive
 of the tag: `ipdbg-ioview`, `ipdbg-uartbridge`, `libipdbg` (libraries,
 headers and pkg-config files, as usual on Arch), `python-ipdbg` and
 `octave-ipdbg`.
 
-Without the AUR, from a checkout:
+## Installing
+
+Add the repository and its signing key once:
+
+```sh
+repo=https://download.opensuse.org/repositories/home:/ipdbg/Arch
+curl -fsSL $repo/x86_64/home_ipdbg_Arch.key | sudo pacman-key --add -
+sudo pacman-key --lsign-key "$(curl -fsSL $repo/x86_64/home_ipdbg_Arch.key |
+    gpg --show-keys --with-colons | awk -F: '/^fpr/ { print $10; exit }')"
+printf '\n[home_ipdbg_Arch]\nServer = %s/$arch\n' $repo | sudo tee -a /etc/pacman.conf
+sudo pacman -Sy ipdbg-ioview
+```
+
+To build the packages yourself from a checkout:
 
 ```sh
 cd sw/packaging/aur
@@ -13,23 +29,12 @@ makepkg -si
 ```
 
 `ci-arch.sh` builds and checks the packages in an Arch container (job
-*linux-packages*, see [`../README.md`](../README.md)) and writes the
-`.SRCINFO` that the AUR needs.
+*linux-packages*, see [`../README.md`](../README.md)).
 
 ## Release
 
-1. Set `pkgver` (and `pkgrel=1`) in `PKGBUILD` and the checksum of the
-   source archive:
-   `curl -sL https://github.com/IPDBG/IPDBG/archive/refs/tags/vVERSION.tar.gz | sha256sum`.
-2. Take `.SRCINFO` from the artifact of the job *linux-packages (arch)*, or
-   run `makepkg --printsrcinfo > .SRCINFO` on Arch.
-3. Commit both to the AUR repository and push:
-
-   ```sh
-   git clone ssh://aur@aur.archlinux.org/ipdbg.git aur-ipdbg
-   cp PKGBUILD .SRCINFO aur-ipdbg/
-   cd aur-ipdbg && git commit -am "ipdbg VERSION" && git push
-   ```
+Set `pkgver` (and `pkgrel=1`) in `PKGBUILD` and copy it to the OBS checkout
+together with the other files, see [`../obs/README.md`](../obs/README.md#new-version).
 
 ## License
 

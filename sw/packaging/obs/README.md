@@ -45,7 +45,8 @@ The packages are built in the project `home:ipdbg` (account `ipdbg`).
 1. Add the repositories (*Repositories* → *Add from a Distribution*):
    the supported Fedora versions and Rawhide, openSUSE Tumbleweed and
    Leap 16, Debian 13 and 12, Ubuntu 24.04 and the current interim release;
-   architectures x86_64 and aarch64. AlmaLinux 9 with EPEL is not in that
+   architectures x86_64 and aarch64. Arch: *Arch Extra*, named `Arch`,
+   x86_64 only. AlmaLinux 9 with EPEL is not in that
    list; add it in the project meta (`osc meta prj -e home:ipdbg`):
 
    ```xml
@@ -73,6 +74,8 @@ The packages are built in the project `home:ipdbg` (account `ipdbg`).
    Prefer: libsdl2-2.0-0
    # AlmaLinux 9
    Prefer: lua texlive-ragged2e
+   # Arch
+   Prefer: hdf5 blas lapack
    ```
 3. Create the package `ipdbg` and upload the files, e.g. with
    [osc](https://github.com/openSUSE/osc):
@@ -83,6 +86,7 @@ The packages are built in the project `home:ipdbg` (account `ipdbg`).
    osc mkpac ipdbg
    cd ipdbg
    cp <IPDBG>/sw/packaging/obs/{_service,ipdbg.spec,ipdbg.dsc,debian.*} .
+   cp <IPDBG>/sw/packaging/aur/PKGBUILD .
    osc add *
    osc commit -m "ipdbg 0.1.1"
    ```
@@ -94,9 +98,10 @@ The packages are built in the project `home:ipdbg` (account `ipdbg`).
 ## New version
 
 Set the new version in `_service` (URL and file name), `ipdbg.spec`
-(`Version`, `%changelog`), `ipdbg.dsc` (`Version`, `DEBTRANSFORM-TAR`) and
-`debian.changelog` (new entry at the top), copy the files to the OBS
-checkout and commit.
+(`Version`, `Release: 1`, `%changelog`), `ipdbg.dsc` (`Version`,
+`DEBTRANSFORM-TAR`), `debian.changelog` (new entry at the top) and
+`../aur/PKGBUILD` (`pkgver`, `pkgrel=1`), copy the files to the OBS checkout
+and commit.
 
 ## License
 
