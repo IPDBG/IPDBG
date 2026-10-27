@@ -45,16 +45,34 @@ The packages are built in the project `home:ipdbg` (account `ipdbg`).
 1. Add the repositories (*Repositories* → *Add from a Distribution*):
    the supported Fedora versions and Rawhide, openSUSE Tumbleweed and
    Leap 16, Debian 13 and 12, Ubuntu 24.04 and the current interim release;
-   architectures x86_64 and aarch64.
+   architectures x86_64 and aarch64. AlmaLinux 9 with EPEL is not in that
+   list; add it in the project meta (`osc meta prj -e home:ipdbg`):
+
+   ```xml
+   <repository name="AlmaLinux_9">
+     <path project="Fedora:EPEL:9" repository="standard"/>
+     <path project="AlmaLinux:9" repository="update"/>
+     <arch>x86_64</arch>
+     <arch>aarch64</arch>
+   </repository>
+   ```
+
+   AlmaLinux 9 has no `octave-ipdbg`: its SWIG cannot build bindings for its
+   Octave. AlmaLinux 10 does not work yet: EPEL 10 has no libserialport.
 2. In the project config (*Project Config*), choose between packages that
    provide the same dependency of Octave or wxWidgets; without this, OBS
    reports *unresolvable: have choice for …*:
 
    ```
+   # Fedora
    Prefer: texlive-latex texlive-tools texlive-preview gnuplot xpdf-libs
    Prefer: pipewire-jack-audio-connection-kit-libs
+   # Debian
    Prefer: libjpeg62-turbo-dev
+   # Ubuntu 26.04
    Prefer: libsdl2-2.0-0
+   # AlmaLinux 9
+   Prefer: lua texlive-ragged2e
    ```
 3. Create the package `ipdbg` and upload the files, e.g. with
    [osc](https://github.com/openSUSE/osc):

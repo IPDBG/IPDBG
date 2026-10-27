@@ -22,8 +22,9 @@ host software (`sw/VERSION`); the HDL cores are released together with it.
 
 ### Added
 
-- Linux packages for Fedora, openSUSE, Debian and Ubuntu, x86_64 and
-  aarch64, from the openSUSE Build Service (project `home:ipdbg`).
+- Linux packages for Fedora, openSUSE, Debian, Ubuntu and AlmaLinux 9 (also
+  for Rocky Linux and RHEL 9, with EPEL; without Octave bindings), x86_64
+  and aarch64, from the openSUSE Build Service (project `home:ipdbg`).
 - Protocol descriptions for own transports and host tools, in the READMEs
   of `rtl/common`, the JtagHub, the UART transport and the cores.
 - Self-checking testbenches for all cores and `IpdbgClockDomainCrossing`,

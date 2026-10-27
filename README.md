@@ -166,9 +166,13 @@ libraries with their Python and Octave bindings):
 - Windows: download `ipdbg-VERSION-windows-x86_64.zip` from the
   [latest release](https://github.com/IPDBG/IPDBG/releases/latest), unpack
   it and start the programs in `bin`. No installation and no MSYS2 needed.
-- Linux: packages for Fedora, openSUSE, Debian and Ubuntu (x86_64 and
-  aarch64) from the openSUSE Build Service, see the
+- Linux: packages for Fedora, openSUSE, Debian, Ubuntu and AlmaLinux 9
+  (x86_64 and aarch64) from the openSUSE Build Service, see the
   [instructions per distribution](https://software.opensuse.org/download.html?project=home%3Aipdbg&package=ipdbg-ioview).
+  For AlmaLinux, Rocky Linux and RHEL 9, enable EPEL and add the repository
+  `https://download.opensuse.org/repositories/home:/ipdbg/AlmaLinux_9/home:ipdbg.repo`
+  with `dnf config-manager --add-repo`; there are no Octave bindings for
+  them.
   Once the repository is added, all packages can be installed:
   `ipdbg-ioview`, `ipdbg-uartbridge`, `python3-ipdbg`, `octave-ipdbg` and,
   for own programs, `libipdbg-devel` (Debian, Ubuntu: `libipdbg-dev`).

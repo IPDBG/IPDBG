@@ -2,11 +2,18 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # RPM package of the IPDBG host software for the openSUSE Build Service
-# (Fedora, openSUSE), see README.md.
+# (Fedora, openSUSE, AlmaLinux), see README.md.
+
+# The SWIG of EL 9 cannot build bindings for its Octave
+%if 0%{?rhel} == 9
+%bcond_with     octave
+%else
+%bcond_without  octave
+%endif
 
 Name:           ipdbg
 Version:        0.1.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Host software of IPDBG, the debugger for FPGAs
 License:        MPL-2.0
 URL:            https://github.com/IPDBG/IPDBG
@@ -24,7 +31,9 @@ BuildRequires:  wxGTK-devel
 %endif
 BuildRequires:  swig
 BuildRequires:  python3-devel
+%if %{with octave}
 BuildRequires:  octave-devel
+%endif
 
 %description
 IPDBG provides vendor-independent debug cores for FPGAs (logic analyzer,
@@ -69,6 +78,7 @@ Requires:       libipdbg0%{?_isa} = %{version}-%{release}
 Python modules BusAccess and WaveformGenerator for the IPDBG bus master and
 waveform generator cores.
 
+%if %{with octave}
 %package -n octave-ipdbg
 Summary:        GNU Octave bindings of the IPDBG libraries
 Requires:       libipdbg0%{?_isa} = %{version}-%{release}
@@ -82,6 +92,7 @@ Requires:       octave
 %description -n octave-ipdbg
 GNU Octave modules BusAccess and WaveformGenerator for the IPDBG bus master
 and waveform generator cores.
+%endif
 
 %prep
 %autosetup -n IPDBG-%{version}
@@ -92,15 +103,17 @@ cp sw/WaveformGenerator/README.md README-WaveformGenerator.md
 %build
 %{?set_build_flags}
 WX_CONFIG=$(command -v wx-config || command -v wx-config-3.2)
-%make_build -C sw all python octave WX_CONFIG="$WX_CONFIG"
+%make_build -C sw all python %{?with_octave:octave} WX_CONFIG="$WX_CONFIG"
 
 %install
 WX_CONFIG=$(command -v wx-config || command -v wx-config-3.2)
-%make_install -C sw install-python install-octave WX_CONFIG="$WX_CONFIG" \
+%make_install -C sw install-python %{?with_octave:install-octave} WX_CONFIG="$WX_CONFIG" \
     PREFIX=%{_prefix} libdir=%{_libdir} PYTHONDIR=%{python3_sitearch}
+%if %{with octave}
 # the Octave directory comes from octave-config
 octdir=$(octave-config -p LOCALOCTFILEDIR)
 printf '%s\n' "$octdir/BusAccess.oct" "$octdir/WaveformGenerator.oct" > octave.files
+%endif
 # byte-compile the Python modules: Fedora does it automatically, openSUSE not
 python3 -m compileall -q -d %{python3_sitearch} %{buildroot}%{python3_sitearch}
 
@@ -139,9 +152,14 @@ python3 -m compileall -q -d %{python3_sitearch} %{buildroot}%{python3_sitearch}
 %{python3_sitearch}/__pycache__/BusAccess.*
 %{python3_sitearch}/__pycache__/WaveformGenerator.*
 
+%if %{with octave}
 %files -n octave-ipdbg -f octave.files
+%endif
 
 %changelog
+* Tue Oct 27 2026 Daniel Anselmi <danselmi@gmx.ch> - 0.1.1-2
+- No Octave bindings on EL 9
+
 * Tue Oct 13 2026 Daniel Anselmi <danselmi@gmx.ch> - 0.1.1-1
 - Version 0.1.1
 
