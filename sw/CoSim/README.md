@@ -56,6 +56,28 @@ The file grows quickly, so keep these runs short.
 
 `make cleanall` removes the build output.
 
+## Automated test
+
+`test.sh` starts CoSim and OpenOCD and checks the four cores with the host
+tools: the Waveform Generator plays a ramp that sigrok-cli captures with the
+Logic Analyzer (compared with `la_ramp.golden`), IoProbe reads back its
+outputs, BusAccess writes and reads the register. It needs, besides CoSim
+and OpenOCD, sigrok-cli with the `ipdbg-la` driver and the Python modules
+`BusAccess` and `WaveformGenerator`, from the source tree (`make python` in
+`sw`) or installed (`pip install ipdbg`). The `ipdbg-la` driver of the
+released libsigrok hangs when sigrok-cli opens the core right after the
+scan, and sigrok-cli does not write its captures; the branch
+`ipdbg-la-rlc` of [danselmi/libsigrok](https://github.com/danselmi/libsigrok)
+has the fixes.
+
+```sh
+make
+./test.sh
+OPENOCD=/path/to/openocd SIGROK_CLI=/path/to/sigrok-cli ./test.sh
+```
+
+The exit status is 0 if all checks passed.
+
 ## The demo design
 
 The demo design ([`tb_top.vhd`](tb_top.vhd)) connects four IPDBG cores to
@@ -178,6 +200,7 @@ The write is reported in the output of `./CoSim`.
 | `main.cpp`          | TCP server for `remote_bitbang`, starts the GHDL simulation |
 | `ipdbg_JtagSim.cfg` | OpenOCD configuration |
 | `examples/`         | Scripts for the tools, see [Protocol decoders](#protocol-decoders-an-spi-master-fsm) |
+| `test.sh`, `la_ramp.golden` | [Automated test](#automated-test) |
 | `Makefile`          | Build |
 | `CoSim.cbp`         | Code::Blocks project |
 
