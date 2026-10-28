@@ -1,0 +1,98 @@
+# Runs sw/CoSim/test.sh: the demo design in GHDL, OpenOCD and the host tools.
+# OpenOCD (master) and sigrok-cli with the ipdbg-la driver of
+# danselmi/libsigrok (ipdbg-la-rlc) are built from git and cached; they are
+# rebuilt when one of the branches changes.
+name: CoSim
+on:
+  push:
+    paths:
+      - rtl/**
+      - sw/CoSim/**
+      - sw/BusAccess/**
+      - sw/WaveformGenerator/**
+      - sw/Makefile
+      - sw/common.mk
+      - .github/workflows/cosim.yml
+  pull_request:
+    paths:
+      - rtl/**
+      - sw/CoSim/**
+      - sw/BusAccess/**
+      - sw/WaveformGenerator/**
+      - sw/Makefile
+      - sw/common.mk
+      - .github/workflows/cosim.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  OPENOCD_REPO: https://github.com/openocd-org/openocd.git
+  OPENOCD_REF: master
+  LIBSIGROK_REPO: https://github.com/danselmi/libsigrok.git
+  LIBSIGROK_REF: ipdbg-la-rlc
+  SIGROK_CLI_REPO: https://github.com/sigrokproject/sigrok-cli.git
+  SIGROK_CLI_REF: master
+
+jobs:
+  cosim:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ghdl/setup-ghdl@v1
+        with:
+          version: 5.1.1
+          backend: llvm
+      - name: Install the dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config \
+            autoconf automake libtool texinfo libjim-dev libglib2.0-dev libzip-dev \
+            swig python3-dev
+      - name: Look up the commits of OpenOCD and sigrok
+        id: tools
+        run: |
+          commit() { git ls-remote "$1" "refs/heads/$2" | cut -c1-12; }
+          echo "key=tools-$(commit "$OPENOCD_REPO" "$OPENOCD_REF")-$(commit "$LIBSIGROK_REPO" "$LIBSIGROK_REF")-$(commit "$SIGROK_CLI_REPO" "$SIGROK_CLI_REF")-${{ hashFiles('.github/workflows/cosim.yml') }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: ~/tools
+          key: ${{ steps.tools.outputs.key }}
+      - name: Build OpenOCD and sigrok-cli
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          prefix=$HOME/tools
+          export PKG_CONFIG_PATH=$prefix/lib/pkgconfig
+          git clone -q --depth 1 -b "$OPENOCD_REF" "$OPENOCD_REPO" openocd
+          git clone -q --depth 1 -b "$LIBSIGROK_REF" "$LIBSIGROK_REPO" libsigrok
+          git clone -q --depth 1 -b "$SIGROK_CLI_REF" "$SIGROK_CLI_REPO" sigrok-cli
+          (cd openocd && ./bootstrap nosubmodule \
+            && ./configure --prefix="$prefix" --enable-remote-bitbang --disable-werror \
+            && make -j"$(nproc)" && make install)
+          (cd libsigrok && ./autogen.sh \
+            && ./configure --prefix="$prefix" --disable-all-drivers --enable-ipdbg-la --disable-bindings \
+            && make -j"$(nproc)" && make install)
+          (cd sigrok-cli && ./autogen.sh \
+            && ./configure --prefix="$prefix" \
+            && make -j"$(nproc)" && make install)
+      - name: Build CoSim and the Python bindings
+        run: |
+          make -C sw/CoSim
+          make -C sw -j"$(nproc)" python
+      - name: Run the test
+        run: |
+          mkdir -p "$RUNNER_TEMP/cosim"
+          TMPDIR=$RUNNER_TEMP/cosim \
+          OPENOCD=$HOME/tools/bin/openocd \
+          SIGROK_CLI=$HOME/tools/bin/sigrok-cli \
+          LD_LIBRARY_PATH=$HOME/tools/lib \
+            sw/CoSim/test.sh
+      - name: Keep the logs and captures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cosim-logs
+          path: ${{ runner.temp }}/cosim
+          if-no-files-found: ignore

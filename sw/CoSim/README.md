@@ -68,7 +68,8 @@ and OpenOCD, sigrok-cli with the `ipdbg-la` driver and the Python modules
 released libsigrok hangs when sigrok-cli opens the core right after the
 scan, and sigrok-cli does not write its captures; the branch
 `ipdbg-la-rlc` of [danselmi/libsigrok](https://github.com/danselmi/libsigrok)
-has the fixes.
+has the fixes. GitHub Actions runs the test on every push that changes
+`rtl/`, `sw/CoSim/` or the libraries, see `.github/workflows/cosim.yml`.
 
 ```sh
 make
