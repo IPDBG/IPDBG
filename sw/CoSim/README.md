@@ -10,7 +10,7 @@ Part of [IPDBG](https://github.com/IPDBG/IPDBG).
 
 ```
  PulseView, IoView,  ── TCP ──▶ OpenOCD ── remote_bitbang ──▶ CoSim
- Python, Octave, …   4242…4245           TCP port 3421       (GHDL simulation:
+ Python, Octave, …   4242…4246           TCP port 3421       (GHDL simulation:
                                                               JTAG TAP, hub, IPDBG cores)
 ```
 
@@ -42,8 +42,8 @@ cd sw/CoSim
 openocd -f ipdbg_JtagSim.cfg
 ```
 
-OpenOCD now serves the four IPDBG cores of the demo design on the ports
-4242 to 4245. The simulation runs until you stop it with Ctrl-C.
+OpenOCD now serves the five IPDBG cores of the demo design on the ports
+4242 to 4246. The simulation runs until you stop it with Ctrl-C.
 
 To record the signals of the simulation for
 [GTKWave](https://gtkwave.sourceforge.net), start CoSim with any argument:
@@ -58,30 +58,39 @@ The file grows quickly, so keep these runs short.
 
 ## Automated test
 
-`test.sh` starts CoSim and OpenOCD and checks the four cores with the host
-tools: the Waveform Generator plays a ramp that sigrok-cli captures with the
-Logic Analyzer (compared with `la_ramp.golden`), IoProbe reads back its
-outputs, BusAccess writes and reads the register. It needs, besides CoSim
-and OpenOCD, sigrok-cli with the `ipdbg-la` driver and the Python modules
-`BusAccess` and `WaveformGenerator`, from the source tree (`make python` in
-`sw`) or installed (`pip install ipdbg`). The `ipdbg-la` driver of the
-released libsigrok hangs when sigrok-cli opens the core right after the
-scan, and sigrok-cli does not write its captures; the branch
-`ipdbg-la-rlc` of [danselmi/libsigrok](https://github.com/danselmi/libsigrok)
-has the fixes. GitHub Actions runs the test on every push that changes
-`rtl/`, `sw/CoSim/` or the libraries, see `.github/workflows/cosim.yml`.
+`test/run.sh` starts CoSim and OpenOCD and runs the checks in `test/`, one
+Python script each:
+
+| Check        | What it does |
+|--------------|--------------|
+| `la_trigger` | The Waveform Generator plays a ramp; sigrok-cli captures it with value and edge triggers |
+| `la_rle`     | The Logic Analyzer with run-length compression captures repeated values |
+| `awg`        | sigrok-cli sets a square wave with the `ipdbg-awg` driver, the Logic Analyzer captures it |
+| `ioprobe`    | IoProbe reads back its outputs |
+| `busaccess`  | BusAccess writes and reads the register, with `sel` |
+
+It needs, besides CoSim and OpenOCD, sigrok-cli with the `ipdbg-la` and
+`ipdbg-awg` drivers of
+[danselmi/libsigrok](https://github.com/danselmi/libsigrok) (branch
+`ipdbg-la-and-awg`), and the Python modules `BusAccess` and
+`WaveformGenerator`, from the source tree (`make python` in `sw`) or
+installed (`pip install ipdbg`). GitHub Actions runs the test on every
+push that changes `rtl/`, `sw/CoSim/` or the libraries, see
+`.github/workflows/cosim.yml`.
 
 ```sh
 make
-./test.sh
-OPENOCD=/path/to/openocd SIGROK_CLI=/path/to/sigrok-cli ./test.sh
+test/run.sh
+OPENOCD=/path/to/openocd SIGROK_CLI=/path/to/sigrok-cli test/run.sh
 ```
 
-The exit status is 0 if all checks passed.
+The exit status is 0 if all checks passed. While CoSim and OpenOCD run, a
+check also runs on its own, e.g. `python3 test/la_rle.py`, with
+`PYTHONPATH` and `LD_LIBRARY_PATH` set as in `run.sh`.
 
 ## The demo design
 
-The demo design ([`tb_top.vhd`](tb_top.vhd)) connects four IPDBG cores to
+The demo design ([`tb_top.vhd`](tb_top.vhd)) connects five IPDBG cores to
 a JTAG hub:
 
 | Port | Core               | Configuration |
@@ -90,11 +99,12 @@ a JTAG hub:
 | 4243 | Waveform Generator | 16 bit, 512 samples, no double buffer |
 | 4244 | IoProbe            | 9 outputs, 18 inputs, used with IoView |
 | 4245 | BusAccess          | Wishbone master (`WbMaster`), 16 bit address, 32 bit data, 2 bit `sel` |
+| 4246 | Logic Analyzer     | as on 4242, with run-length compression (8 bit counter); needs the `ipdbg-la` driver of the branch `ipdbg-la-and-awg` |
 
 The cores are connected to each other, so you can see the effect of one
 tool in another:
 
-* The Logic Analyzer records the output of the Waveform Generator. While
+* Both Logic Analyzers record the output of the Waveform Generator. While
   the Waveform Generator is not playing, all channels are 0.
 * The IoProbe inputs are the outputs, twice: input bits 17..9 and 8..0 both
   show output bits 8..0.
@@ -196,12 +206,12 @@ The write is reported in the output of `./CoSim`.
 
 | File                | Content |
 |---------------------|---------|
-| `tb_top.vhd`        | Demo design: JTAG hub and the four IPDBG cores |
+| `tb_top.vhd`        | Demo design: JTAG hub and the five IPDBG cores |
 | `JtagAdapter.vhd`   | JTAG adapter driven by the `remote_bitbang` protocol |
 | `main.cpp`          | TCP server for `remote_bitbang`, starts the GHDL simulation |
 | `ipdbg_JtagSim.cfg` | OpenOCD configuration |
 | `examples/`         | Scripts for the tools, see [Protocol decoders](#protocol-decoders-an-spi-master-fsm) |
-| `test.sh`, `la_ramp.golden` | [Automated test](#automated-test) |
+| `test/`             | [Automated test](#automated-test) |
 | `Makefile`          | Build |
 | `CoSim.cbp`         | Code::Blocks project |
 

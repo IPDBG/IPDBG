@@ -33,6 +33,9 @@ host software (`sw/VERSION`); the HDL cores are released together with it.
   of `rtl/common`, the JtagHub, the UART transport and the cores.
 - Self-checking testbenches for all cores and `IpdbgClockDomainCrossing`,
   run by `rtl/test/run.sh` and in GitHub Actions.
+- CoSim: a second Logic Analyzer with run-length compression (port 4246),
+  and `sw/CoSim/test/run.sh`, which checks the cores with the host tools
+  and sigrok-cli, also in GitHub Actions.
 
 ## 0.1.1 – 2026-10-13
 

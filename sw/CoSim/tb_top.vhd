@@ -160,6 +160,8 @@ architecture structure of tb_top is
     signal up_lines_iov   : ipdbg_up_lines;
     signal dn_lines_bm    : ipdbg_dn_lines;
     signal up_lines_bm    : ipdbg_up_lines;
+    signal dn_lines_la_rl : ipdbg_dn_lines;
+    signal up_lines_la_rl : ipdbg_up_lines;
 
     constant T            : time := 10 ns;
 
@@ -225,13 +227,14 @@ begin
             dn_lines_1 => dn_lines_wfg,
             dn_lines_2 => dn_lines_iov,
             dn_lines_3 => dn_lines_bm,
-            dn_lines_4 => open,
+            dn_lines_4 => dn_lines_la_rl,
             dn_lines_5 => open,
             dn_lines_6 => open,
             up_lines_0 => up_lines_la,
             up_lines_1 => up_lines_wfg,
             up_lines_2 => up_lines_iov,
-            up_lines_3 => up_lines_bm
+            up_lines_3 => up_lines_bm,
+            up_lines_4 => up_lines_la_rl
         );
 
     la: component LogicAnalyserTop
@@ -287,6 +290,25 @@ begin
 --
 --        wait;
 --    end process;
+
+    -- the same probe, with run-length compression
+    la_rl: component LogicAnalyserTop
+        generic map(
+            ADDR_WIDTH             => 9,
+            ASYNC_RESET            => ASYNC_RESET,
+            USE_EXT_TRIGGER        => false,
+            RUN_LENGTH_COMPRESSION => 8
+        )
+        port map(
+            clk           => clk,
+            rst           => rst,
+            ce            => ce,
+            dn_lines      => dn_lines_la_rl,
+            up_lines      => up_lines_la_rl,
+            sample_enable => sample_enable,
+            probe         => data_in_la,
+            ext_trigger   => ext_trigger
+        );
 
     sample_enable <= '1';
     data_in_la <= data_out_wfg when output_active = '1' else x"0000";

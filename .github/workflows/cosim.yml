@@ -1,6 +1,6 @@
-# Runs sw/CoSim/test.sh: the demo design in GHDL, OpenOCD and the host tools.
-# OpenOCD (master) and sigrok-cli with the ipdbg-la driver of
-# danselmi/libsigrok (ipdbg-la-rlc) are built from git and cached; they are
+# Runs sw/CoSim/test/run.sh: the demo design in GHDL, OpenOCD and the host tools.
+# OpenOCD (master) and sigrok-cli with the ipdbg-la and ipdbg-awg drivers of
+# danselmi/libsigrok (ipdbg-la-and-awg) are built from git and cached; they are
 # rebuilt when one of the branches changes.
 name: CoSim
 on:
@@ -31,7 +31,7 @@ env:
   OPENOCD_REPO: https://github.com/openocd-org/openocd.git
   OPENOCD_REF: master
   LIBSIGROK_REPO: https://github.com/danselmi/libsigrok.git
-  LIBSIGROK_REF: ipdbg-la-rlc
+  LIBSIGROK_REF: ipdbg-la-and-awg
   SIGROK_CLI_REPO: https://github.com/sigrokproject/sigrok-cli.git
   SIGROK_CLI_REF: master
 
@@ -72,7 +72,7 @@ jobs:
             && ./configure --prefix="$prefix" --enable-remote-bitbang --disable-werror \
             && make -j"$(nproc)" && make install)
           (cd libsigrok && ./autogen.sh \
-            && ./configure --prefix="$prefix" --disable-all-drivers --enable-ipdbg-la --disable-bindings \
+            && ./configure --prefix="$prefix" --disable-all-drivers --enable-ipdbg-la --enable-ipdbg-awg --disable-bindings \
             && make -j"$(nproc)" && make install)
           (cd sigrok-cli && ./autogen.sh \
             && ./configure --prefix="$prefix" \
@@ -88,7 +88,7 @@ jobs:
           OPENOCD=$HOME/tools/bin/openocd \
           SIGROK_CLI=$HOME/tools/bin/sigrok-cli \
           LD_LIBRARY_PATH=$HOME/tools/lib \
-            sw/CoSim/test.sh
+            sw/CoSim/test/run.sh
       - name: Keep the logs and captures
         if: failure()
         uses: actions/upload-artifact@v7

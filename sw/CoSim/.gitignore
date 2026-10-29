@@ -4,3 +4,4 @@ e~tb_top.lst
 wave.ghw
 obj/
 .cache/
+__pycache__/

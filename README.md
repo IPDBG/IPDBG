@@ -241,6 +241,7 @@ The demo design provides four of the tools, each on its own port:
 | 4243 | Waveform Generator |
 | 4244 | IoView             |
 | 4245 | BusAccess          |
+| 4246 | Logic Analyzer, with run-length compression |
 
 The Logic Analyzer records the output of the Waveform Generator, so you
 can generate a waveform and capture it right away. The
