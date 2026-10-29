@@ -10,6 +10,10 @@ host software (`sw/VERSION`); the HDL cores are released together with it.
 - BusAccess: the lock polarity was inverted. After every write by the host,
   `lock_o` (Wishbone), `hmastlock` (AHB) and `lock` (Avalon) stayed
   asserted, and a locked read did not lock the bus.
+- BusAccess and WaveformGenerator libraries: `close()` waits for an answer
+  of the core first; OpenOCD dropped commands sent just before. On Linux
+  and macOS the connection is closed gracefully, as on Windows, so that
+  OpenOCD accepts a new connection right after.
 
 ### Changed
 

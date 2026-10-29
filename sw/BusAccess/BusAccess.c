@@ -54,8 +54,10 @@
 /* sockets are closed with closesocket() on Windows, close() does not work for them */
 #ifdef _WIN32
     #define CLOSE_SOCKET closesocket
+    #define SHUTDOWN_SEND SD_SEND
 #else
     #define CLOSE_SOCKET close
+    #define SHUTDOWN_SEND SHUT_WR
 #endif
 
 #define ROUND_UP(a, b) ((a + b - 1) / b)
@@ -464,8 +466,14 @@ int API IpdbgBusAccess_close(struct IpdbgBusAccessHandle *handle)
 {
     if (IpdbgBusAccess_begin(handle, false) != RET_OK)
         return RET_ERROR;
+    if (handle->socket == INVALD_SOCKET)
+        return RET_OK;
 
-    return IpdbgBusAccess_closeSocket(handle);
+    // OpenOCD drops what it has not yet sent to the core when the connection
+    // closes: wait for an answer, then all commands have arrived
+    int ret = IpdbgBusAccess_getSizes(handle);
+    int retClose = IpdbgBusAccess_closeSocket(handle);
+    return ret != RET_OK ? ret : retClose;
 }
 
 /* closes the connection and frees the buffers, does not clear the last error */
@@ -474,15 +482,20 @@ static int IpdbgBusAccess_closeSocket(struct IpdbgBusAccessHandle *handle)
     if (handle->socket == INVALD_SOCKET)
         return RET_OK;
 
-#ifdef _WIN32
-    if (shutdown(handle->socket, SD_SEND) != SOCKET_ERROR)
+    // close gracefully: OpenOCD serves one connection per core and rejects a
+    // new one until it has seen the end of this one
+    if (shutdown(handle->socket, SHUTDOWN_SEND) == 0)
     {
-        char recvbuf[16];
-        int recvbuflen = 16;
-        // Receive until the peer closes the connection
-        while (recv(handle->socket, recvbuf, recvbuflen, 0) > 0);
-    }
+#ifdef _WIN32
+        DWORD tv = 2000;
+#else
+        struct timeval tv = { 2, 0 };
 #endif
+        char recvbuf[16];
+        setsockopt(handle->socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
+        // receive until the peer closes the connection
+        while (recv(handle->socket, recvbuf, sizeof(recvbuf), 0) > 0);
+    }
 
     int ret = RET_OK;
     if (CLOSE_SOCKET(handle->socket) < 0)
