@@ -55,7 +55,7 @@ jobs:
         run: |
           commit() { git ls-remote "$1" "refs/heads/$2" | cut -c1-12; }
           echo "key=tools-$(commit "$OPENOCD_REPO" "$OPENOCD_REF")-$(commit "$LIBSIGROK_REPO" "$LIBSIGROK_REF")-$(commit "$SIGROK_CLI_REPO" "$SIGROK_CLI_REF")-${{ hashFiles('.github/workflows/cosim.yml') }}" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: cache
         with:
           path: ~/tools
@@ -91,7 +91,7 @@ jobs:
             sw/CoSim/test.sh
       - name: Keep the logs and captures
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cosim-logs
           path: ${{ runner.temp }}/cosim
