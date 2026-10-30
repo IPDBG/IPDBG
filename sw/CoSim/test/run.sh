@@ -34,7 +34,7 @@ pids=()
 keep_work=false
 cleanup() {
     local i
-    # OpenOCD first: it crashes when CoSim goes away under it
+    # in reverse order: OpenOCD before CoSim
     for ((i = ${#pids[@]} - 1; i >= 0; i--)); do
         kill "${pids[i]}" 2>/dev/null
         wait "${pids[i]}" 2>/dev/null
