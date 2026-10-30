@@ -6,7 +6,7 @@
 # - windows-bindings: builds the Python and Octave bindings with MSYS2 and
 #   loads them, they are not in the ZIP
 # - linux-packages: builds the packages of sw/packaging/obs and
-#   sw/packaging/aur in containers of the distributions, installs and checks
+#   sw/packaging/obs in containers of the distributions, installs and checks
 #   them; the packages are attached to the run as artifacts
 # - python-wheels, python-sdist: the Python package for PyPI (sw/pyproject.toml)
 # - release: for a tag v*, if all jobs passed, creates a draft GitHub release
@@ -70,7 +70,7 @@ jobs:
           - {name: debian12, image: 'debian:bookworm', script: obs/ci-deb.sh}
           - {name: ubuntu2404, image: 'ubuntu:24.04', script: obs/ci-deb.sh}
           - {name: ubuntu2604, image: 'ubuntu:26.04', script: obs/ci-deb.sh}
-          - {name: arch, image: 'archlinux:latest', script: aur/ci-arch.sh}
+          - {name: arch, image: 'archlinux:latest', script: obs/ci-arch.sh}
     steps:
       # git and tar for actions/checkout
       - name: Prepare the container

@@ -3,17 +3,17 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 # Builds the Arch packages from the PKGBUILD in an Arch Linux container,
-# installs them and checks them with ../obs/ci-check.sh. Run as root from
+# installs them and checks them with ci-check.sh. Run as root from
 # the top of the repository, e.g.
 #
-#   podman run --rm -v "$PWD":/src -w /src archlinux sw/packaging/aur/ci-arch.sh out
+#   podman run --rm -v "$PWD":/src -w /src archlinux sw/packaging/obs/ci-arch.sh out
 #
-# The packages and the .SRCINFO for the AUR go to OUTDIR (default out).
+# The packages and the .SRCINFO go to OUTDIR (default out).
 
 set -euo pipefail
 
 OUT=$(realpath -m "${1:-out}")
-HERE=sw/packaging/aur
+HERE=sw/packaging/obs
 VERSION=$(cat sw/VERSION)
 
 pkgver=$(source "$HERE/PKGBUILD" && echo "$pkgver")

@@ -3,7 +3,8 @@
 For the maintainers, see also [`../README.md`](../README.md): the files
 here build the host software as packages on the
 [openSUSE Build Service](https://build.opensuse.org) (OBS) for Fedora,
-openSUSE, Debian and Ubuntu, and OBS publishes them as package repositories.
+openSUSE, AlmaLinux, Debian, Ubuntu and Arch Linux, and OBS publishes them
+as package repositories.
 The top-level README tells users how to add the repositories.
 
 | File | Purpose |
@@ -11,6 +12,7 @@ The top-level README tells users how to add the repositories.
 | `_service` | downloads the source archive of the tag from GitHub |
 | `ipdbg.spec` | RPM package (Fedora, openSUSE) |
 | `ipdbg.dsc`, `debian.*` | Debian package (Debian, Ubuntu); OBS turns `debian.X` into `debian/X` |
+| `PKGBUILD` | Arch Linux packages; `libipdbg` and `python-ipdbg` instead of `libipdbg-devel` and `python3-ipdbg` |
 | `ci-*.sh` | build and check the packages without OBS, see below |
 
 One source package `ipdbg` builds six packages:
@@ -29,14 +31,19 @@ One source package `ipdbg` builds six packages:
 `ci-rpm.sh` and `ci-deb.sh` build the packages from these files in a
 container of the distribution, the way OBS does, install them and check
 them with `ci-check.sh`. GitHub Actions runs them for Fedora, openSUSE
-Tumbleweed and Leap 16, Debian 13 and 12, Ubuntu 24.04 and 26.04 (job
+Tumbleweed and Leap 16, Debian 13 and 12, Ubuntu 24.04 and 26.04, and
+`ci-arch.sh` for Arch (job
 *linux-packages* of the workflow *Host software*) and attaches the packages
 to the run. Locally, e.g. with podman:
 
 ```sh
 podman run --rm -v "$PWD":/src -w /src fedora:latest sw/packaging/obs/ci-rpm.sh out
 podman run --rm -v "$PWD":/src -w /src debian:trixie sw/packaging/obs/ci-deb.sh out
+podman run --rm -v "$PWD":/src -w /src archlinux sw/packaging/obs/ci-arch.sh out
 ```
+
+On Arch Linux, `makepkg -si` in this directory builds and installs the
+packages from the source archive of the tag.
 
 ## Setting up the OBS project
 
@@ -85,10 +92,9 @@ The packages are built in the project `home:ipdbg` (account `ipdbg`).
    cd home:ipdbg
    osc mkpac ipdbg
    cd ipdbg
-   cp <IPDBG>/sw/packaging/obs/{_service,ipdbg.spec,ipdbg.dsc,debian.*} .
-   cp <IPDBG>/sw/packaging/aur/PKGBUILD .
+   cp <IPDBG>/sw/packaging/obs/{_service,ipdbg.spec,ipdbg.dsc,debian.*,PKGBUILD} .
    osc add *
-   osc commit -m "ipdbg 0.1.1"
+   osc commit -m "Version 0.2.0"
    ```
 
    OBS runs `_service`, downloads the source archive and builds all
@@ -100,8 +106,18 @@ The packages are built in the project `home:ipdbg` (account `ipdbg`).
 Set the new version in `_service` (URL and file name), `ipdbg.spec`
 (`Version`, `Release: 1`, `%changelog`), `ipdbg.dsc` (`Version`,
 `DEBTRANSFORM-TAR`), `debian.changelog` (new entry at the top) and
-`../aur/PKGBUILD` (`pkgver`, `pkgrel=1`), copy the files to the OBS checkout
-and commit.
+`PKGBUILD` (`pkgver`, `pkgrel=1`). After the tag is pushed, update the OBS
+checkout, copy the files and commit:
+
+```sh
+cd home:ipdbg/ipdbg
+osc up
+cp <IPDBG>/sw/packaging/obs/{_service,ipdbg.spec,ipdbg.dsc,debian.*,PKGBUILD} .
+osc commit -m "Version x.y.z"
+```
+
+`osc up` brings the checkout to the state on OBS, in case the package was
+changed elsewhere, e.g. in the web interface.
 
 ## License
 

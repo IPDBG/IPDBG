@@ -8,8 +8,7 @@ Linux packages are built and tested. Users find the installation in the
 | Directory | Contents |
 |-----------|----------|
 | [`windows/`](windows) | the Windows ZIP: `make-zip.sh` and the `README.txt` in the ZIP |
-| [`obs/`](obs/README.md) | the Linux packages for the openSUSE Build Service, and scripts to build and check them in containers |
-| [`aur/`](aur/README.md) | the `PKGBUILD` of the Arch Linux packages, built on OBS |
+| [`obs/`](obs/README.md) | the Linux packages for the openSUSE Build Service (RPM, Debian, Arch), and scripts to build and check them in containers |
 | [`pypi/`](pypi/README.md) | the description of the Python package on PyPI; the build files are [`sw/pyproject.toml`](../pyproject.toml) and [`sw/setup.py`](../setup.py) |
 
 ## Continuous integration
@@ -20,7 +19,7 @@ runs on every change of `sw/`:
 | Job | What it does |
 |-----|--------------|
 | `linux` | builds everything on Ubuntu, loads the Python and Octave modules, checks `make install` and `make uninstall` |
-| `linux-packages` | builds the packages of [`obs/`](obs/README.md) and [`aur/`](aur/README.md) in containers of Fedora, openSUSE, Debian, Ubuntu and Arch, installs and checks them; the packages are attached to the run |
+| `linux-packages` | builds the packages of [`obs/`](obs/README.md) in containers of Fedora, openSUSE, Debian, Ubuntu and Arch, installs and checks them; the packages are attached to the run |
 | `windows-zip` | builds the Windows ZIP with MSYS2 (UCRT64), starts UartBridge with only the DLLs of the ZIP; the ZIP is attached to the run |
 | `windows-bindings` | builds the Python and Octave bindings with MSYS2 and loads them; they are not in the ZIP |
 | `python-wheels`, `python-sdist` | build the Python package `ipdbg` for Linux, Windows and macOS with [cibuildwheel](https://cibuildwheel.pypa.io), and the source archive; each wheel is imported in a test |
@@ -29,9 +28,8 @@ runs on every change of `sw/`:
 
 ## Release
 
-1. Set the version in [`sw/VERSION`](../VERSION), in the files of
-   [`obs/`](obs/README.md#new-version) and in [`aur/PKGBUILD`](aur/README.md#release),
-   rename *Unreleased* in [`CHANGELOG.md`](../../CHANGELOG.md) to the version
+1. Set the version in [`sw/VERSION`](../VERSION) and in the files of
+   [`obs/`](obs/README.md#new-version), rename *Unreleased* in [`CHANGELOG.md`](../../CHANGELOG.md) to the version
    and date, commit and push. The job
    `linux-packages` checks that the versions match.
 2. Tag the commit and push the tag:

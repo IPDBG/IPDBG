@@ -173,9 +173,19 @@ libraries with their Python and Octave bindings):
   `https://download.opensuse.org/repositories/home:/ipdbg/AlmaLinux_9/home:ipdbg.repo`
   with `dnf config-manager --add-repo`; there are no Octave bindings for
   them.
-  For Arch Linux (x86_64), see [`sw/packaging/aur`](sw/packaging/aur/README.md#installing);
+  For Arch Linux (x86_64), add the repository and its signing key once;
   there the packages are `libipdbg` and `python-ipdbg` instead of
-  `libipdbg-devel` and `python3-ipdbg`.
+  `libipdbg-devel` and `python3-ipdbg`:
+
+  ```sh
+  repo=https://download.opensuse.org/repositories/home:/ipdbg/Arch
+  curl -fsSL $repo/x86_64/home_ipdbg_Arch.key | sudo pacman-key --add -
+  sudo pacman-key --lsign-key "$(curl -fsSL $repo/x86_64/home_ipdbg_Arch.key |
+      gpg --show-keys --with-colons | awk -F: '/^fpr/ { print $10; exit }')"
+  printf '\n[home_ipdbg_Arch]\nServer = %s/$arch\n' $repo | sudo tee -a /etc/pacman.conf
+  sudo pacman -Sy ipdbg-ioview
+  ```
+
   Once the repository is added, all packages can be installed:
   `ipdbg-ioview`, `ipdbg-uartbridge`, `python3-ipdbg`, `octave-ipdbg` and,
   for own programs, `libipdbg-devel` (Debian, Ubuntu: `libipdbg-dev`).
