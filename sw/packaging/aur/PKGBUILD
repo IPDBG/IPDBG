@@ -4,7 +4,7 @@
 
 pkgbase=ipdbg
 pkgname=(ipdbg-ioview ipdbg-uartbridge libipdbg python-ipdbg octave-ipdbg)
-pkgver=0.1.1
+pkgver=0.2.0
 pkgrel=1
 pkgdesc='Host software of IPDBG, the debugger for FPGAs'
 arch=(x86_64 aarch64)

@@ -3,7 +3,7 @@
 Changes that matter to users of IPDBG. The version is the version of the
 host software (`sw/VERSION`); the HDL cores are released together with it.
 
-## Unreleased
+## 0.2.0 – 2026-10-30
 
 ### Fixed
 
@@ -17,9 +17,10 @@ host software (`sw/VERSION`); the HDL cores are released together with it.
 
 ### Changed
 
-- All hubs, transports and cores use the valid/ready handshake of
-  AXI4-Stream between hub and core; bytes may follow back to back. A JtagHub
+- All hubs, transports and cores use a valid/ready handshake between hub
+  and core which allows bytes to follow back to back. A JtagHub
   channel without flow control still does not wait for `dnlink_ready`.
+  Own cores have to follow the handshake too, see `rtl/common/README.md`.
 - Iurt: THR moves to a transmit register as soon as possible, so THRE is set
   earlier, like on a 16450; TEMT is set when both are empty. OE is only set
   for a byte that the hub dropped.

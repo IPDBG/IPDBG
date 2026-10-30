@@ -12,8 +12,8 @@
 %endif
 
 Name:           ipdbg
-Version:        0.1.1
-Release:        2%{?dist}
+Version:        0.2.0
+Release:        1%{?dist}
 Summary:        Host software of IPDBG, the debugger for FPGAs
 License:        MPL-2.0
 URL:            https://github.com/IPDBG/IPDBG
@@ -157,6 +157,9 @@ python3 -m compileall -q -d %{python3_sitearch} %{buildroot}%{python3_sitearch}
 %endif
 
 %changelog
+* Fri Oct 30 2026 Daniel Anselmi <danselmi@gmx.ch> - 0.2.0-1
+- Version 0.2.0
+
 * Tue Oct 27 2026 Daniel Anselmi <danselmi@gmx.ch> - 0.1.1-2
 - No Octave bindings on EL 9
 

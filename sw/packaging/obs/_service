@@ -2,7 +2,7 @@
   <!-- the source archive of the tag on GitHub; update the version here, in
        ipdbg.spec, ipdbg.dsc and debian.changelog for a new release -->
   <service name="download_url">
-    <param name="url">https://github.com/IPDBG/IPDBG/archive/refs/tags/v0.1.1.tar.gz</param>
-    <param name="filename">ipdbg-0.1.1.tar.gz</param>
+    <param name="url">https://github.com/IPDBG/IPDBG/archive/refs/tags/v0.2.0.tar.gz</param>
+    <param name="filename">ipdbg-0.2.0.tar.gz</param>
   </service>
 </services>
